@@ -35,16 +35,17 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: 'Release ${{ github.ref_name }}'
+          generate_release_notes: true
           body: |
-            ## 安装方法
+            ## 安装方法 / Installation
 
-            1. 下载以下文件：
-               - `main.js`
-               - `manifest.json`
-               - `styles.css`
-            2. 在 Obsidian vault 中创建 `.obsidian/plugins/md-publisher/` 目录
-            3. 将下载的文件放入该目录
-            4. 重启 Obsidian 并启用插件
+            1. 下载下方 **Assets** 区域中的 `main.js`、`manifest.json` 和 `styles.css` 文件。
+            2. 在你的 Obsidian Vault 中通过以下路径创建插件目录：`.obsidian/plugins/md-publisher/`。
+            3. 将下载的三个文件放入该目录中。
+            4. 在 Obsidian 的 `设置` > `第三方插件` 中找到并启用 **Markdown Publisher**。
+
+            ---
+            ### 更新日志 / What's Changed
           files: |
             dist/main.js
             dist/manifest.json
