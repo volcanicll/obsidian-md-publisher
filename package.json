@@ -1,0 +1,43 @@
+{
+  "name": "obsidian-md-publisher",
+  "version": "0.0.0",
+  "description": "Markdown Publisher - 一键发布 Markdown 到微信公众号、知乎、头条、小红书",
+  "main": "main.js",
+  "scripts": {
+    "dev": "bun run esbuild.config.mjs",
+    "build": "bun run esbuild.config.mjs production",
+    "version": "bun run .agent/skills/obsidian-version-manager/scripts/version_bump.ts"
+  },
+  "keywords": [
+    "obsidian",
+    "markdown",
+    "wechat",
+    "zhihu"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "juice": "^11.1.0",
+    "katex": "^0.16.27",
+    "rehype-external-links": "^3.0.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "rehype-stringify": "^10.0.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5"
+  }
+}
