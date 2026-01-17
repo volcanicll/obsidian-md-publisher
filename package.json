@@ -14,7 +14,7 @@
     "wechat",
     "zhihu"
   ],
-  "author": "",
+  "author": "volcanic",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",

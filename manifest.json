@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "minAppVersion": "1.0.0",
   "description": "一键发布 Markdown 到微信公众号、知乎、头条、小红书",
-  "author": "md-publisher",
+  "author": "volcanic",
   "authorUrl": "https://github.com/volcanic/obsidian-md-publisher",
   "isDesktopOnly": false
 }
