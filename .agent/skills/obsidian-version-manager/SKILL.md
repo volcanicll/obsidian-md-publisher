@@ -31,8 +31,8 @@ If no argument is provided, it will start an interactive prompt.
 
 1. Update `package.json`, `manifest.json`, and `versions.json`.
 2. Stage the modified JSON files.
-3. Create a Git commit: `chore: release vX.X.X`.
-4. Create a Git tag: `vX.X.X`.
+3. Create a Git commit: `chore: release X.X.X`.
+4. Create a Git tag: `X.X.X`.
 5. **Push** the current branch and the new tag to `origin` (with user confirmation).
 
 ### Bumping Rules
