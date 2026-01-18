@@ -3,8 +3,8 @@
   "name": "Markdown Publisher",
   "version": "1.0.0",
   "minAppVersion": "1.0.0",
-  "description": "一键发布 Markdown 到微信公众号、知乎、头条、小红书",
+  "description": "One-click publish Markdown notes to WeChat, Zhihu, Toutiao, and Xiaohongshu.",
   "author": "volcanic",
-  "authorUrl": "https://github.com/volcanic/obsidian-md-publisher",
+  "authorUrl": "https://github.com/volcanicll/obsidian-md-publisher",
   "isDesktopOnly": false
 }

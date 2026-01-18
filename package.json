@@ -1,7 +1,7 @@
 {
   "name": "obsidian-md-publisher",
   "version": "1.0.0",
-  "description": "Markdown Publisher - 一键发布 Markdown 到微信公众号、知乎、头条、小红书",
+  "description": "One-click publish Markdown notes to WeChat, Zhihu, Toutiao, and Xiaohongshu.",
   "main": "main.js",
   "scripts": {
     "dev": "bun run esbuild.config.mjs",
