@@ -3,8 +3,8 @@
   "name": "Markdown Publisher",
   "version": "1.0.0",
   "minAppVersion": "1.0.0",
-  "description": "One-click publish Markdown notes to WeChat, Zhihu, Toutiao, and Xiaohongshu.",
+  "description": "One-Click Publish Markdown to WeChat Official Accounts, Zhihu, Toutiao, and Xiaohongshu.",
   "author": "volcanic",
-  "authorUrl": "https://github.com/volcanicll/obsidian-md-publisher",
+  "authorUrl": "https://github.com/volcanicll",
   "isDesktopOnly": false
 }
