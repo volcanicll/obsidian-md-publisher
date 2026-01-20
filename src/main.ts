@@ -86,7 +86,7 @@ export default class BmMdPlugin extends Plugin {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf)
+     await workspace.revealLeaf(leaf)
     }
   }
 }
