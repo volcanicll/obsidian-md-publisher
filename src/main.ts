@@ -38,7 +38,7 @@ export default class BmMdPlugin extends Plugin {
 
     // Add ribbon icon to open preview
     this.addRibbonIcon('file-text', '打开  排版预览', () => {
-      this.activateView()
+      void this.activateView()
     })
 
     // Add command to open preview
@@ -46,7 +46,7 @@ export default class BmMdPlugin extends Plugin {
       id: 'open-preview',
       name: '打开排版预览',
       callback: () => {
-        this.activateView()
+        void this.activateView()
       }
     })
 

@@ -64,7 +64,9 @@ export class PreviewView extends ItemView {
     const copyBtn = toolbar.createDiv({ cls: 'bm-md-copy-btn' })
     copyBtn.createSpan({ cls: 'bm-md-copy-icon', text: '📋' })
     copyBtn.createSpan({ text: '复制' })
-    copyBtn.addEventListener('click', () => this.copyToClipboard())
+    copyBtn.addEventListener('click', () => {
+      void this.copyToClipboard()
+    })
 
     // Settings row
     const settingsRow = container.createDiv({ cls: 'bm-md-settings' })
@@ -78,7 +80,7 @@ export class PreviewView extends ItemView {
       this.app.workspace.on('active-leaf-change', () => {
         this.refreshMarkdownCache()
         this.clearRenderedCache()
-        this.updatePreview()
+        void this.updatePreview()
       })
     )
 
@@ -119,7 +121,7 @@ export class PreviewView extends ItemView {
       tab.addEventListener('click', () => {
         this.currentPlatform = platform.id
         this.renderTabs()
-        this.updatePreview()
+        void this.updatePreview()
       })
     })
   }
@@ -166,7 +168,7 @@ export class PreviewView extends ItemView {
             await this.plugin.saveSettings()
             this.updateStyleSelector()
             this.clearRenderedCache()
-            this.updatePreview()
+            void this.updatePreview()
           })
       })
     })
@@ -185,7 +187,7 @@ export class PreviewView extends ItemView {
             await this.plugin.saveSettings()
             this.updateCodeThemeSelector()
             this.clearRenderedCache()
-            this.updatePreview()
+            void this.updatePreview()
           })
       })
     })
@@ -243,7 +245,9 @@ export class PreviewView extends ItemView {
 
   debounceUpdatePreview(): void {
     if (this.debounceTimer) clearTimeout(this.debounceTimer)
-    this.debounceTimer = setTimeout(() => this.updatePreview(), 300)
+    this.debounceTimer = setTimeout(() => {
+      void this.updatePreview()
+    }, 300)
   }
 
   getCurrentMarkdown(): string | null {
