@@ -16,7 +16,9 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     containerEl.empty()
 
-    containerEl.createEl('h2', { text: ' 排版助手设置' })
+    new Setting(containerEl)
+      .setName(' 排版助手设置')
+      .setHeading()
 
     // Markdown Style Selection
     new Setting(containerEl)
@@ -72,9 +74,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
       .setName('自定义 CSS')
       .setDesc('添加自定义 CSS 样式，在主题样式之后应用')
       .addTextArea(text => {
-        text.inputEl.style.width = '100%'
-        text.inputEl.style.height = '150px'
-        text.inputEl.style.fontFamily = 'monospace'
+        text.inputEl.classList.add('bm-md-custom-css-textarea')
         text
           .setPlaceholder('#bm-md h1 { color: red; }')
           .setValue(this.plugin.settings.customCss)

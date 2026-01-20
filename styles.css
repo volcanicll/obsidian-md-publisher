@@ -178,3 +178,9 @@
 
 /* Code Highlighting */
 .bm-md-preview .hljs { background: transparent; }
+
+.bm-md-custom-css-textarea {
+  width: 100%;
+  height: 150px;
+  font-family: monospace;
+}

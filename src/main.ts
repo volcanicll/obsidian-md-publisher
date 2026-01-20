@@ -24,17 +24,15 @@ export default class BmMdPlugin extends Plugin {
 
     // Register the preview view
     try {
-      this.registerView(
-        VIEW_TYPE_PREVIEW,
-        (leaf) => new PreviewView(leaf, this)
-      )
-    } catch (e: any) {
+      this.registerView(VIEW_TYPE_PREVIEW, (leaf) => new PreviewView(leaf, this))
+    } catch (e) {
+      const error = e as Error
       // Ignore if view is already registered
       // This often happens during hot reload or if previous unload failed
-      if (e.message && e.message.includes('already registered')) {
-        console.warn('View already registered, skipping registration.')
+      if (error.message && error.message.includes('already registered')) {
+        console.debug('View already registered, skipping registration.')
       } else {
-        throw e
+        throw error
       }
     }
 
@@ -55,12 +53,11 @@ export default class BmMdPlugin extends Plugin {
     // Add settings tab
     this.addSettingTab(new BmMdSettingsTab(this.app, this))
 
-    console.log(' 插件已加载')
+    console.debug(' 插件已加载')
   }
 
   onunload() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_PREVIEW)
-    console.log(' 插件已卸载')
+    console.debug(' 插件已卸载')
   }
 
   async loadSettings() {

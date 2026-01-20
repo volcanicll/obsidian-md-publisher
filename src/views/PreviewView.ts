@@ -62,7 +62,8 @@ export class PreviewView extends ItemView {
     
     // Copy button
     const copyBtn = toolbar.createDiv({ cls: 'bm-md-copy-btn' })
-    copyBtn.innerHTML = `<span class="bm-md-copy-icon">📋</span><span>复制</span>`
+    copyBtn.createSpan({ cls: 'bm-md-copy-icon', text: '📋' })
+    copyBtn.createSpan({ text: '复制' })
     copyBtn.addEventListener('click', () => this.copyToClipboard())
 
     // Settings row
@@ -91,7 +92,7 @@ export class PreviewView extends ItemView {
 
     // Initial render
     this.refreshMarkdownCache()
-    this.updatePreview()
+    await this.updatePreview()
   }
 
   refreshMarkdownCache(): void {
@@ -261,19 +262,21 @@ export class PreviewView extends ItemView {
 
     const html = await this.getRenderedHtml(this.currentPlatform)
     
+    this.previewContainer.empty()
+    
     if (!html) {
-      this.previewContainer.innerHTML = `
-        <div class="bm-md-empty">
-          <p>📝 打开 Markdown 文件开始预览</p>
-        </div>
-      `
+      const emptyDiv = this.previewContainer.createDiv({ cls: 'bm-md-empty' })
+      emptyDiv.createEl('p', { text: '📝 打开 Markdown 文件开始预览' })
       return
     }
 
-    this.previewContainer.innerHTML = html
+    // Use ContextualFragment to avoid direct innerHTML usage
+    const fragment = document.createRange().createContextualFragment(html)
+    this.previewContainer.appendChild(fragment)
   }
 
-  async onClose(): Promise<void> {
+  onClose(): Promise<void> {
     if (this.debounceTimer) clearTimeout(this.debounceTimer)
+    return Promise.resolve()
   }
 }
