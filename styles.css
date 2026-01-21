@@ -12,7 +12,7 @@
 .bm-md-toolbar {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
+  padding: 0 12px 10px;
   gap: 10px;
   background: var(--background-primary);
   border-bottom: 1px solid var(--background-modifier-border);
@@ -118,19 +118,38 @@
 .bm-md-preview #bm-md {
   max-width: 100%;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 15px;
   line-height: 1.75;
   color: var(--text-normal);
 }
 
 /* Typography */
-.bm-md-preview h1 { font-size: 1.75em; font-weight: 700; margin: 1em 0 0.5em; }
-.bm-md-preview h2 { font-size: 1.4em; font-weight: 600; margin: 0.9em 0 0.4em; }
-.bm-md-preview h3 { font-size: 1.2em; font-weight: 600; margin: 0.8em 0 0.3em; }
-.bm-md-preview p { margin: 0.7em 0; }
-.bm-md-preview a { color: var(--text-accent); text-decoration: none; }
-.bm-md-preview a:hover { text-decoration: underline; }
+.bm-md-preview h1 {
+  font-size: 1.75em;
+  font-weight: 700;
+  margin: 1em 0 0.5em;
+}
+.bm-md-preview h2 {
+  font-size: 1.4em;
+  font-weight: 600;
+  margin: 0.9em 0 0.4em;
+}
+.bm-md-preview h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+}
+.bm-md-preview p {
+  margin: 0.7em 0;
+}
+.bm-md-preview a {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+.bm-md-preview a:hover {
+  text-decoration: underline;
+}
 
 .bm-md-preview blockquote {
   margin: 0.8em 0;
@@ -141,7 +160,7 @@
 }
 
 .bm-md-preview code {
-  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
   font-size: 0.9em;
   padding: 0.1em 0.35em;
   background: var(--background-secondary);
@@ -156,15 +175,44 @@
   overflow-x: auto;
 }
 
-.bm-md-preview pre code { padding: 0; background: none; }
-.bm-md-preview ul, .bm-md-preview ol { margin: 0.7em 0; padding-left: 1.4em; }
-.bm-md-preview li { margin: 0.2em 0; }
+.bm-md-preview pre code {
+  padding: 0;
+  background: none;
+}
+.bm-md-preview ul,
+.bm-md-preview ol {
+  margin: 0.7em 0;
+  padding-left: 1.4em;
+}
+.bm-md-preview li {
+  margin: 0.2em 0;
+}
 
-.bm-md-preview table { width: 100%; border-collapse: collapse; margin: 0.8em 0; }
-.bm-md-preview th, .bm-md-preview td { border: 1px solid var(--background-modifier-border); padding: 0.35em 0.5em; text-align: left; }
-.bm-md-preview th { background: var(--background-secondary); font-weight: 600; }
-.bm-md-preview img { max-width: 100%; height: auto; border-radius: 4px; }
-.bm-md-preview hr { border: none; border-top: 1px solid var(--background-modifier-border); margin: 1.2em 0; }
+.bm-md-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.8em 0;
+}
+.bm-md-preview th,
+.bm-md-preview td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 0.35em 0.5em;
+  text-align: left;
+}
+.bm-md-preview th {
+  background: var(--background-secondary);
+  font-weight: 600;
+}
+.bm-md-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+.bm-md-preview hr {
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+  margin: 1.2em 0;
+}
 
 /* Empty State */
 .bm-md-empty {
@@ -177,10 +225,122 @@
 }
 
 /* Code Highlighting */
-.bm-md-preview .hljs { background: transparent; }
+.bm-md-preview .hljs {
+  background: transparent;
+}
 
 .bm-md-custom-css-textarea {
   width: 100%;
   height: 150px;
   font-family: monospace;
+}
+
+/* Button Group */
+.bm-md-button-group {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Publish Button */
+.bm-md-publish-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  background: #8b5cf6;
+  color: white;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.bm-md-publish-btn:hover {
+  background: #7c3aed;
+}
+
+.bm-md-publish-icon {
+  font-size: 14px;
+}
+
+/* Publish Modal */
+.bm-md-publish-modal {
+  padding: 10px;
+}
+
+.bm-md-modal-title {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bm-md-title-input {
+  width: 100%;
+}
+
+.bm-md-digest-textarea {
+  width: 100%;
+  height: 80px;
+  resize: vertical;
+}
+
+.bm-md-warning {
+  color: var(--text-warning);
+  background: var(--background-modifier-warning);
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.bm-md-info {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 16px 0;
+  padding: 10px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.bm-md-button-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.bm-md-cancel-btn {
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+
+.bm-md-cancel-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* WeChat Settings */
+.bm-md-appid-input,
+.bm-md-appsecret-input {
+  width: 300px;
+}
+
+.bm-md-connection-status {
+  margin-left: 10px;
+  font-weight: 500;
+}
+
+.bm-md-status-success {
+  color: #10b981;
+}
+
+.bm-md-status-error {
+  color: #ef4444;
 }

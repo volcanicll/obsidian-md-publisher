@@ -1,7 +1,8 @@
-import { App, PluginSettingTab, Setting } from 'obsidian'
+import { App, PluginSettingTab, Setting, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
 import { markdownStyles } from '../themes/markdown-style'
 import { codeThemes } from '../themes/code-theme'
+import { WeChatApi } from '../lib/wechat/wechat-api'
 
 export class BmMdSettingsTab extends PluginSettingTab {
   plugin: BmMdPlugin
@@ -17,7 +18,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName(' 排版助手设置')
+      .setName('排版助手设置')
       .setHeading()
 
     // Markdown Style Selection
@@ -59,8 +60,8 @@ export class BmMdSettingsTab extends PluginSettingTab {
       .addDropdown(dropdown => {
         dropdown
           .addOption('wechat', '微信公众号')
-          .addOption('zhihu', '知乎')
-          .addOption('toutiao', '头条')
+          // .addOption('zhihu', '知乎')
+          // .addOption('toutiao', '头条')
           .addOption('xiaohongshu', '小红书')
           .setValue(this.plugin.settings.defaultPlatform)
           .onChange(async (value) => {
@@ -83,5 +84,90 @@ export class BmMdSettingsTab extends PluginSettingTab {
             await this.plugin.saveSettings()
           })
       })
+
+    // WeChat Official Account Settings Section
+    new Setting(containerEl)
+      .setName('微信公众号设置')
+      .setHeading()
+
+    new Setting(containerEl)
+      .setName('AppID')
+      .setDesc('微信公众号的 AppID，在公众平台 - 开发 - 基本配置中获取')
+      .addText(text => {
+        text.inputEl.classList.add('bm-md-appid-input')
+        text
+          .setPlaceholder('wx1234567890abcdef')
+          .setValue(this.plugin.settings.wechatAppId)
+          .onChange(async (value) => {
+            this.plugin.settings.wechatAppId = value.trim()
+            await this.plugin.saveSettings()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('AppSecret')
+      .setDesc('微信公众号的 AppSecret，请妥善保管')
+      .addText(text => {
+        text.inputEl.type = 'password'
+        text.inputEl.classList.add('bm-md-appsecret-input')
+        text
+          .setPlaceholder('请输入 AppSecret')
+          .setValue(this.plugin.settings.wechatAppSecret)
+          .onChange(async (value) => {
+            this.plugin.settings.wechatAppSecret = value.trim()
+            await this.plugin.saveSettings()
+          })
+      })
+
+    // Test Connection Button
+    const testConnectionSetting = new Setting(containerEl)
+      .setName('测试连接')
+      .setDesc('测试公众号 API 连接是否正常')
+    
+    const statusEl = testConnectionSetting.descEl.createSpan({ cls: 'bm-md-connection-status' })
+    
+    testConnectionSetting.addButton(button => {
+      button
+        .setButtonText('测试')
+        .onClick(async () => {
+          if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
+            new Notice('请先填写 AppID 和 AppSecret')
+            return
+          }
+
+          button.setButtonText('测试中...')
+          button.setDisabled(true)
+          statusEl.setText('')
+
+          const api = new WeChatApi({
+            appId: this.plugin.settings.wechatAppId,
+            appSecret: this.plugin.settings.wechatAppSecret
+          }, {
+            onTokenRefresh: async (token, expireTime) => {
+              this.plugin.settings.wechatAccessToken = token
+              this.plugin.settings.wechatTokenExpireTime = expireTime
+              await this.plugin.saveSettings()
+            }
+          })
+
+          const result = await api.testConnection()
+
+          button.setButtonText('测试')
+          button.setDisabled(false)
+
+          if (result.success) {
+            statusEl.setText(' ✅ ' + result.message)
+            statusEl.classList.add('bm-md-status-success')
+            statusEl.classList.remove('bm-md-status-error')
+            new Notice('✅ ' + result.message)
+          } else {
+            statusEl.setText(' ❌ ' + result.message)
+            statusEl.classList.add('bm-md-status-error')
+            statusEl.classList.remove('bm-md-status-success')
+            new Notice('❌ ' + result.message)
+          }
+        })
+    })
   }
 }
+

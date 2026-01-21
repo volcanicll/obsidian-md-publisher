@@ -3,6 +3,7 @@ import type BmMdPlugin from '../main'
 import { render, Platform } from '../lib/markdown/render'
 import { markdownStyles } from '../themes/markdown-style'
 import { codeThemes } from '../themes/code-theme'
+import { PublishModal } from './PublishModal'
 
 export const VIEW_TYPE_PREVIEW = 'obsidian-md-publisher'
 
@@ -10,7 +11,7 @@ const PLATFORMS: { id: Platform; name: string }[] = [
   { id: 'wechat', name: '公众号' },
   // { id: 'zhihu', name: '知乎' },
   // { id: 'toutiao', name: '头条' },
-  // { id: 'xiaohongshu', name: '小红书' },
+  { id: 'xiaohongshu', name: '小红书' },
 ]
 
 export class PreviewView extends ItemView {
@@ -22,6 +23,8 @@ export class PreviewView extends ItemView {
   tabsContainer: HTMLElement | null = null
   styleSelector: HTMLElement | null = null
   codeThemeSelector: HTMLElement | null = null
+  publishBtnEl: HTMLElement | null = null
+  settingsRowEl: HTMLElement | null = null
   
   // Cache markdown content and rendered HTML per platform
   private lastMarkdownContent: string | null = null
@@ -60,17 +63,31 @@ export class PreviewView extends ItemView {
     this.tabsContainer = toolbar.createDiv({ cls: 'bm-md-tabs' })
     this.renderTabs()
     
+    // Button group
+    const buttonGroup = toolbar.createDiv({ cls: 'bm-md-button-group' })
+
     // Copy button
-    const copyBtn = toolbar.createDiv({ cls: 'bm-md-copy-btn' })
+    const copyBtn = buttonGroup.createDiv({ cls: 'bm-md-copy-btn' })
     copyBtn.createSpan({ cls: 'bm-md-copy-icon', text: '📋' })
     copyBtn.createSpan({ text: '复制' })
     copyBtn.addEventListener('click', () => {
       void this.copyToClipboard()
     })
 
-    // Settings row
-    const settingsRow = container.createDiv({ cls: 'bm-md-settings' })
-    this.renderSelectors(settingsRow)
+    // Publish button (hidden for xiaohongshu)
+    this.publishBtnEl = buttonGroup.createDiv({ cls: 'bm-md-publish-btn' })
+    this.publishBtnEl.createSpan({ cls: 'bm-md-publish-icon', text: '📤' })
+    this.publishBtnEl.createSpan({ text: '发布' })
+    this.publishBtnEl.addEventListener('click', () => {
+      void this.openPublishModal()
+    })
+
+    // Settings row (hidden for xiaohongshu)
+    this.settingsRowEl = container.createDiv({ cls: 'bm-md-settings' })
+    this.renderSelectors(this.settingsRowEl)
+
+    // Update UI visibility based on current platform
+    this.updatePlatformUI()
 
     // Preview container
     this.previewContainer = container.createDiv({ cls: 'bm-md-preview' })
@@ -120,10 +137,36 @@ export class PreviewView extends ItemView {
       })
       tab.addEventListener('click', () => {
         this.currentPlatform = platform.id
+        this.clearRenderedCache()
         this.renderTabs()
+        this.updatePlatformUI()
         void this.updatePreview()
       })
     })
+  }
+
+  /**
+   * Update UI visibility based on current platform
+   * Xiaohongshu: hide publish button and theme selectors, use fixed style
+   */
+  updatePlatformUI(): void {
+    const isXiaohongshu = this.currentPlatform === 'xiaohongshu'
+    
+    // Hide/show publish button
+    if (this.publishBtnEl) {
+      this.publishBtnEl.style.display = isXiaohongshu ? 'none' : ''
+    }
+    
+    // Hide/show settings row (theme selectors)
+    if (this.settingsRowEl) {
+      this.settingsRowEl.style.display = isXiaohongshu ? 'none' : ''
+    }
+    
+    // For xiaohongshu, always use the xiaohongshu theme
+    if (isXiaohongshu) {
+      this.currentMarkdownStyle = 'xiaohongshu'
+      this.currentCodeTheme = 'github' // Simple code theme
+    }
   }
 
   renderSelectors(container: HTMLElement): void {
@@ -277,6 +320,27 @@ export class PreviewView extends ItemView {
     // Use ContextualFragment to avoid direct innerHTML usage
     const fragment = document.createRange().createContextualFragment(html)
     this.previewContainer.appendChild(fragment)
+  }
+
+  async openPublishModal(): Promise<void> {
+    const markdown = this.getCurrentMarkdown()
+    if (!markdown) {
+      new Notice('没有可发布的内容，请先打开 Markdown 文件')
+      return
+    }
+
+    const html = await this.getRenderedHtml(this.currentPlatform)
+    if (!html) {
+      new Notice('内容渲染失败，无法发布')
+      return
+    }
+
+    const modal = new PublishModal(this.app, {
+      markdown,
+      html,
+      plugin: this.plugin
+    })
+    modal.open()
   }
 
   onClose(): Promise<void> {

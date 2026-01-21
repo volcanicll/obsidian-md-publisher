@@ -7,13 +7,23 @@ interface BmMdSettings {
   codeTheme: string
   customCss: string
   defaultPlatform: string
+  // WeChat Official Account settings
+  wechatAppId: string
+  wechatAppSecret: string
+  wechatAccessToken: string
+  wechatTokenExpireTime: number
 }
 
 const DEFAULT_SETTINGS: BmMdSettings = {
   markdownStyle: 'ayu-light',
   codeTheme: 'github',
   customCss: '',
-  defaultPlatform: 'wechat'
+  defaultPlatform: 'wechat',
+  // WeChat defaults
+  wechatAppId: '',
+  wechatAppSecret: '',
+  wechatAccessToken: '',
+  wechatTokenExpireTime: 0
 }
 
 export default class BmMdPlugin extends Plugin {
