@@ -40,7 +40,7 @@ export class PublishModal extends Modal {
     contentEl.addClass('bm-md-publish-modal')
 
     // Title
-    contentEl.createEl('h2', { text: '发布到微信公众号', cls: 'bm-md-modal-title' })
+    contentEl.createEl('h2', { text: 'Publish to WeChat Official Account', cls: 'bm-md-modal-title' })
 
     // Check if WeChat is configured
     if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {

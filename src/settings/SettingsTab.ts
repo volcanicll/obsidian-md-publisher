@@ -18,13 +18,13 @@ export class BmMdSettingsTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName('排版助手设置')
+      .setName('Markdown Publisher settings')
       .setHeading()
 
     // Markdown Style Selection
     new Setting(containerEl)
-      .setName('Markdown 样式')
-      .setDesc('选择默认的 Markdown 排版样式')
+      .setName('Markdown style')
+      .setDesc('Select default Markdown styling theme')
       .addDropdown(dropdown => {
         markdownStyles.forEach(style => {
           dropdown.addOption(style.id, style.name)
@@ -39,8 +39,8 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // Code Theme Selection
     new Setting(containerEl)
-      .setName('代码高亮主题')
-      .setDesc('选择代码块的高亮主题')
+      .setName('Code highlight theme')
+      .setDesc('Select code block syntax highlighting theme')
       .addDropdown(dropdown => {
         codeThemes.forEach(theme => {
           dropdown.addOption(theme.id, theme.name)
@@ -55,14 +55,14 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // Default Platform Selection
     new Setting(containerEl)
-      .setName('默认平台')
-      .setDesc('选择默认的发布平台')
+      .setName('Default platform')
+      .setDesc('Select default publishing platform')
       .addDropdown(dropdown => {
         dropdown
-          .addOption('wechat', '微信公众号')
-          // .addOption('zhihu', '知乎')
-          // .addOption('toutiao', '头条')
-          .addOption('xiaohongshu', '小红书')
+          .addOption('wechat', 'WeChat Official Account')
+          // .addOption('zhihu', 'Zhihu')
+          // .addOption('toutiao', 'Toutiao')
+          .addOption('xiaohongshu', 'Xiaohongshu')
           .setValue(this.plugin.settings.defaultPlatform)
           .onChange(async (value) => {
             this.plugin.settings.defaultPlatform = value
@@ -72,8 +72,8 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // Custom CSS
     new Setting(containerEl)
-      .setName('自定义 CSS')
-      .setDesc('添加自定义 CSS 样式，在主题样式之后应用')
+      .setName('Custom CSS')
+      .setDesc('Add custom CSS styles, applied after theme styles')
       .addTextArea(text => {
         text.inputEl.classList.add('bm-md-custom-css-textarea')
         text
@@ -87,7 +87,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // WeChat Official Account Settings Section
     new Setting(containerEl)
-      .setName('微信公众号设置')
+      .setName('WeChat Official Account settings')
       .setHeading()
 
     new Setting(containerEl)
@@ -152,7 +152,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
           const result = await api.testConnection()
 
-          button.setButtonText('测试')
+          button.setButtonText('Test')
           button.setDisabled(false)
 
           if (result.success) {

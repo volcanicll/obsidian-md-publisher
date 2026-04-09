@@ -69,7 +69,7 @@ export class PreviewView extends ItemView {
     // Copy button
     const copyBtn = buttonGroup.createDiv({ cls: 'bm-md-copy-btn' })
     copyBtn.createSpan({ cls: 'bm-md-copy-icon', text: '📋' })
-    copyBtn.createSpan({ text: '复制' })
+    copyBtn.createSpan({ text: 'Copy' })
     copyBtn.addEventListener('click', () => {
       void this.copyToClipboard()
     })
@@ -77,7 +77,7 @@ export class PreviewView extends ItemView {
     // Publish button (hidden for xiaohongshu)
     this.publishBtnEl = buttonGroup.createDiv({ cls: 'bm-md-publish-btn' })
     this.publishBtnEl.createSpan({ cls: 'bm-md-publish-icon', text: '📤' })
-    this.publishBtnEl.createSpan({ text: '发布' })
+    this.publishBtnEl.createSpan({ text: 'Publish' })
     this.publishBtnEl.addEventListener('click', () => {
       void this.openPublishModal()
     })
@@ -172,16 +172,16 @@ export class PreviewView extends ItemView {
   renderSelectors(container: HTMLElement): void {
     // Markdown Style Selector
     const styleGroup = container.createDiv({ cls: 'bm-md-selector-group' })
-    styleGroup.createSpan({ text: '主题:', cls: 'bm-md-selector-label' })
-    
+    styleGroup.createSpan({ text: 'Theme:', cls: 'bm-md-selector-label' })
+
     this.styleSelector = styleGroup.createDiv({ cls: 'bm-md-selector' })
     this.updateStyleSelector()
     this.styleSelector.addEventListener('click', (e) => this.showStyleMenu(e))
 
     // Code Theme Selector
     const codeGroup = container.createDiv({ cls: 'bm-md-selector-group' })
-    codeGroup.createSpan({ text: '代码:', cls: 'bm-md-selector-label' })
-    
+    codeGroup.createSpan({ text: 'Code:', cls: 'bm-md-selector-label' })
+
     this.codeThemeSelector = codeGroup.createDiv({ cls: 'bm-md-selector' })
     this.updateCodeThemeSelector()
     this.codeThemeSelector.addEventListener('click', (e) => this.showCodeThemeMenu(e))
@@ -240,7 +240,7 @@ export class PreviewView extends ItemView {
   async copyToClipboard(): Promise<void> {
     const html = await this.getRenderedHtml(this.currentPlatform)
     if (!html) {
-      new Notice('没有可复制的内容')
+      new Notice('No content to copy')
       return
     }
 
@@ -253,10 +253,10 @@ export class PreviewView extends ItemView {
         'text/plain': textBlob,
       })
       await navigator.clipboard.write([item])
-      new Notice(`✅ 已复制 ${PLATFORMS.find(p => p.id === this.currentPlatform)?.name} 格式`)
+      new Notice(`✅ Copied ${PLATFORMS.find(p => p.id === this.currentPlatform)?.name} format`)
     } catch (err) {
-      console.error('复制失败:', err)
-      new Notice('复制失败: ' + String(err))
+      console.error('Copy failed:', err)
+      new Notice('Copy failed: ' + String(err))
     }
   }
 
@@ -313,7 +313,7 @@ export class PreviewView extends ItemView {
     
     if (!html) {
       const emptyDiv = this.previewContainer.createDiv({ cls: 'bm-md-empty' })
-      emptyDiv.createEl('p', { text: '📝 打开 Markdown 文件开始预览' })
+      emptyDiv.createEl('p', { text: '📝 Open a Markdown file to start preview' })
       return
     }
 
@@ -325,13 +325,13 @@ export class PreviewView extends ItemView {
   async openPublishModal(): Promise<void> {
     const markdown = this.getCurrentMarkdown()
     if (!markdown) {
-      new Notice('没有可发布的内容，请先打开 Markdown 文件')
+      new Notice('No content to publish, please open a Markdown file first')
       return
     }
 
     const html = await this.getRenderedHtml(this.currentPlatform)
     if (!html) {
-      new Notice('内容渲染失败，无法发布')
+      new Notice('Content rendering failed, cannot publish')
       return
     }
 
