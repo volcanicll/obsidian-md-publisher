@@ -1,4 +1,4 @@
-import { requestUrl, RequestUrlParam, Notice } from 'obsidian'
+import { requestUrl, RequestUrlParam } from 'obsidian'
 import type {
   WeChatAccessTokenResponse,
   WeChatDraftAddResponse,

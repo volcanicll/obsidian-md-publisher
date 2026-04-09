@@ -44,15 +44,15 @@ export class PublishModal extends Modal {
 
     // Check if WeChat is configured
     if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
-      contentEl.createEl('p', { 
-        text: '⚠️ 请先在设置中配置微信公众号的 AppID 和 AppSecret',
+      contentEl.createEl('p', {
+        text: '⚠️ Please configure WeChat App ID and App Secret in settings first',
         cls: 'bm-md-warning'
       })
-      
+
       new Setting(contentEl)
         .addButton(button => {
           button
-            .setButtonText('关闭')
+            .setButtonText('Close')
             .onClick(() => this.close())
         })
       return
@@ -60,12 +60,12 @@ export class PublishModal extends Modal {
 
     // Article Title
     new Setting(contentEl)
-      .setName('文章标题')
-      .setDesc('标题会显示在公众号文章顶部')
+      .setName('Article title')
+      .setDesc('Title will be displayed at the top of the article')
       .addText(text => {
         text.inputEl.classList.add('bm-md-title-input')
         text
-          .setPlaceholder('请输入文章标题')
+          .setPlaceholder('Enter article title')
           .setValue(this.title)
           .onChange(value => {
             this.title = value
@@ -74,11 +74,11 @@ export class PublishModal extends Modal {
 
     // Article Author
     new Setting(contentEl)
-      .setName('作者')
-      .setDesc('可选，显示在标题下方')
+      .setName('Author')
+      .setDesc('Optional, displayed below the title')
       .addText(text => {
         text
-          .setPlaceholder('作者名称')
+          .setPlaceholder('Author name')
           .setValue(this.author)
           .onChange(value => {
             this.author = value
@@ -87,12 +87,12 @@ export class PublishModal extends Modal {
 
     // Article Digest
     new Setting(contentEl)
-      .setName('文章摘要')
-      .setDesc('可选，显示在转发卡片中，最多120字')
+      .setName('Article digest')
+      .setDesc('Optional, displayed in share card, max 120 characters')
       .addTextArea(text => {
         text.inputEl.classList.add('bm-md-digest-textarea')
         text
-          .setPlaceholder('自动提取自文章开头')
+          .setPlaceholder('Auto-extracted from article beginning')
           .setValue(this.digest)
           .onChange(value => {
             this.digest = value
@@ -101,8 +101,8 @@ export class PublishModal extends Modal {
 
     // Original Article URL
     new Setting(contentEl)
-      .setName('原文链接')
-      .setDesc('可选，点击"阅读原文"跳转的链接')
+      .setName('Original article URL')
+      .setDesc('Optional, link for "Read original" button')
       .addText(text => {
         text
           .setPlaceholder('https://...')
@@ -113,18 +113,18 @@ export class PublishModal extends Modal {
       })
 
     // Info text
-    contentEl.createEl('p', { 
-      text: '📝 文章将保存到公众号草稿箱，请登录微信公众平台预览确认后再发布',
+    contentEl.createEl('p', {
+      text: '📝 Article will be saved to WeChat drafts, please preview and confirm on WeChat platform before publishing',
       cls: 'bm-md-info'
     })
 
     // Action buttons
     const buttonContainer = contentEl.createDiv({ cls: 'bm-md-button-container' })
-    
-    const cancelBtn = buttonContainer.createEl('button', { text: '取消', cls: 'bm-md-cancel-btn' })
+
+    const cancelBtn = buttonContainer.createEl('button', { text: 'Cancel', cls: 'bm-md-cancel-btn' })
     cancelBtn.addEventListener('click', () => this.close())
 
-    const publishBtn = buttonContainer.createEl('button', { text: '保存到草稿箱', cls: 'mod-cta bm-md-publish-btn' })
+    const publishBtn = buttonContainer.createEl('button', { text: 'Save to drafts', cls: 'mod-cta bm-md-publish-btn' })
     publishBtn.addEventListener('click', () => {
       void this.publish()
     })
@@ -132,16 +132,16 @@ export class PublishModal extends Modal {
 
   async publish(): Promise<void> {
     if (this.isPublishing) return
-    
+
     if (!this.title.trim()) {
-      new Notice('请输入文章标题')
+      new Notice('Please enter article title')
       return
     }
 
     this.isPublishing = true
     const publishBtn = this.contentEl.querySelector('.bm-md-publish-btn') as HTMLButtonElement
     if (publishBtn) {
-      publishBtn.setText('发布中...')
+      publishBtn.setText('Publishing...')
       publishBtn.disabled = true
     }
 
@@ -170,18 +170,18 @@ export class PublishModal extends Modal {
         only_fans_can_comment: 0
       })
 
-      new Notice('✅ 文章已保存到草稿箱！')
+      new Notice('✅ Article saved to drafts!')
       this.close()
-      
+
       // Log the media_id for reference
       console.debug('Draft created with media_id:', mediaId)
-      
+
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      new Notice('❌ 发布失败: ' + message)
-      
+      new Notice('❌ Publishing failed: ' + message)
+
       if (publishBtn) {
-        publishBtn.setText('保存到草稿箱')
+        publishBtn.setText('Save to drafts')
         publishBtn.disabled = false
       }
     } finally {

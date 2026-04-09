@@ -91,8 +91,8 @@ export class BmMdSettingsTab extends PluginSettingTab {
       .setHeading()
 
     new Setting(containerEl)
-      .setName('AppID')
-      .setDesc('微信公众号的 AppID，在公众平台 - 开发 - 基本配置中获取')
+      .setName('App ID')
+      .setDesc('WeChat Official Account App ID from the platform - Development - Basic configuration')
       .addText(text => {
         text.inputEl.classList.add('bm-md-appid-input')
         text
@@ -105,13 +105,13 @@ export class BmMdSettingsTab extends PluginSettingTab {
       })
 
     new Setting(containerEl)
-      .setName('AppSecret')
-      .setDesc('微信公众号的 AppSecret，请妥善保管')
+      .setName('App Secret')
+      .setDesc('WeChat Official Account App Secret, please keep it safe')
       .addText(text => {
         text.inputEl.type = 'password'
         text.inputEl.classList.add('bm-md-appsecret-input')
         text
-          .setPlaceholder('请输入 AppSecret')
+          .setPlaceholder('Enter App Secret')
           .setValue(this.plugin.settings.wechatAppSecret)
           .onChange(async (value) => {
             this.plugin.settings.wechatAppSecret = value.trim()
@@ -121,21 +121,21 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // Test Connection Button
     const testConnectionSetting = new Setting(containerEl)
-      .setName('测试连接')
-      .setDesc('测试公众号 API 连接是否正常')
-    
+      .setName('Test connection')
+      .setDesc('Test WeChat API connection status')
+
     const statusEl = testConnectionSetting.descEl.createSpan({ cls: 'bm-md-connection-status' })
-    
+
     testConnectionSetting.addButton(button => {
       button
-        .setButtonText('测试')
+        .setButtonText('Test')
         .onClick(async () => {
           if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
-            new Notice('请先填写 AppID 和 AppSecret')
+            new Notice('Please fill in App ID and App Secret first')
             return
           }
 
-          button.setButtonText('测试中...')
+          button.setButtonText('Testing...')
           button.setDisabled(true)
           statusEl.setText('')
 
