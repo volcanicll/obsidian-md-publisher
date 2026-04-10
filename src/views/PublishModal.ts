@@ -40,12 +40,12 @@ export class PublishModal extends Modal {
     contentEl.addClass('bm-md-publish-modal')
 
     // Title
-    contentEl.createEl('h2', { text: 'Publish to WeChat Official Account', cls: 'bm-md-modal-title' })
+    contentEl.createEl('h2', { text: 'Publish to WeChat', cls: 'bm-md-modal-title' })
 
     // Check if WeChat is configured
     if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
       contentEl.createEl('p', {
-        text: '⚠️ Please configure WeChat App ID and App Secret in settings first',
+        text: '⚠️ Please configure WeChat app ID and app secret in settings first',
         cls: 'bm-md-warning'
       })
 
@@ -61,7 +61,7 @@ export class PublishModal extends Modal {
     // Article Title
     new Setting(contentEl)
       .setName('Article title')
-      .setDesc('Title will be displayed at the top of the article')
+      .setDesc('Title will be displayed at the top of the WeChat article')
       .addText(text => {
         text.inputEl.classList.add('bm-md-title-input')
         text
@@ -114,7 +114,7 @@ export class PublishModal extends Modal {
 
     // Info text
     contentEl.createEl('p', {
-      text: '📝 Article will be saved to WeChat drafts, please preview and confirm on WeChat platform before publishing',
+      text: '📝 Article will be saved to WeChat drafts, please preview and confirm on the WeChat platform before publishing',
       cls: 'bm-md-info'
     })
 

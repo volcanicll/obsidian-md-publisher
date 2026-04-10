@@ -18,7 +18,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName('Markdown Publisher settings')
+      .setName('General')
       .setHeading()
 
     // Markdown Style Selection
@@ -59,7 +59,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
       .setDesc('Select default publishing platform')
       .addDropdown(dropdown => {
         dropdown
-          .addOption('wechat', 'WeChat Official Account')
+          .addOption('wechat', 'WeChat')
           // .addOption('zhihu', 'Zhihu')
           // .addOption('toutiao', 'Toutiao')
           .addOption('xiaohongshu', 'Xiaohongshu')
@@ -85,14 +85,14 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
-    // WeChat Official Account Settings Section
+    // WeChat Settings Section
     new Setting(containerEl)
-      .setName('WeChat Official Account settings')
+      .setName('WeChat')
       .setHeading()
 
     new Setting(containerEl)
       .setName('App ID')
-      .setDesc('WeChat Official Account App ID from the platform - Development - Basic configuration')
+      .setDesc('WeChat app ID from WeChat platform - Development - Basic configuration')
       .addText(text => {
         text.inputEl.classList.add('bm-md-appid-input')
         text
@@ -106,7 +106,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('App Secret')
-      .setDesc('WeChat Official Account App Secret, please keep it safe')
+      .setDesc('WeChat app secret, please keep it safe')
       .addText(text => {
         text.inputEl.type = 'password'
         text.inputEl.classList.add('bm-md-appsecret-input')
