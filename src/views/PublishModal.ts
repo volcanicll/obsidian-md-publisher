@@ -42,6 +42,7 @@ export class PublishModal extends Modal {
     // Title
     contentEl.createEl('h2', { text: 'Publish to WeChat', cls: 'bm-md-modal-title' })
 
+
     // Check if WeChat is configured
     if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
       contentEl.createEl('p', {
@@ -102,7 +103,7 @@ export class PublishModal extends Modal {
     // Original Article URL
     new Setting(contentEl)
       .setName('Original article URL')
-      .setDesc('Optional, link for "Read original" button')
+      .setDesc('Optional, link for "read original" button')
       .addText(text => {
         text
           .setPlaceholder('https://...')

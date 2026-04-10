@@ -18,7 +18,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName('General')
+      .setName('Appearance')
       .setHeading()
 
     // Markdown Style Selection
@@ -87,12 +87,12 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // WeChat Settings Section
     new Setting(containerEl)
-      .setName('WeChat')
+      .setName('WeChat configuration')
       .setHeading()
 
     new Setting(containerEl)
       .setName('App ID')
-      .setDesc('WeChat app ID from WeChat platform - Development - Basic configuration')
+      .setDesc('WeChat app ID from WeChat platform - development - basic configuration')
       .addText(text => {
         text.inputEl.classList.add('bm-md-appid-input')
         text
@@ -105,13 +105,13 @@ export class BmMdSettingsTab extends PluginSettingTab {
       })
 
     new Setting(containerEl)
-      .setName('App Secret')
+      .setName('App secret')
       .setDesc('WeChat app secret, please keep it safe')
       .addText(text => {
         text.inputEl.type = 'password'
         text.inputEl.classList.add('bm-md-appsecret-input')
         text
-          .setPlaceholder('Enter App Secret')
+          .setPlaceholder('Enter app secret')
           .setValue(this.plugin.settings.wechatAppSecret)
           .onChange(async (value) => {
             this.plugin.settings.wechatAppSecret = value.trim()
@@ -131,7 +131,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
         .setButtonText('Test')
         .onClick(async () => {
           if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
-            new Notice('Please fill in App ID and App Secret first')
+            new Notice('Please fill in app ID and app secret first')
             return
           }
 
