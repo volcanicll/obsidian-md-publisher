@@ -10,7 +10,7 @@ export default [
     },
     plugins: { obsidianmd },
     rules: {
-      "obsidianmd/ui/sentence-case": ["error", { enforceCamelCaseLower: true }],
+      "obsidianmd/ui/sentence-case": "error",
     },
   },
 ];
