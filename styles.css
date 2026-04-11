@@ -326,6 +326,27 @@
   background: var(--background-modifier-hover);
 }
 
+/* Publish Progress */
+.bm-md-progress-container {
+	margin: 10px 0;
+	padding: 12px 16px;
+	background: var(--background-secondary);
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.bm-md-progress-text {
+	margin: 0;
+	font-size: 13px;
+	color: var(--text-muted);
+	animation: bm-md-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes bm-md-pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.6; }
+}
+
 /* WeChat Settings */
 .bm-md-appid-input,
 .bm-md-appsecret-input {
