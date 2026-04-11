@@ -17,13 +17,14 @@
   "author": "volcanic",
   "license": "MIT",
   "devDependencies": {
+    "@eslint-community/eslint-utils": "^4.9.1",
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.58.1",
     "@typescript-eslint/parser": "^8.58.1",
     "@typescript-eslint/utils": "^8.58.1",
     "builtin-modules": "^4.0.0",
     "esbuild": "^0.25.0",
-    "eslint-plugin-obsidianmd": "github:obsidianmd/eslint-plugin#master",
+    "eslint-plugin-obsidianmd": "github:obsidianmd/eslint-plugin",
     "obsidian": "^1.7.2",
     "typescript": "^5.7.0"
   },

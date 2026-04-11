@@ -59,7 +59,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
       .setDesc('Select default publishing platform')
       .addDropdown(dropdown => {
         dropdown
-          .addOption('wechat', 'WeChat')
+          .addOption('wechat', 'Wechat')
           // .addOption('zhihu', 'Zhihu')
           // .addOption('toutiao', 'Toutiao')
           .addOption('xiaohongshu', 'Xiaohongshu')
@@ -87,16 +87,16 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // WeChat Settings Section
     new Setting(containerEl)
-      .setName('WeChat configuration')
+      .setName('Wechat configuration')
       .setHeading()
 
     new Setting(containerEl)
       .setName('App ID')
-      .setDesc('WeChat app ID from WeChat platform - development - basic configuration')
+      .setDesc('Wechat app ID from wechat platform - development - basic configuration')
       .addText(text => {
         text.inputEl.classList.add('bm-md-appid-input')
         text
-          .setPlaceholder('wx1234567890abcdef')
+          .setPlaceholder('Wx1234567890abcdef')
           .setValue(this.plugin.settings.wechatAppId)
           .onChange(async (value) => {
             this.plugin.settings.wechatAppId = value.trim()
@@ -106,7 +106,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('App secret')
-      .setDesc('WeChat app secret, please keep it safe')
+      .setDesc('Wechat app secret, please keep it safe')
       .addText(text => {
         text.inputEl.type = 'password'
         text.inputEl.classList.add('bm-md-appsecret-input')
@@ -122,7 +122,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
     // Test Connection Button
     const testConnectionSetting = new Setting(containerEl)
       .setName('Test connection')
-      .setDesc('Test WeChat API connection status')
+      .setDesc('Test wechat API connection status')
 
     const statusEl = testConnectionSetting.descEl.createSpan({ cls: 'bm-md-connection-status' })
 

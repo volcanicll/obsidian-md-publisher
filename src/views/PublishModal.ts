@@ -40,13 +40,13 @@ export class PublishModal extends Modal {
     contentEl.addClass('bm-md-publish-modal')
 
     // Title
-    contentEl.createEl('h2', { text: 'Publish to WeChat', cls: 'bm-md-modal-title' })
+    contentEl.createEl('h2', { text: 'Publish to wechat', cls: 'bm-md-modal-title' })
 
 
     // Check if WeChat is configured
     if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
       contentEl.createEl('p', {
-        text: '⚠️ Please configure WeChat app ID and app secret in settings first',
+        text: '⚠️ please configure wechat app ID and app secret in settings first',
         cls: 'bm-md-warning'
       })
 
@@ -62,7 +62,7 @@ export class PublishModal extends Modal {
     // Article Title
     new Setting(contentEl)
       .setName('Article title')
-      .setDesc('Title will be displayed at the top of the WeChat article')
+      .setDesc('Title will be displayed at the top of the wechat article')
       .addText(text => {
         text.inputEl.classList.add('bm-md-title-input')
         text
@@ -106,7 +106,7 @@ export class PublishModal extends Modal {
       .setDesc('Optional, link for "read original" button')
       .addText(text => {
         text
-          .setPlaceholder('https://...')
+          .setPlaceholder('Link to original article')
           .setValue(this.contentSourceUrl)
           .onChange(value => {
             this.contentSourceUrl = value
@@ -115,7 +115,7 @@ export class PublishModal extends Modal {
 
     // Info text
     contentEl.createEl('p', {
-      text: '📝 Article will be saved to WeChat drafts, please preview and confirm on the WeChat platform before publishing',
+      text: '📝 Article will be saved to wechat drafts, please preview and confirm on the wechat platform before publishing',
       cls: 'bm-md-info'
     })
 
