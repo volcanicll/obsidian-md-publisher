@@ -313,7 +313,7 @@ export class PreviewView extends ItemView {
     
     if (!html) {
       const emptyDiv = this.previewContainer.createDiv({ cls: 'bm-md-empty' })
-      emptyDiv.createEl('p', { text: 'Open a markdown file to start preview' })
+      emptyDiv.createEl('p', { text: 'Open a Markdown file to start preview' })
       return
     }
 

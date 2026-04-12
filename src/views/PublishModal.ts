@@ -52,7 +52,7 @@ export class PublishModal extends Modal {
 		// Check if WeChat is configured
 		if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
 			contentEl.createEl('p', {
-				text: 'Please configure WeChat app ID and app secret in settings first',
+				text: 'Configure WeChat credentials in settings before publishing',
 				cls: 'bm-md-warning'
 			})
 
