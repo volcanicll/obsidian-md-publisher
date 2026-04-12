@@ -52,7 +52,7 @@ export class PublishModal extends Modal {
 		// Check if WeChat is configured
 		if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
 			contentEl.createEl('p', {
-				text: '⚠️ please configure wechat app ID and app secret in settings first',
+				text: 'Please configure WeChat app ID and app secret in settings first',
 				cls: 'bm-md-warning'
 			})
 
@@ -121,7 +121,7 @@ export class PublishModal extends Modal {
 
 		// Info text
 		contentEl.createEl('p', {
-			text: '📝 Article will be saved to wechat drafts. Local images will be auto-uploaded.',
+			text: 'Article will be saved to wechat drafts. Local images will be auto-uploaded.',
 			cls: 'bm-md-info'
 		})
 
@@ -169,7 +169,7 @@ export class PublishModal extends Modal {
 
 		this.isPublishing = true
 		this.setButtonsEnabled(false)
-		this.updateProgress('⏳ Initializing...')
+		this.updateProgress('Initializing...')
 
 		try {
 			const api = new WeChatApi({
@@ -191,10 +191,10 @@ export class PublishModal extends Modal {
 
 			// Process local images: extract, compress, upload to WeChat
 			const onProgress: ProgressCallback = (current, total, filename) => {
-				this.updateProgress(`🖼️ Uploading image ${current}/${total}: ${filename}`)
+				this.updateProgress(`Uploading image ${current}/${total}: ${filename}`)
 			}
 
-			this.updateProgress('🔍 Scanning for local images...')
+			this.updateProgress('Scanning for local images...')
 
 			const { html: processedHtml, results, errors } = await processImages(
 				this.html,
@@ -207,15 +207,15 @@ export class PublishModal extends Modal {
 
 			// Report image processing results
 			if (results.length > 0) {
-				new Notice(`✅ ${results.length} image(s) uploaded successfully`)
+				new Notice(`${results.length} image(s) uploaded`)
 			}
 			if (errors.length > 0) {
 				console.warn('Image processing warnings:', errors)
-				new Notice(`⚠️ ${errors.length} image(s) had issues (skipped)`, 5000)
+				new Notice(`${errors.length} image(s) skipped due to errors`, 5000)
 			}
 
 			// Create draft with processed HTML
-			this.updateProgress('📝 Creating draft...')
+			this.updateProgress('Creating draft...')
 
 			const mediaId = await api.addDraft({
 				title: this.title.trim(),
@@ -228,7 +228,7 @@ export class PublishModal extends Modal {
 				only_fans_can_comment: 0
 			})
 
-			new Notice('✅ Draft saved successfully!')
+			new Notice('Draft saved successfully')
 			this.close()
 
 			// Log the media_id for reference
@@ -236,7 +236,7 @@ export class PublishModal extends Modal {
 
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error)
-			new Notice('❌ Publishing failed: ' + message)
+			new Notice('Publishing failed: ' + message)
 
 			// Reset UI
 			if (this.progressEl) {

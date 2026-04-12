@@ -156,15 +156,15 @@ export class BmMdSettingsTab extends PluginSettingTab {
           button.setDisabled(false)
 
           if (result.success) {
-            statusEl.setText(' ✅ ' + result.message)
+            statusEl.setText(result.message)
             statusEl.classList.add('bm-md-status-success')
             statusEl.classList.remove('bm-md-status-error')
-            new Notice('✅ ' + result.message)
+            new Notice(result.message)
           } else {
-            statusEl.setText(' ❌ ' + result.message)
+            statusEl.setText(result.message)
             statusEl.classList.add('bm-md-status-error')
             statusEl.classList.remove('bm-md-status-success')
-            new Notice('❌ ' + result.message)
+            new Notice(result.message)
           }
         })
     })

@@ -24,7 +24,7 @@
     "@typescript-eslint/utils": "^8.58.1",
     "builtin-modules": "^4.0.0",
     "esbuild": "^0.25.0",
-    "eslint-plugin-obsidianmd": "github:obsidianmd/eslint-plugin",
+    "eslint-plugin-obsidianmd": "^0.1.9",
     "obsidian": "^1.7.2",
     "typescript": "^5.7.0"
   },

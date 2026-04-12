@@ -154,12 +154,12 @@ export class PreviewView extends ItemView {
     
     // Hide/show publish button
     if (this.publishBtnEl) {
-      this.publishBtnEl.style.display = isXiaohongshu ? 'none' : ''
+      this.publishBtnEl.toggleClass('bm-md-hidden', isXiaohongshu)
     }
     
     // Hide/show settings row (theme selectors)
     if (this.settingsRowEl) {
-      this.settingsRowEl.style.display = isXiaohongshu ? 'none' : ''
+      this.settingsRowEl.toggleClass('bm-md-hidden', isXiaohongshu)
     }
     
     // For xiaohongshu, always use the xiaohongshu theme
@@ -253,7 +253,7 @@ export class PreviewView extends ItemView {
         'text/plain': textBlob,
       })
       await navigator.clipboard.write([item])
-      new Notice(`✅ Copied ${PLATFORMS.find(p => p.id === this.currentPlatform)?.name} format`)
+      new Notice(`Copied ${PLATFORMS.find(p => p.id === this.currentPlatform)?.name} format`)
     } catch (err) {
       console.error('Copy failed:', err)
       new Notice('Copy failed: ' + String(err))
@@ -313,7 +313,7 @@ export class PreviewView extends ItemView {
     
     if (!html) {
       const emptyDiv = this.previewContainer.createDiv({ cls: 'bm-md-empty' })
-      emptyDiv.createEl('p', { text: '📝 Open a Markdown file to start preview' })
+      emptyDiv.createEl('p', { text: 'Open a markdown file to start preview' })
       return
     }
 
