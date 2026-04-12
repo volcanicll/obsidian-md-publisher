@@ -1,4 +1,4 @@
-import { App, TFile, Notice } from 'obsidian'
+import { App, TFile } from 'obsidian'
 import { WeChatApi } from './wechat/wechat-api'
 
 export interface ImageProcessorOptions {
@@ -210,27 +210,6 @@ export async function compressImage(
 
 		img.src = url
 	})
-}
-
-/**
- * Determine MIME type from file extension
- */
-function getMimeType(filename: string): string {
-	const ext = filename.split('.').pop()?.toLowerCase()
-	switch (ext) {
-		case 'jpg':
-		case 'jpeg':
-			return 'image/jpeg'
-		case 'gif':
-			return 'image/gif'
-		case 'webp':
-			return 'image/webp'
-		case 'svg':
-			return 'image/svg+xml'
-		case 'png':
-		default:
-			return 'image/png'
-	}
 }
 
 /**

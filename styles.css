@@ -335,6 +335,10 @@
 	border: 1px solid var(--background-modifier-border);
 }
 
+.bm-md-hidden {
+	display: none !important;
+}
+
 .bm-md-progress-text {
 	margin: 0;
 	font-size: 13px;

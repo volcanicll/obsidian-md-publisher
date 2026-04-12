@@ -1,6 +1,6 @@
 {
   "name": "obsidian-md-publisher",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "One-click publish Markdown notes to WeChat, Zhihu, Toutiao, and Xiaohongshu.",
   "main": "main.js",
   "scripts": {

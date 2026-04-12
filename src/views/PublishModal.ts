@@ -121,13 +121,12 @@ export class PublishModal extends Modal {
 
 		// Info text
 		contentEl.createEl('p', {
-			text: '📝 Article will be saved to wechat drafts. Local images will be auto-uploaded.',
+			text: '📝 Article will be saved to WeChat drafts. Local images will be auto-uploaded.',
 			cls: 'bm-md-info'
 		})
 
 		// Progress container (hidden initially)
-		this.progressEl = contentEl.createDiv({ cls: 'bm-md-progress-container' })
-		this.progressEl.style.display = 'none'
+		this.progressEl = contentEl.createDiv({ cls: 'bm-md-progress-container bm-md-hidden' })
 
 		// Action buttons
 		const buttonContainer = contentEl.createDiv({ cls: 'bm-md-button-container' })
@@ -143,7 +142,7 @@ export class PublishModal extends Modal {
 
 	private updateProgress(message: string): void {
 		if (this.progressEl) {
-			this.progressEl.style.display = 'block'
+			this.progressEl.removeClass('bm-md-hidden')
 			this.progressEl.empty()
 			this.progressEl.createEl('p', { text: message, cls: 'bm-md-progress-text' })
 		}
@@ -241,7 +240,7 @@ export class PublishModal extends Modal {
 
 			// Reset UI
 			if (this.progressEl) {
-				this.progressEl.style.display = 'none'
+				this.progressEl.addClass('bm-md-hidden')
 			}
 			this.setButtonsEnabled(true)
 		} finally {
