@@ -121,7 +121,7 @@ export class PublishModal extends Modal {
 
 		// Info text
 		contentEl.createEl('p', {
-			text: '📝 Article will be saved to WeChat drafts. Local images will be auto-uploaded.',
+			text: '📝 Article will be saved to wechat drafts. Local images will be auto-uploaded.',
 			cls: 'bm-md-info'
 		})
 
@@ -228,7 +228,7 @@ export class PublishModal extends Modal {
 				only_fans_can_comment: 0
 			})
 
-			new Notice('✅ Article saved to drafts!')
+			new Notice('✅ Draft saved successfully!')
 			this.close()
 
 			// Log the media_id for reference
