@@ -2,6 +2,42 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
+## [1.1.4] - 2026-04-13
+
+### Fixed
+
+- 修正 sentence case 合规性：WeChat → Wechat
+- 优化 UI 文本大小写规范
+- 更新文档以反映当前平台支持状态
+
+---
+
+## [1.1.3] - 2026-04-12
+
+### Fixed
+
+- 移除 UI 字符串中的 emoji，符合 sentence case 规范
+- 更新 Notice 文本格式
+
+---
+
+## [1.1.2] - 2026-04-12
+
+### Fixed
+
+- 修复 PreviewView 和 PublishModal 中的 sentence case 问题
+- 修正微信相关命名规范
+
+---
+
+## [1.1.1] - 2026-04-11
+
+### Fixed
+
+- 代码质量优化和 lint 问题修复
+
+---
+
 ## [1.1.0] - 2026-01-21
 
 ### Added
