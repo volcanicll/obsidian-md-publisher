@@ -108,7 +108,34 @@ src/
 
 ## 🤝 贡献
 
-欢迎贡献！欢迎提交 issue 或 pull request。
+欢迎贡献！无论是新主题、新平台适配、Bug 修复还是文档改进，都非常欢迎。
+
+### 本地开发
+
+```bash
+git clone https://github.com/volcanicll/obsidian-md-publisher.git
+cd obsidian-md-publisher
+bun install
+bun run dev          # 开发模式（watch）
+bun run build        # 生产构建
+```
+
+### 贡献流程
+
+1. Fork 本仓库
+2. 创建特性分支（`git checkout -b feat/your-feature`）
+3. 提交更改，确保 `bun run build` 构建通过
+4. 提交 Pull Request，描述清楚改动与动机
+
+### 🔧 维护与自动化
+
+本项目已建立自动化维护流程，降低重复性维护成本：
+
+- **发布流水线**：[`.github/workflows/release.yml`](.github/workflows/release.yml) 自动构建并发布 Release
+- **版本管理**：通过 [`.agent/skills/obsidian-version-manager`](.agent/skills/obsidian-version-manager) 自动同步 `package.json`、`manifest.json`、`versions.json` 的版本号
+- **AI 辅助维护**：借助 AI Agent 协助代码审查、PR 评审与发布检查清单，提升维护效率
+
+如果你在使用中遇到问题，欢迎在 [Issues](https://github.com/volcanicll/obsidian-md-publisher/issues) 提出。
 
 ## 📄 开源协议
 

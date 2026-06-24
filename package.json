@@ -16,6 +16,14 @@
   ],
   "author": "volcanic",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/volcanicll/obsidian-md-publisher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/volcanicll/obsidian-md-publisher/issues"
+  },
+  "homepage": "https://github.com/volcanicll/obsidian-md-publisher#readme",
   "devDependencies": {
     "@eslint-community/eslint-utils": "^4.9.1",
     "@types/node": "^22.0.0",
