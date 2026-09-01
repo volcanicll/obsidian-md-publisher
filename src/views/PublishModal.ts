@@ -14,7 +14,7 @@ export interface PublishModalOptions {
 }
 
 /**
- * Modal for confirming and publishing article to WeChat Official Account
+ * 发布到微信公众号草稿箱的确认弹窗。
  */
 export class PublishModal extends Modal {
   private markdown: string
@@ -24,6 +24,8 @@ export class PublishModal extends Modal {
   private digest: string
   private author: string
   private contentSourceUrl: string
+  private needOpenComment: boolean
+  private onlyFansCanComment: boolean
   private isPublishing: boolean = false
   private progressEl: HTMLElement | null = null
 
@@ -38,6 +40,8 @@ export class PublishModal extends Modal {
     this.digest = extractDigestFromMarkdown(this.markdown)
     this.author = ''
     this.contentSourceUrl = ''
+    this.needOpenComment = this.plugin.settings.defaultOpenComment
+    this.onlyFansCanComment = this.plugin.settings.defaultFansOnlyComment
   }
 
   onOpen(): void {
@@ -46,29 +50,31 @@ export class PublishModal extends Modal {
     contentEl.addClass('bm-md-publish-modal')
 
     // Title
-    contentEl.createEl('h2', { text: 'Publish to wechat', cls: 'bm-md-modal-title' })
+    contentEl.createEl('h2', { text: '发布到微信公众号草稿', cls: 'bm-md-modal-title' })
 
     // Check if WeChat is configured
-    if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
+    const configured = this.plugin.settings.wechatAppId && this.plugin.settings.wechatAppSecret
+    const manualConfigured = this.plugin.settings.useManualToken && this.plugin.settings.manualAccessToken
+    if (!configured && !manualConfigured) {
       contentEl.createEl('p', {
-        text: 'Configure wechat credentials in settings before publishing',
+        text: '尚未配置微信公众号。请先在 设置 → Markdown Publisher 中填写 AppID 与 AppSecret，或启用手动 token 模式。',
         cls: 'bm-md-warning'
       })
 
       new Setting(contentEl).addButton((button) => {
-        button.setButtonText('Close').onClick(() => this.close())
+        button.setButtonText('关闭').onClick(() => this.close())
       })
       return
     }
 
     // Article Title
     new Setting(contentEl)
-      .setName('Article title')
-      .setDesc('Title will be displayed at the top of the wechat article')
+      .setName('文章标题')
+      .setDesc('将显示在公众号文章顶部')
       .addText((text) => {
         text.inputEl.classList.add('bm-md-title-input')
         text
-          .setPlaceholder('Enter article title')
+          .setPlaceholder('请输入文章标题')
           .setValue(this.title)
           .onChange((value) => {
             this.title = value
@@ -77,11 +83,11 @@ export class PublishModal extends Modal {
 
     // Article Author
     new Setting(contentEl)
-      .setName('Author')
-      .setDesc('Optional, displayed below the title')
+      .setName('作者')
+      .setDesc('可选，显示在标题下方')
       .addText((text) => {
         text
-          .setPlaceholder('Author name')
+          .setPlaceholder('作者名')
           .setValue(this.author)
           .onChange((value) => {
             this.author = value
@@ -90,12 +96,12 @@ export class PublishModal extends Modal {
 
     // Article Digest
     new Setting(contentEl)
-      .setName('Article digest')
-      .setDesc('Optional, displayed in share card, max 120 characters')
+      .setName('摘要')
+      .setDesc('可选，显示在分享卡片中，最多 120 字')
       .addTextArea((text) => {
         text.inputEl.classList.add('bm-md-digest-textarea')
         text
-          .setPlaceholder('Auto-extracted from article beginning')
+          .setPlaceholder('已自动从正文开头提取')
           .setValue(this.digest)
           .onChange((value) => {
             this.digest = value
@@ -104,20 +110,43 @@ export class PublishModal extends Modal {
 
     // Original Article URL
     new Setting(contentEl)
-      .setName('Original article URL')
-      .setDesc('Optional, link for "read original" button')
+      .setName('原文链接')
+      .setDesc('可选，「阅读原文」按钮跳转地址')
       .addText((text) => {
         text
-          .setPlaceholder('Link to original article')
+          .setPlaceholder('原文链接')
           .setValue(this.contentSourceUrl)
           .onChange((value) => {
             this.contentSourceUrl = value
           })
       })
 
+    // Comment toggles
+    new Setting(contentEl)
+      .setName('开启评论')
+      .setDesc('允许读者在文章下留言')
+      .addToggle((toggle) => {
+        toggle.setValue(this.needOpenComment).onChange((value) => {
+          this.needOpenComment = value
+          // 关闭评论时取消「仅粉丝可评论」
+          if (!value) {
+            this.onlyFansCanComment = false
+          }
+        })
+      })
+
+    new Setting(contentEl)
+      .setName('仅粉丝可评论')
+      .setDesc('开启评论后，仅关注者可以留言')
+      .addToggle((toggle) => {
+        toggle.setValue(this.onlyFansCanComment).onChange((value) => {
+          this.onlyFansCanComment = value
+        })
+      })
+
     // Info text
     contentEl.createEl('p', {
-      text: 'Article will be saved to wechat drafts. Local images will be auto-uploaded.',
+      text: '文章将保存到公众号草稿箱，本地图片会自动上传。',
       cls: 'bm-md-info'
     })
 
@@ -128,13 +157,13 @@ export class PublishModal extends Modal {
     const buttonContainer = contentEl.createDiv({ cls: 'bm-md-button-container' })
 
     const cancelBtn = buttonContainer.createEl('button', {
-      text: 'Cancel',
+      text: '取消',
       cls: 'bm-md-cancel-btn'
     })
     cancelBtn.addEventListener('click', () => this.close())
 
     const publishBtn = buttonContainer.createEl('button', {
-      text: 'Save to drafts',
+      text: '保存到草稿',
       cls: 'mod-cta bm-md-publish-btn'
     })
     publishBtn.addEventListener('click', () => {
@@ -165,21 +194,23 @@ export class PublishModal extends Modal {
     if (this.isPublishing) return
 
     if (!this.title.trim()) {
-      new Notice('Please enter article title')
+      new Notice('请输入文章标题')
       return
     }
 
     this.isPublishing = true
     this.setButtonsEnabled(false)
-    this.updateProgress('Initializing...')
+    this.updateProgress('初始化…')
 
     try {
+      const s = this.plugin.settings
       const api = new WeChatApi(
         {
-          appId: this.plugin.settings.wechatAppId,
-          appSecret: this.plugin.settings.wechatAppSecret,
-          accessToken: this.plugin.settings.wechatAccessToken,
-          tokenExpireTime: this.plugin.settings.wechatTokenExpireTime
+          appId: s.wechatAppId,
+          appSecret: s.wechatAppSecret,
+          accessToken: s.useManualToken ? s.manualAccessToken : s.wechatAccessToken,
+          tokenExpireTime: s.useManualToken ? s.manualTokenExpireTime : s.wechatTokenExpireTime,
+          manualMode: s.useManualToken
         },
         {
           onTokenRefresh: async (token, expireTime) => {
@@ -196,10 +227,10 @@ export class PublishModal extends Modal {
 
       // Process local images: extract, compress, upload to WeChat
       const onProgress: ProgressCallback = (current, total, filename) => {
-        this.updateProgress(`Uploading image ${current}/${total}: ${filename}`)
+        this.updateProgress(`正在上传图片 ${current}/${total}：${filename}`)
       }
 
-      this.updateProgress('Scanning for local images...')
+      this.updateProgress('正在扫描本地图片…')
 
       const {
         html: processedHtml,
@@ -216,15 +247,15 @@ export class PublishModal extends Modal {
 
       // Report image processing results
       if (results.length > 0) {
-        new Notice(`${results.length} image(s) uploaded`)
+        new Notice(`已上传 ${results.length} 张图片`)
       }
       if (errors.length > 0) {
-        console.warn('Image processing warnings:', errors)
-        new Notice(`${errors.length} image(s) skipped due to errors`, 5000)
+        console.warn('图片处理警告:', errors)
+        new Notice(`${errors.length} 张图片处理失败，已跳过`, 5000)
       }
 
       // Create draft with processed HTML
-      this.updateProgress('Creating draft...')
+      this.updateProgress('正在创建草稿…')
 
       const mediaId = await api.addDraft({
         title: this.title.trim(),
@@ -233,18 +264,18 @@ export class PublishModal extends Modal {
         digest: this.digest.trim() || undefined,
         content_source_url: this.contentSourceUrl.trim() || undefined,
         show_cover_pic: 0,
-        need_open_comment: 0,
-        only_fans_can_comment: 0
+        need_open_comment: this.needOpenComment ? 1 : 0,
+        only_fans_can_comment: this.onlyFansCanComment ? 1 : 0
       })
 
-      new Notice('Draft saved successfully')
+      new Notice('草稿保存成功')
       this.close()
 
       // Log the media_id for reference
-      console.debug('Draft created with media_id:', mediaId, 'Images uploaded:', results.length)
+      console.debug('草稿已创建，media_id:', mediaId, '上传图片数:', results.length)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      new Notice('Publishing failed: ' + message)
+      new Notice('发布失败：' + message)
 
       // Reset UI
       if (this.progressEl) {

@@ -22,6 +22,36 @@ export interface ImageProcessResult {
 
 export type ProgressCallback = (current: number, total: number, filename: string) => void
 
+export interface CompressedImage {
+	data: ArrayBuffer
+	contentType: string
+}
+
+/**
+ * Detect the MIME type of an image from its magic bytes.
+ * Used to send the correct Content-Type when uploading to WeChat.
+ */
+export function detectImageType(data: ArrayBuffer): string {
+	const bytes = new Uint8Array(data).slice(0, 16)
+	if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+		return 'image/png'
+	}
+	if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+		return 'image/jpeg'
+	}
+	if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) {
+		return 'image/gif'
+	}
+	const ascii = new TextDecoder().decode(bytes)
+	if (ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP') {
+		return 'image/webp'
+	}
+	if (ascii.trimStart().startsWith('<svg')) {
+		return 'image/svg+xml'
+	}
+	return 'image/png'
+}
+
 /**
  * Extract local image paths from HTML content.
  * Matches <img src="..."> where src is a relative path or app:// path.
@@ -60,8 +90,6 @@ export function normalizeImagePath(
 	const appMatch = path.match(/^app:\/\/[^/]+\/(.+)$/)
 	if (appMatch) {
 		path = decodeURIComponent(appMatch[1])
-		// This is an absolute path, we need to make it vault-relative
-		// But in Obsidian, we use vault.adapter to resolve
 		return path
 	}
 
@@ -139,13 +167,14 @@ function getImageDimensions(
 }
 
 /**
- * Compress and resize image to meet requirements.
- * Uses Canvas API for resizing and quality adjustment.
+ * Compress and resize an image to meet WeChat requirements.
+ * Returns the re-encoded image (JPEG) and its MIME type.
+ * If the image is already within limits, it is returned unchanged.
  */
 export async function compressImage(
 	imageData: ArrayBuffer,
 	options: ImageProcessorOptions = DEFAULT_IMAGE_OPTIONS
-): Promise<ArrayBuffer> {
+): Promise<CompressedImage> {
 	const dims = await getImageDimensions(imageData)
 
 	// No need to resize if within limits and size is OK
@@ -155,7 +184,7 @@ export async function compressImage(
 		dims.height <= options.maxHeight &&
 		sizeKB <= options.maxSizeKB
 	) {
-		return imageData
+		return { data: imageData, contentType: detectImageType(imageData) }
 	}
 
 	return new Promise((resolve, reject) => {
@@ -193,7 +222,9 @@ export async function compressImage(
 				(blob) => {
 					URL.revokeObjectURL(url)
 					if (blob) {
-						blob.arrayBuffer().then(resolve).catch(reject)
+						blob.arrayBuffer()
+							.then((data) => resolve({ data, contentType: 'image/jpeg' }))
+							.catch(reject)
 					} else {
 						reject(new Error('Image compression failed'))
 					}
@@ -213,10 +244,76 @@ export async function compressImage(
 }
 
 /**
+ * Convert an SVG image to PNG via canvas.
+ * 微信公众号文章不支持 SVG 内联，需先转为位图。
+ */
+export async function convertSvgToPng(
+	svgData: ArrayBuffer,
+	options: ImageProcessorOptions = DEFAULT_IMAGE_OPTIONS
+): Promise<ArrayBuffer> {
+	const svgText = new TextDecoder().decode(svgData)
+	const url = URL.createObjectURL(new Blob([svgData], { type: 'image/svg+xml' }))
+
+	return new Promise((resolve, reject) => {
+		const img = new Image()
+		img.onload = () => {
+			try {
+				let { width, height } = img
+				if (!width || !height) {
+					// SVG 无固有尺寸时，从 viewBox 推导
+					const vb = svgText.match(/viewBox=["']([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)["']/)
+					if (vb) {
+						width = parseFloat(vb[3])
+						height = parseFloat(vb[4])
+					} else {
+						width = 800
+						height = 600
+					}
+				}
+				if (width > options.maxWidth) {
+					height = Math.round((height * options.maxWidth) / width)
+					width = options.maxWidth
+				}
+
+				const canvas = document.createElement('canvas')
+				canvas.width = Math.round(width)
+				canvas.height = Math.round(height)
+				const ctx = canvas.getContext('2d')
+				if (!ctx) {
+					URL.revokeObjectURL(url)
+					reject(new Error('Canvas context unavailable'))
+					return
+				}
+				ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+				canvas.toBlob(
+					(blob) => {
+						URL.revokeObjectURL(url)
+						if (blob) {
+							blob.arrayBuffer().then(resolve).catch(reject)
+						} else {
+							reject(new Error('SVG conversion failed'))
+						}
+					},
+					'image/png'
+				)
+			} catch (err) {
+				URL.revokeObjectURL(url)
+				reject(err instanceof Error ? err : new Error(String(err)))
+			}
+		}
+		img.onerror = () => {
+			URL.revokeObjectURL(url)
+			reject(new Error('Failed to load SVG image'))
+		}
+		img.src = url
+	})
+}
+
+/**
  * Process all local images in HTML content:
  * 1. Extract local image paths
  * 2. Read from vault
- * 3. Compress if needed
+ * 3. Compress if needed (GIF 保留动画，SVG 转为 PNG)
  * 4. Upload to WeChat
  * 5. Replace URLs in HTML
  *
@@ -263,19 +360,31 @@ export async function processImages(
 			continue
 		}
 
-		// Compress if needed
-		let processedData: ArrayBuffer
+		// Determine output image
+		let processedData = imageData
+		let contentType = detectImageType(imageData)
+
 		try {
-			processedData = await compressImage(imageData, options)
+			if (contentType === 'image/gif') {
+				// 保留 GIF 动画，不压缩
+			} else if (contentType === 'image/svg+xml') {
+				processedData = await convertSvgToPng(imageData, options)
+				contentType = 'image/png'
+			} else {
+				const compressed = await compressImage(imageData, options)
+				processedData = compressed.data
+				contentType = compressed.contentType
+			}
 		} catch (err) {
-			errors.push(`Failed to compress ${filename}: ${err}`)
-			// Use original data as fallback
+			errors.push(`Failed to process ${filename}: ${err}`)
+			// 回退为原始图片
 			processedData = imageData
+			contentType = detectImageType(imageData)
 		}
 
 		// Upload to WeChat
 		try {
-			const wechatUrl = await api.uploadImage(processedData, filename)
+			const wechatUrl = await api.uploadImage(processedData, filename, contentType)
 
 			// Replace in HTML — escape special regex chars in rawPath
 			const escapedPath = rawPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

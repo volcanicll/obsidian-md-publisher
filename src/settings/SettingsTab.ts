@@ -4,6 +4,8 @@ import { markdownStyles } from '../themes/markdown-style'
 import { codeThemes } from '../themes/code-theme'
 import { WeChatApi } from '../lib/wechat/wechat-api'
 
+const MANUAL_TOKEN_TTL_MS = 2 * 60 * 60 * 1000 // 微信 access_token 有效期约 2 小时
+
 export class BmMdSettingsTab extends PluginSettingTab {
   plugin: BmMdPlugin
 
@@ -18,13 +20,13 @@ export class BmMdSettingsTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName('Appearance')
+      .setName('排版')
       .setHeading()
 
     // Markdown Style Selection
     new Setting(containerEl)
-      .setName('Markdown style')
-      .setDesc('Select default Markdown styling theme')
+      .setName('排版主题')
+      .setDesc('选择默认的 Markdown 排版样式')
       .addDropdown(dropdown => {
         markdownStyles.forEach(style => {
           dropdown.addOption(style.id, style.name)
@@ -39,8 +41,8 @@ export class BmMdSettingsTab extends PluginSettingTab {
 
     // Code Theme Selection
     new Setting(containerEl)
-      .setName('Code highlight theme')
-      .setDesc('Select code block syntax highlighting theme')
+      .setName('代码高亮主题')
+      .setDesc('选择代码块的语法高亮样式')
       .addDropdown(dropdown => {
         codeThemes.forEach(theme => {
           dropdown.addOption(theme.id, theme.name)
@@ -53,27 +55,10 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
-    // Default Platform Selection
-    new Setting(containerEl)
-      .setName('Default platform')
-      .setDesc('Select default publishing platform')
-      .addDropdown(dropdown => {
-        dropdown
-          .addOption('wechat', 'Wechat')
-          // .addOption('zhihu', 'Zhihu')
-          // .addOption('toutiao', 'Toutiao')
-          .addOption('xiaohongshu', 'Xiaohongshu')
-          .setValue(this.plugin.settings.defaultPlatform)
-          .onChange(async (value) => {
-            this.plugin.settings.defaultPlatform = value
-            await this.plugin.saveSettings()
-          })
-      })
-
     // Custom CSS
     new Setting(containerEl)
-      .setName('Custom CSS')
-      .setDesc('Add custom CSS styles, applied after theme styles')
+      .setName('自定义 CSS')
+      .setDesc('附加样式，会覆盖主题中的同名规则')
       .addTextArea(text => {
         text.inputEl.classList.add('bm-md-custom-css-textarea')
         text
@@ -85,89 +70,181 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
-    // WeChat Settings Section
+    // 发布默认值
     new Setting(containerEl)
-      .setName('Wechat configuration')
+      .setName('发布默认值')
       .setHeading()
 
     new Setting(containerEl)
-      .setName('App ID')
-      .setDesc('Wechat app ID from wechat platform - development - basic configuration')
-      .addText(text => {
-        text.inputEl.classList.add('bm-md-appid-input')
-        text
-          .setPlaceholder('Wx1234567890abcdef')
-          .setValue(this.plugin.settings.wechatAppId)
+      .setName('默认开启评论')
+      .setDesc('发布弹窗中「开启评论」的默认状态')
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.defaultOpenComment)
           .onChange(async (value) => {
-            this.plugin.settings.wechatAppId = value.trim()
+            this.plugin.settings.defaultOpenComment = value
             await this.plugin.saveSettings()
           })
       })
 
     new Setting(containerEl)
-      .setName('App secret')
-      .setDesc('Wechat app secret, please keep it safe')
-      .addText(text => {
-        text.inputEl.type = 'password'
-        text.inputEl.classList.add('bm-md-appsecret-input')
-        text
-          .setPlaceholder('Enter app secret')
-          .setValue(this.plugin.settings.wechatAppSecret)
+      .setName('默认仅粉丝可评论')
+      .setDesc('发布弹窗中「仅粉丝可评论」的默认状态')
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.defaultFansOnlyComment)
           .onChange(async (value) => {
-            this.plugin.settings.wechatAppSecret = value.trim()
+            this.plugin.settings.defaultFansOnlyComment = value
             await this.plugin.saveSettings()
           })
       })
 
-    // Test Connection Button
-    const testConnectionSetting = new Setting(containerEl)
-      .setName('Test connection')
-      .setDesc('Test wechat API connection status')
+    // WeChat Settings Section
+    new Setting(containerEl)
+      .setName('微信公众号')
+      .setHeading()
 
-    const statusEl = testConnectionSetting.descEl.createSpan({ cls: 'bm-md-connection-status' })
+    this.renderWeChatSettings(containerEl)
+  }
 
-    testConnectionSetting.addButton(button => {
+  private renderWeChatSettings(containerEl: HTMLElement): void {
+    // 认证方式：手动 token 模式可绕过 IP 白名单限制
+    new Setting(containerEl)
+      .setName('使用手动 token')
+      .setDesc(
+        '开启后不再调用微信接口自动刷新 token，而是使用你粘贴的 access_token（有效期约 2 小时）。' +
+        '适合网络 IP 频繁变化、无法在公众号后台设置 IP 白名单的场景。'
+      )
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.useManualToken)
+          .onChange(async (value) => {
+            this.plugin.settings.useManualToken = value
+            await this.plugin.saveSettings()
+            this.display()
+          })
+      })
+
+    if (this.plugin.settings.useManualToken) {
+      // 手动 token
+      new Setting(containerEl)
+        .setName('access_token')
+        .setDesc(
+          '从公众号后台 / 开发工具获取并粘贴。粘贴后按 2 小时有效期计算，过期后在此重新粘贴即可。'
+        )
+        .addText(text => {
+          text.inputEl.type = 'password'
+          text.inputEl.classList.add('bm-md-appsecret-input')
+          text
+            .setPlaceholder('粘贴 access_token')
+            .setValue(this.plugin.settings.manualAccessToken)
+            .onChange(async (value) => {
+              this.plugin.settings.manualAccessToken = value.trim()
+              // 重置有效期：从粘贴时刻起算约 2 小时
+              this.plugin.settings.manualTokenExpireTime = Date.now() + MANUAL_TOKEN_TTL_MS
+              await this.plugin.saveSettings()
+            })
+        })
+    } else {
+      // 自动模式
+      new Setting(containerEl)
+        .setName('AppID')
+        .setDesc('公众号 AppID，位于 公众平台 → 设置与开发 → 基本配置')
+        .addText(text => {
+          text.inputEl.classList.add('bm-md-appid-input')
+          text
+            .setPlaceholder('wx1234567890abcdef')
+            .setValue(this.plugin.settings.wechatAppId)
+            .onChange(async (value) => {
+              this.plugin.settings.wechatAppId = value.trim()
+              await this.plugin.saveSettings()
+            })
+        })
+
+      new Setting(containerEl)
+        .setName('AppSecret')
+        .setDesc(
+          '公众号 AppSecret，请务必保密。注意：Obsidian 将其明文保存在本机配置中，' +
+          '若担心泄露风险，建议改用「手动 token」模式。'
+        )
+        .addText(text => {
+          text.inputEl.type = 'password'
+          text.inputEl.classList.add('bm-md-appsecret-input')
+          text
+            .setPlaceholder('请输入 AppSecret')
+            .setValue(this.plugin.settings.wechatAppSecret)
+            .onChange(async (value) => {
+              this.plugin.settings.wechatAppSecret = value.trim()
+              await this.plugin.saveSettings()
+            })
+        })
+
+      new Setting(containerEl)
+        .setName('IP 白名单')
+        .setDesc(
+          '自动模式需要把本机当前 IP 加入公众号的 IP 白名单（公众平台 → 基本配置）。' +
+          'IP 变化后会失效，此时可改用「手动 token」模式。'
+        )
+    }
+
+    // 测试连接
+    const testSetting = new Setting(containerEl)
+      .setName('测试连接')
+      .setDesc('验证公众号凭证与接口可用性')
+
+    const statusEl = testSetting.descEl.createSpan({ cls: 'bm-md-connection-status' })
+
+    testSetting.addButton(button => {
       button
-        .setButtonText('Test')
+        .setButtonText('测试')
         .onClick(async () => {
-          if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
-            new Notice('Please fill in app ID and app secret first')
+          const s = this.plugin.settings
+          const autoReady = s.wechatAppId && s.wechatAppSecret
+          const manualReady = s.useManualToken && s.manualAccessToken
+
+          if (!autoReady && !manualReady) {
+            new Notice('请先填写公众号凭证或手动 token')
             return
           }
 
-          button.setButtonText('Testing...')
+          button.setButtonText('测试中…')
           button.setDisabled(true)
           statusEl.setText('')
+          statusEl.removeClass('bm-md-status-success', 'bm-md-status-error')
 
-          const api = new WeChatApi({
-            appId: this.plugin.settings.wechatAppId,
-            appSecret: this.plugin.settings.wechatAppSecret
-          }, {
-            onTokenRefresh: async (token, expireTime) => {
-              this.plugin.settings.wechatAccessToken = token
-              this.plugin.settings.wechatTokenExpireTime = expireTime
-              await this.plugin.saveSettings()
+          const api = new WeChatApi(
+            {
+              appId: s.wechatAppId,
+              appSecret: s.wechatAppSecret,
+              accessToken: s.useManualToken ? s.manualAccessToken : s.wechatAccessToken,
+              tokenExpireTime: s.useManualToken ? s.manualTokenExpireTime : s.wechatTokenExpireTime,
+              manualMode: s.useManualToken
+            },
+            {
+              onTokenRefresh: async (token, expireTime) => {
+                this.plugin.settings.wechatAccessToken = token
+                this.plugin.settings.wechatTokenExpireTime = expireTime
+                await this.plugin.saveSettings()
+              }
             }
-          })
+          )
 
-          const result = await api.testConnection()
-
-          button.setButtonText('Test')
-          button.setDisabled(false)
-
-          if (result.success) {
-            statusEl.setText(result.message)
+          try {
+            // 拉取一条草稿即可验证 token 与接口连通性
+            const data = await api.listDrafts(0, 1)
+            statusEl.setText(`连接成功！草稿箱共 ${data.total_count} 条草稿`)
             statusEl.classList.add('bm-md-status-success')
-            statusEl.classList.remove('bm-md-status-error')
-            new Notice(result.message)
-          } else {
-            statusEl.setText(result.message)
+            new Notice('连接成功')
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            statusEl.setText(message)
             statusEl.classList.add('bm-md-status-error')
-            statusEl.classList.remove('bm-md-status-success')
-            new Notice(result.message)
+            new Notice('连接失败：' + message)
+          } finally {
+            button.setButtonText('测试')
+            button.setDisabled(false)
           }
         })
     })
   }
 }
-

@@ -51,6 +51,30 @@ export interface WeChatDraftAddRequest {
   articles: WeChatArticle[]
 }
 
+// Draft list item returned by draft/batchget
+export interface WeChatDraftListItem {
+  media_id: string
+  update_time: number
+  content: {
+    news_item: Array<{ title: string; digest?: string; author?: string }>
+  }
+}
+
+// draft/batchget response
+export interface WeChatDraftListResponse {
+  total_count: number
+  item_count: number
+  item?: WeChatDraftListItem[]
+  errcode?: number
+  errmsg?: string
+}
+
+// draft/delete response
+export interface WeChatDraftDeleteResponse {
+  errcode?: number
+  errmsg?: string
+}
+
 // Error codes mapping
 export const WECHAT_ERROR_CODES: Record<number, string> = {
   [-1]: '系统繁忙，请稍后重试',

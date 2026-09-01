@@ -3,7 +3,9 @@ import type {
   WeChatAccessTokenResponse,
   WeChatDraftAddResponse,
   WeChatArticle,
-  WeChatDraftAddRequest
+  WeChatDraftAddRequest,
+  WeChatDraftListResponse,
+  WeChatDraftDeleteResponse
 } from './types'
 import { getWeChatErrorMessage } from './types'
 
@@ -14,6 +16,8 @@ export interface WeChatApiConfig {
   appSecret: string
   accessToken?: string
   tokenExpireTime?: number
+  /** 手动 token 模式：只使用提供的 accessToken，永不自动刷新 */
+  manualMode?: boolean
 }
 
 export interface WeChatApiCallbacks {
@@ -29,6 +33,7 @@ export class WeChatApi {
   private appSecret: string
   private accessToken: string
   private tokenExpireTime: number
+  private manualMode: boolean
   private callbacks: WeChatApiCallbacks
 
   constructor(config: WeChatApiConfig, callbacks: WeChatApiCallbacks = {}) {
@@ -36,6 +41,7 @@ export class WeChatApi {
     this.appSecret = config.appSecret
     this.accessToken = config.accessToken || ''
     this.tokenExpireTime = config.tokenExpireTime || 0
+    this.manualMode = config.manualMode || false
     this.callbacks = callbacks
   }
 
@@ -51,9 +57,20 @@ export class WeChatApi {
   }
 
   /**
-   * Get valid access token, refresh if expired
+   * Get valid access token.
+   * 手动 token 模式（manualMode）下不调用微信 token 接口自动刷新，
+   * 用于绕过 IP 白名单限制：用户从公众号后台获取 token 后粘贴使用。
    */
   async getAccessToken(): Promise<string> {
+    if (this.manualMode) {
+      if (!this.isTokenExpired()) {
+        return this.accessToken
+      }
+      throw new Error(
+        '手动 token 已过期（有效期约 2 小时）。请到设置 → 微信公众号配置中粘贴新的 access_token，或切换到自动模式。'
+      )
+    }
+
     if (!this.isTokenExpired()) {
       return this.accessToken
     }
@@ -90,24 +107,6 @@ export class WeChatApi {
     }
 
     return this.accessToken
-  }
-
-  /**
-   * Test API connection by getting access token
-   */
-  async testConnection(): Promise<{ success: boolean; message: string }> {
-    try {
-      await this.getAccessToken()
-      return {
-        success: true,
-        message: '连接成功！access_token 已获取'
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : String(error)
-      }
-    }
   }
 
   /**
@@ -150,19 +149,24 @@ export class WeChatApi {
   /**
    * Upload image to WeChat server for use in article content
    * Note: Images in article content must be uploaded via this API
-   * @param imageBlob Image data as Blob
+   * @param imageBlob Image data as ArrayBuffer
    * @param filename Original filename
+   * @param contentType Image MIME type, defaults to image/png
    * @returns URL of the uploaded image on WeChat servers
    */
-  async uploadImage(imageBlob: ArrayBuffer, filename: string): Promise<string> {
+  async uploadImage(
+    imageBlob: ArrayBuffer,
+    filename: string,
+    contentType: string = 'image/png'
+  ): Promise<string> {
     const token = await this.getAccessToken()
-    
+
     const url = `${WECHAT_API_BASE}/media/uploadimg?access_token=${encodeURIComponent(token)}`
 
     // Create form data with the image
     const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2)
-    
-    const header = `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${filename}"\r\nContent-Type: image/png\r\n\r\n`
+
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`
     const footer = `\r\n--${boundary}--\r\n`
     
     const headerBytes = new TextEncoder().encode(header)
@@ -195,6 +199,60 @@ export class WeChatApi {
     }
 
     return data.url
+  }
+
+  /**
+   * List article drafts from the WeChat draft box.
+   * @param offset Page offset (starts at 0)
+   * @param count Items per page (max 20)
+   */
+  async listDrafts(offset = 0, count = 20): Promise<WeChatDraftListResponse> {
+    const token = await this.getAccessToken()
+
+    const url = `${WECHAT_API_BASE}/draft/batchget?access_token=${encodeURIComponent(token)}`
+
+    const params: RequestUrlParam = {
+      url,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ offset, count, no_content: 0 })
+    }
+
+    const response = await requestUrl(params)
+    const data = response.json as WeChatDraftListResponse
+
+    if (data.errcode && data.errcode !== 0) {
+      throw new Error(getWeChatErrorMessage(data.errcode))
+    }
+
+    return data
+  }
+
+  /**
+   * Delete an article draft by media_id.
+   */
+  async deleteDraft(mediaId: string): Promise<void> {
+    const token = await this.getAccessToken()
+
+    const url = `${WECHAT_API_BASE}/draft/delete?access_token=${encodeURIComponent(token)}`
+
+    const params: RequestUrlParam = {
+      url,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ media_id: mediaId })
+    }
+
+    const response = await requestUrl(params)
+    const data = response.json as WeChatDraftDeleteResponse
+
+    if (data.errcode && data.errcode !== 0) {
+      throw new Error(getWeChatErrorMessage(data.errcode))
+    }
   }
 
   /**

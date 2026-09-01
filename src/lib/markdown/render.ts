@@ -11,19 +11,16 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeExternalLinks from 'rehype-external-links'
 import rehypeStringify from 'rehype-stringify'
 import juice from 'juice'
+import katexCss from 'katex/dist/katex.min.css'
 import { getMarkdownStyleCss } from '../../themes/markdown-style'
 import { getCodeThemeCss } from '../../themes/code-theme'
-
-export type Platform = 'wechat' | 'zhihu' | 'toutiao' | 'xiaohongshu' | 'html'
 
 export interface RenderOptions {
   markdown: string
   markdownStyle?: string
   codeTheme?: string
   customCss?: string
-  enableFootnoteLinks?: boolean
   openLinksInNewWindow?: boolean
-  platform?: Platform
 }
 
 const sanitizeSchema = {
@@ -50,13 +47,7 @@ const sanitizeSchema = {
   },
 }
 
-interface ProcessorOptions {
-  enableFootnoteLinks?: boolean
-  openLinksInNewWindow?: boolean
-  platform?: Platform
-}
-
-function createProcessor(options: ProcessorOptions) {
+function createProcessor(options: { openLinksInNewWindow?: boolean }) {
   const { openLinksInNewWindow = true } = options
 
   const processor = unified()
@@ -88,26 +79,33 @@ function createProcessor(options: ProcessorOptions) {
   return processor
 }
 
+/**
+ * KaTeX 公式样式。@font-face 规则（指向 KaTeX 字体文件）在
+ * 公众号文章中无法内联加载，且发布目标平台不提供这些字体，
+ * 因此先移除，公式会用回退字体栈渲染。
+ */
+const katexStyle = katexCss.replace(/@font-face\s*\{[^}]*\}/g, '')
+
 export async function render(options: RenderOptions): Promise<string> {
   const {
     markdown,
     markdownStyle = 'ayu-light',
     codeTheme = 'github',
     customCss = '',
-    enableFootnoteLinks = true,
     openLinksInNewWindow = true,
-    platform = 'html',
   } = options
 
-  const processor = createProcessor({ enableFootnoteLinks, openLinksInNewWindow, platform })
+  const processor = createProcessor({ openLinksInNewWindow })
   const html = (await processor.process(markdown)).toString()
 
   const wrapped = `<section id="bm-md">${html}</section>`
 
-  // Combine all CSS: markdown style + code theme + custom CSS
+  // Combine all CSS: KaTeX + markdown style + code theme + custom CSS
   const markdownStyleCss = getMarkdownStyleCss(markdownStyle)
   const codeThemeCss = getCodeThemeCss(codeTheme)
-  const combinedCss = [markdownStyleCss, codeThemeCss, customCss].filter(Boolean).join('\n')
+  const combinedCss = [katexStyle, markdownStyleCss, codeThemeCss, customCss]
+    .filter(Boolean)
+    .join('\n')
 
   if (!combinedCss) {
     return wrapped

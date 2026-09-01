@@ -34,6 +34,7 @@ const context = await esbuild.context({
   format: 'cjs',
   target: 'es2018',
   logLevel: 'info',
+  loader: { '.css': 'text' },
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
   outfile: path.join(outdir, 'main.js'),

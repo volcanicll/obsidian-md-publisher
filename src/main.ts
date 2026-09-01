@@ -1,29 +1,41 @@
 import { Plugin, WorkspaceLeaf } from 'obsidian'
 import { BmMdSettingsTab } from './settings/SettingsTab'
 import { PreviewView, VIEW_TYPE_PREVIEW } from './views/PreviewView'
+import { DraftsModal } from './views/DraftsModal'
 
 interface BmMdSettings {
   markdownStyle: string
   codeTheme: string
   customCss: string
-  defaultPlatform: string
   // WeChat Official Account settings
   wechatAppId: string
   wechatAppSecret: string
   wechatAccessToken: string
   wechatTokenExpireTime: number
+  // 手动 token 模式（绕过 IP 白名单）：只使用手动粘贴的 access_token
+  useManualToken: boolean
+  manualAccessToken: string
+  manualTokenExpireTime: number
+  // 发布默认值
+  defaultOpenComment: boolean
+  defaultFansOnlyComment: boolean
 }
 
 const DEFAULT_SETTINGS: BmMdSettings = {
   markdownStyle: 'ayu-light',
   codeTheme: 'github',
   customCss: '',
-  defaultPlatform: 'wechat',
   // WeChat defaults
   wechatAppId: '',
   wechatAppSecret: '',
   wechatAccessToken: '',
-  wechatTokenExpireTime: 0
+  wechatTokenExpireTime: 0,
+  // 手动 token 默认关闭
+  useManualToken: false,
+  manualAccessToken: '',
+  manualTokenExpireTime: 0,
+  defaultOpenComment: false,
+  defaultFansOnlyComment: false,
 }
 
 export default class BmMdPlugin extends Plugin {
@@ -47,7 +59,7 @@ export default class BmMdPlugin extends Plugin {
     }
 
     // Add ribbon icon to open preview
-    this.addRibbonIcon('file-text', '打开  排版预览', () => {
+    this.addRibbonIcon('file-text', '打开排版预览', () => {
       void this.activateView()
     })
 
@@ -60,14 +72,23 @@ export default class BmMdPlugin extends Plugin {
       }
     })
 
+    // Add command to manage WeChat drafts
+    this.addCommand({
+      id: 'open-drafts',
+      name: '管理公众号草稿',
+      callback: () => {
+        new DraftsModal(this.app, this).open()
+      }
+    })
+
     // Add settings tab
     this.addSettingTab(new BmMdSettingsTab(this.app, this))
 
-    console.debug(' 插件已加载')
+    console.debug('插件已加载')
   }
 
   onunload() {
-    console.debug(' 插件已卸载')
+    console.debug('插件已卸载')
   }
 
   async loadSettings() {

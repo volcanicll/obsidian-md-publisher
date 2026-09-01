@@ -18,33 +18,25 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-/* Platform Tabs */
-.bm-md-tabs {
+/* Secondary Button (e.g. Drafts) */
+.bm-md-secondary-btn {
   display: flex;
+  align-items: center;
   gap: 6px;
-  flex: 1;
-}
-
-.bm-md-tab {
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
-  background: var(--background-secondary);
-  color: var(--text-muted);
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-
-.bm-md-tab:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
-
-.bm-md-tab.active {
-  background: #8b5cf6;
-  color: white;
   font-weight: 600;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.bm-md-secondary-btn:hover {
+  background: var(--background-modifier-hover);
 }
 
 /* Copy Button */
@@ -368,4 +360,62 @@
 
 .bm-md-status-error {
   color: #ef4444;
+}
+
+/* Drafts Modal */
+.bm-md-drafts-modal {
+  padding: 10px;
+}
+
+.bm-md-drafts-content {
+  margin-top: 4px;
+}
+
+.bm-md-draft-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 6px 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+}
+
+.bm-md-draft-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bm-md-draft-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bm-md-draft-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.bm-md-draft-delete {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #ef4444;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  transition: all 0.15s ease;
+}
+
+.bm-md-draft-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
 }

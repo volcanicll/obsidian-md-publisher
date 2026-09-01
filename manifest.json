@@ -1,10 +1,10 @@
 {
   "id": "md-publisher",
   "name": "Markdown Publisher",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "minAppVersion": "1.0.0",
-  "description": "One-Click Publish Markdown to WeChat Official Accounts, Zhihu, Toutiao, and Xiaohongshu.",
+  "description": "One-Click Publish Markdown to WeChat Official Account.",
   "author": "volcanic",
   "authorUrl": "https://github.com/volcanicll",
-  "isDesktopOnly": false
+  "isDesktopOnly": true
 }

@@ -328,11 +328,6 @@ export const markdownStyles: MarkdownStyle[] = [
 #bm-md li { margin-bottom: 0.5em; }
     `
   },
-  {
-    id:'xiaohongshu',
-    name:'小红书',
-    css: COMMON_STYLE + `#bm-md{}`
-  },
 ]
 
 export function getMarkdownStyleCss(styleId: string): string {

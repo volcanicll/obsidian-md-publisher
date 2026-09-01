@@ -1,40 +1,29 @@
 import { ItemView, WorkspaceLeaf, MarkdownView, Menu, TFile, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
-import { render, Platform } from '../lib/markdown/render'
+import { render } from '../lib/markdown/render'
 import { markdownStyles } from '../themes/markdown-style'
 import { codeThemes } from '../themes/code-theme'
 import { PublishModal } from './PublishModal'
+import { DraftsModal } from './DraftsModal'
 
 export const VIEW_TYPE_PREVIEW = 'obsidian-md-publisher'
 
-const PLATFORMS: { id: Platform; name: string }[] = [
-  { id: 'wechat', name: '公众号' },
-  // { id: 'zhihu', name: '知乎' },
-  // { id: 'toutiao', name: '头条' },
-  { id: 'xiaohongshu', name: '小红书' },
-]
-
 export class PreviewView extends ItemView {
   plugin: BmMdPlugin
-  currentPlatform: Platform = 'wechat'
   currentMarkdownStyle: string = 'ayu-light'
   currentCodeTheme: string = 'github'
   previewContainer: HTMLElement | null = null
-  tabsContainer: HTMLElement | null = null
   styleSelector: HTMLElement | null = null
   codeThemeSelector: HTMLElement | null = null
-  publishBtnEl: HTMLElement | null = null
-  settingsRowEl: HTMLElement | null = null
-  
-  // Cache markdown content and rendered HTML per platform
+
+  // Cache markdown content and rendered HTML
   private lastMarkdownContent: string | null = null
   private lastActiveFile: TFile | null = null
-  private renderedHtmlCache: Map<Platform, string> = new Map()
+  private renderedHtmlCache: string | null = null
 
   constructor(leaf: WorkspaceLeaf, plugin: BmMdPlugin) {
     super(leaf)
     this.plugin = plugin
-    this.currentPlatform = (plugin.settings.defaultPlatform as Platform) || 'wechat'
     this.currentMarkdownStyle = plugin.settings.markdownStyle || 'ayu-light'
     this.currentCodeTheme = plugin.settings.codeTheme || 'github'
   }
@@ -44,7 +33,7 @@ export class PreviewView extends ItemView {
   }
 
   getDisplayText(): string {
-    return ' 排版预览'
+    return '排版预览'
   }
 
   getIcon(): string {
@@ -59,35 +48,36 @@ export class PreviewView extends ItemView {
     // Toolbar
     const toolbar = container.createDiv({ cls: 'bm-md-toolbar' })
 
-    // Platform tabs
-    this.tabsContainer = toolbar.createDiv({ cls: 'bm-md-tabs' })
-    this.renderTabs()
-    
-    // Button group
+    // Button group (left side)
     const buttonGroup = toolbar.createDiv({ cls: 'bm-md-button-group' })
 
-    // Copy button
+    // 草稿管理
+    const draftsBtn = buttonGroup.createDiv({ cls: 'bm-md-secondary-btn' })
+    draftsBtn.createSpan({ cls: 'bm-md-copy-icon', text: '📚' })
+    draftsBtn.createSpan({ text: '草稿' })
+    draftsBtn.addEventListener('click', () => {
+      new DraftsModal(this.app, this.plugin).open()
+    })
+
+    // 复制
     const copyBtn = buttonGroup.createDiv({ cls: 'bm-md-copy-btn' })
     copyBtn.createSpan({ cls: 'bm-md-copy-icon', text: '📋' })
-    copyBtn.createSpan({ text: 'Copy' })
+    copyBtn.createSpan({ text: '复制' })
     copyBtn.addEventListener('click', () => {
       void this.copyToClipboard()
     })
 
-    // Publish button (hidden for xiaohongshu)
-    this.publishBtnEl = buttonGroup.createDiv({ cls: 'bm-md-publish-btn' })
-    this.publishBtnEl.createSpan({ cls: 'bm-md-publish-icon', text: '📤' })
-    this.publishBtnEl.createSpan({ text: 'Publish' })
-    this.publishBtnEl.addEventListener('click', () => {
+    // 发布
+    const publishBtn = buttonGroup.createDiv({ cls: 'bm-md-publish-btn' })
+    publishBtn.createSpan({ cls: 'bm-md-publish-icon', text: '📤' })
+    publishBtn.createSpan({ text: '发布' })
+    publishBtn.addEventListener('click', () => {
       void this.openPublishModal()
     })
 
-    // Settings row (hidden for xiaohongshu)
-    this.settingsRowEl = container.createDiv({ cls: 'bm-md-settings' })
-    this.renderSelectors(this.settingsRowEl)
-
-    // Update UI visibility based on current platform
-    this.updatePlatformUI()
+    // Theme selectors
+    const settingsRow = container.createDiv({ cls: 'bm-md-settings' })
+    this.renderSelectors(settingsRow)
 
     // Preview container
     this.previewContainer = container.createDiv({ cls: 'bm-md-preview' })
@@ -123,56 +113,13 @@ export class PreviewView extends ItemView {
   }
 
   clearRenderedCache(): void {
-    this.renderedHtmlCache.clear()
-  }
-
-  renderTabs(): void {
-    if (!this.tabsContainer) return
-    this.tabsContainer.empty()
-
-    PLATFORMS.forEach(platform => {
-      const tab = this.tabsContainer!.createDiv({
-        cls: `bm-md-tab ${platform.id === this.currentPlatform ? 'active' : ''}`,
-        text: platform.name
-      })
-      tab.addEventListener('click', () => {
-        this.currentPlatform = platform.id
-        this.clearRenderedCache()
-        this.renderTabs()
-        this.updatePlatformUI()
-        void this.updatePreview()
-      })
-    })
-  }
-
-  /**
-   * Update UI visibility based on current platform
-   * Xiaohongshu: hide publish button and theme selectors, use fixed style
-   */
-  updatePlatformUI(): void {
-    const isXiaohongshu = this.currentPlatform === 'xiaohongshu'
-    
-    // Hide/show publish button
-    if (this.publishBtnEl) {
-      this.publishBtnEl.toggleClass('bm-md-hidden', isXiaohongshu)
-    }
-    
-    // Hide/show settings row (theme selectors)
-    if (this.settingsRowEl) {
-      this.settingsRowEl.toggleClass('bm-md-hidden', isXiaohongshu)
-    }
-    
-    // For xiaohongshu, always use the xiaohongshu theme
-    if (isXiaohongshu) {
-      this.currentMarkdownStyle = 'xiaohongshu'
-      this.currentCodeTheme = 'github' // Simple code theme
-    }
+    this.renderedHtmlCache = null
   }
 
   renderSelectors(container: HTMLElement): void {
     // Markdown Style Selector
     const styleGroup = container.createDiv({ cls: 'bm-md-selector-group' })
-    styleGroup.createSpan({ text: 'Theme:', cls: 'bm-md-selector-label' })
+    styleGroup.createSpan({ text: '主题:', cls: 'bm-md-selector-label' })
 
     this.styleSelector = styleGroup.createDiv({ cls: 'bm-md-selector' })
     this.updateStyleSelector()
@@ -180,7 +127,7 @@ export class PreviewView extends ItemView {
 
     // Code Theme Selector
     const codeGroup = container.createDiv({ cls: 'bm-md-selector-group' })
-    codeGroup.createSpan({ text: 'Code:', cls: 'bm-md-selector-label' })
+    codeGroup.createSpan({ text: '代码:', cls: 'bm-md-selector-label' })
 
     this.codeThemeSelector = codeGroup.createDiv({ cls: 'bm-md-selector' })
     this.updateCodeThemeSelector()
@@ -238,32 +185,43 @@ export class PreviewView extends ItemView {
   }
 
   async copyToClipboard(): Promise<void> {
-    const html = await this.getRenderedHtml(this.currentPlatform)
+    const html = await this.getRenderedHtml()
     if (!html) {
-      new Notice('No content to copy')
+      new Notice('暂无内容可复制')
       return
     }
 
     try {
-      // Copy as both HTML and plain text fallback
-      const htmlBlob = new Blob([html], { type: 'text/html' })
-      const textBlob = new Blob([html], { type: 'text/plain' })
-      const item = new ClipboardItem({
-        'text/html': htmlBlob,
-        'text/plain': textBlob,
-      })
-      await navigator.clipboard.write([item])
-      new Notice(`Copied ${PLATFORMS.find(p => p.id === this.currentPlatform)?.name} format`)
+      // 优先使用 ClipboardItem（桌面 Chromium），否则回退到富文本复制
+      if (typeof ClipboardItem !== 'undefined') {
+        const htmlBlob = new Blob([html], { type: 'text/html' })
+        const textBlob = new Blob([html], { type: 'text/plain' })
+        const item = new ClipboardItem({
+          'text/html': htmlBlob,
+          'text/plain': textBlob,
+        })
+        await navigator.clipboard.write([item])
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = html
+        document.body.appendChild(textarea)
+        textarea.select()
+        const ok = document.execCommand('copy')
+        document.body.removeChild(textarea)
+        if (!ok) {
+          throw new Error('execCommand 复制失败')
+        }
+      }
+      new Notice('已复制公众号 HTML 格式')
     } catch (err) {
-      console.error('Copy failed:', err)
-      new Notice('Copy failed: ' + String(err))
+      console.error('复制失败:', err)
+      new Notice('复制失败：' + String(err))
     }
   }
 
-  async getRenderedHtml(platform: Platform): Promise<string | null> {
+  async getRenderedHtml(): Promise<string | null> {
     // Check cache first
-    const cached = this.renderedHtmlCache.get(platform)
-    if (cached) return cached
+    if (this.renderedHtmlCache) return this.renderedHtmlCache
 
     const markdown = this.getCurrentMarkdown()
     if (!markdown) return null
@@ -274,9 +232,8 @@ export class PreviewView extends ItemView {
         markdownStyle: this.currentMarkdownStyle,
         codeTheme: this.currentCodeTheme,
         customCss: this.plugin.settings.customCss,
-        platform,
       })
-      this.renderedHtmlCache.set(platform, html)
+      this.renderedHtmlCache = html
       return html
     } catch (err) {
       console.error('渲染失败:', err)
@@ -307,13 +264,13 @@ export class PreviewView extends ItemView {
   async updatePreview(): Promise<void> {
     if (!this.previewContainer) return
 
-    const html = await this.getRenderedHtml(this.currentPlatform)
-    
+    const html = await this.getRenderedHtml()
+
     this.previewContainer.empty()
-    
+
     if (!html) {
       const emptyDiv = this.previewContainer.createDiv({ cls: 'bm-md-empty' })
-      emptyDiv.createEl('p', { text: 'Open a Markdown file to start preview' })
+      emptyDiv.createEl('p', { text: '打开一篇 Markdown 笔记以预览公众号排版' })
       return
     }
 
@@ -325,13 +282,13 @@ export class PreviewView extends ItemView {
   async openPublishModal(): Promise<void> {
     const markdown = this.getCurrentMarkdown()
     if (!markdown) {
-      new Notice('No content to publish, please open a Markdown file first')
+      new Notice('没有可发布的内容，请先打开一篇 Markdown 笔记')
       return
     }
 
-    const html = await this.getRenderedHtml(this.currentPlatform)
+    const html = await this.getRenderedHtml()
     if (!html) {
-      new Notice('Content rendering failed, cannot publish')
+      new Notice('内容渲染失败，无法发布')
       return
     }
 

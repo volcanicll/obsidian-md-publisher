@@ -1,18 +1,22 @@
 {
   "name": "obsidian-md-publisher",
-  "version": "1.1.1",
-  "description": "One-click publish Markdown notes to WeChat, Zhihu, Toutiao, and Xiaohongshu.",
+  "version": "1.1.5",
+  "description": "One-click publish Markdown notes to WeChat Official Account.",
   "main": "main.js",
   "scripts": {
     "dev": "bun run esbuild.config.mjs",
     "build": "bun run esbuild.config.mjs production",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint \"src/**/*.ts\"",
     "version": "bun run .agent/skills/obsidian-version-manager/scripts/version_bump.ts"
   },
   "keywords": [
     "obsidian",
+    "obsidian-plugin",
     "markdown",
     "wechat",
-    "zhihu"
+    "wechat-official-account"
   ],
   "author": "volcanic",
   "license": "MIT",
@@ -32,9 +36,9 @@
     "@typescript-eslint/utils": "^8.58.1",
     "builtin-modules": "^4.0.0",
     "esbuild": "^0.25.0",
-    "eslint-plugin-obsidianmd": "^0.1.9",
     "obsidian": "^1.7.2",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
