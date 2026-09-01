@@ -103,7 +103,26 @@ h2{font-family:var(--serif);font-weight:900;font-size:clamp(26px,3.2vw,36px);lin
 .feat p{font-size:14px;color:var(--ink-soft)}
 .feat p code{font-family:var(--mono);font-size:12px;background:var(--paper-2);padding:1px 6px;border-radius:5px;color:var(--green-ink)}
 
-/* ---------- 步骤区 ---------- */
+/* ---------- 在线体验 ---------- */
+.demo-band{background:var(--paper-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.demo-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:7px 18px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--sans)}
+.pill:hover{transform:translateY(-1px)}
+.pill.on{background:var(--ink);color:var(--paper)}
+.demo-copy{margin-left:auto;background:var(--green);color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s,transform .15s}
+.demo-copy:hover{background:var(--green-deep)}
+.demo-copy:active{transform:scale(.96)}
+.demo-copy.ok{background:var(--green-ink)}
+.demo-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:22px;align-items:stretch}
+.demo-editor{width:100%;height:480px;border:1px solid var(--line);border-radius:14px;background:#fffdf9;padding:20px;font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--ink);resize:vertical;outline:none;transition:border-color .15s}
+.demo-editor:focus{border-color:var(--green)}
+.demo-count{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--ink-faint);text-align:right}
+.demo-preview{background:#fff;border:1px solid var(--line);border-radius:14px;height:480px;overflow:auto;padding:30px 28px;transition:background .25s}
+.demo-hint{margin-top:18px;font-size:13px;color:var(--ink-faint);display:flex;gap:8px;align-items:center}
+.demo-hint::before{content:"💡"}
+
+
 .steps{background:var(--ink);color:var(--paper);border-radius:26px;padding:64px 56px;position:relative;overflow:hidden}
 .steps::after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(7,193,96,.22),transparent 70%)}
 .steps .sec-tag{color:#4ade80}
@@ -162,6 +181,10 @@ footer a:hover{color:var(--green-deep)}
   .themes{grid-template-columns:repeat(2,1fr)}
   .detail-grid{grid-template-columns:1fr}
   .steps{padding:44px 28px}
+  .demo-grid{grid-template-columns:minmax(0,1fr)}
+  .demo-editor{height:320px}
+  .demo-preview{height:380px}
+  .demo-copy{margin-left:0;width:100%}
   .nav-links{display:none}
 }
 @media (max-width:520px){
@@ -186,6 +209,7 @@ footer a:hover{color:var(--green-deep)}
     <a class="brand" href="#"><span class="dot">发</span>Markdown Publisher</a>
     <div class="nav-links">
       <a href="#features">功能</a>
+      <a href="#demo">在线体验</a>
       <a href="#guide">使用说明</a>
       <a href="#themes">主题</a>
       <a href="#faq">注意事项</a>
@@ -247,6 +271,30 @@ footer a:hover{color:var(--green-deep)}
       <div class="feat reveal"><div class="ic">✍️</div><h3>公式与表格</h3><p>KaTeX 数学公式渲染、GFM 表格、任务列表、脚注一应俱全，技术写作无短板。</p></div>
       <div class="feat wide reveal"><div class="ic">🌓</div><h3>18 种排版主题 × 14 种代码高亮</h3><p>从 Newsprint 纸墨感到 Neo-Brutalism 潮流感，搭配 GitHub、Dracula、Nord 等代码主题，还支持自定义 CSS 覆盖。</p></div>
       <div class="feat wide reveal"><div class="ic">📤</div><h3>直发草稿箱 + 草稿管理</h3><p>填写标题、作者、摘要后直接调用微信草稿箱 API 存稿；也可随时查看、删除草稿箱中的历史草稿。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="demo" class="demo-band">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-tag">Live Demo</span>
+      <h2>在线体验：粘贴即排版</h2>
+      <p>在左侧粘贴 Markdown，右侧实时预览公众号排版效果。样式与插件一样直接内联到每个标签，选好主题即可一键复制，粘贴进公众号编辑器。</p>
+    </div>
+    <div class="reveal">
+      <div class="demo-bar">
+        <div class="pills" id="demoPills"></div>
+        <button class="demo-copy" id="demoCopy" type="button">复制排版结果</button>
+      </div>
+      <div class="demo-grid">
+        <div>
+          <textarea class="demo-editor" id="demoInput" spellcheck="false" aria-label="Markdown 输入框"></textarea>
+          <div class="demo-count" id="demoCount"></div>
+        </div>
+        <div class="demo-preview" id="demoOutput" aria-live="polite"></div>
+      </div>
+      <div class="demo-hint">演示覆盖标题、加粗、行内代码、代码块、引用、列表与链接；完整排版能力以插件为准。</div>
     </div>
   </div>
 </section>
@@ -373,6 +421,157 @@ footer a:hover{color:var(--green-deep)}
 <script>
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.12});
 document.querySelectorAll(".reveal").forEach((el,i)=>{el.style.transitionDelay=(i%3)*60+"ms";io.observe(el)});
+</script>
+<script>
+/* ---------- 在线排版体验 ---------- */
+const DEMO_THEMES={
+  professional:{label:"Professional",wrap:"font-family:-apple-system,'PingFang SC',sans-serif;color:#333",
+    h1:"font-size:22px;font-weight:700;color:#1f1f1f;margin:26px 0 16px;text-align:center",
+    h2:"font-size:18px;font-weight:700;color:#1f1f1f;margin:24px 0 14px;border-left:4px solid #07c160;padding-left:10px",
+    h3:"font-size:16px;font-weight:700;color:#333;margin:20px 0 12px",
+    p:"font-size:15px;line-height:1.9;letter-spacing:.4px;margin:0 0 16px",
+    strong:"color:#07c160;font-weight:700",
+    a:"color:#07c160;text-decoration:none;border-bottom:1px solid rgba(7,193,96,.4)",
+    quote:"border-left:3px solid #07c160;background:#f6fbf7;padding:12px 16px;margin:0 0 16px;font-size:14px;color:#555",
+    pre:"background:#f6f8fa;border:1px solid #eaecef;border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,monospace;font-size:13px;color:#24292f;line-height:1.7",
+    code:"background:#f0f0f0;color:#c7254e;padding:2px 6px;border-radius:4px;font-size:13px",
+    li:"font-size:15px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:1px solid #e5e5e5;margin:24px 0"},
+  newsprint:{label:"Newsprint 纸墨",wrap:"font-family:Georgia,'Noto Serif SC','Songti SC',serif;color:#2b2118",
+    h1:"font-size:24px;font-weight:700;color:#1a120b;margin:26px 0 16px;text-align:center;letter-spacing:.05em",
+    h2:"font-size:19px;font-weight:700;color:#1a120b;margin:24px 0 14px;border-bottom:2px solid #b58900;padding-bottom:6px",
+    h3:"font-size:16px;font-weight:700;color:#3a2d1e;margin:20px 0 12px",
+    p:"font-size:15px;line-height:2;margin:0 0 16px;text-indent:0",
+    strong:"color:#8a5a00;font-weight:700",
+    a:"color:#8a5a00;text-decoration:none;border-bottom:1px dotted #8a5a00",
+    quote:"border-left:3px double #b58900;background:#fdf9ef;padding:12px 16px;margin:0 0 16px;font-size:14px;color:#5c4a32;font-style:italic",
+    pre:"background:#fdf6e3;border:1px solid #e8dcbe;padding:14px 16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,monospace;font-size:13px;color:#584e3a;line-height:1.7",
+    code:"background:#f3ecd8;color:#8a5a00;padding:2px 6px;font-size:13px",
+    li:"font-size:15px;line-height:2;margin:0 0 6px",hr:"border:none;border-top:1px solid #d8c9a5;margin:24px 0"},
+  terminal:{label:"Terminal 极客",wrap:"font-family:Menlo,Consolas,'JetBrains Mono',monospace;color:#c9d1d9",
+    h1:"font-size:20px;font-weight:700;color:#58a6ff;margin:26px 0 16px",
+    h2:"font-size:17px;font-weight:700;color:#7ee787;margin:24px 0 14px",
+    h3:"font-size:15px;font-weight:700;color:#ff7b72;margin:20px 0 12px",
+    p:"font-size:14px;line-height:1.9;margin:0 0 16px",
+    strong:"color:#fff;font-weight:700",
+    a:"color:#58a6ff;text-decoration:none;border-bottom:1px dashed #58a6ff",
+    quote:"border-left:3px solid #3fb950;background:#161b22;padding:12px 16px;margin:0 0 16px;font-size:13px;color:#8b949e",
+    pre:"background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,monospace;font-size:12.5px;color:#c9d1d9;line-height:1.7",
+    code:"background:#161b22;color:#79c0ff;padding:2px 6px;border-radius:4px;font-size:12.5px",
+    li:"font-size:14px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:1px dashed #30363d;margin:24px 0",wrapBg:"#0d1117"},
+  brutalism:{label:"Neo-Brutalism 潮流",wrap:"font-family:'Noto Sans SC','PingFang SC',sans-serif;color:#111",
+    h1:"font-size:23px;font-weight:900;color:#111;margin:26px 0 16px;background:#ffd400;display:inline-block;padding:4px 12px;border:2px solid #000;box-shadow:4px 4px 0 #000",
+    h2:"font-size:18px;font-weight:900;color:#111;margin:24px 0 14px;border-bottom:3px solid #000;padding-bottom:4px",
+    h3:"font-size:16px;font-weight:900;color:#111;margin:20px 0 12px",
+    p:"font-size:15px;line-height:1.9;margin:0 0 16px",
+    strong:"background:#ff6b6b;color:#fff;font-weight:700;padding:0 4px",
+    a:"color:#111;font-weight:700;text-decoration:none;background:#ffd400;border:1.5px solid #000;padding:0 4px",
+    quote:"border:2px solid #000;background:#fff;box-shadow:4px 4px 0 #000;padding:12px 16px;margin:0 0 20px;font-size:14px;font-weight:600",
+    pre:"background:#111;border:2px solid #000;box-shadow:6px 6px 0 #ffd400;padding:14px 16px;overflow-x:auto;margin:0 0 20px",
+    preCode:"font-family:Menlo,Consolas,monospace;font-size:13px;color:#7ee787;line-height:1.7",
+    code:"background:#111;color:#ffd400;padding:2px 6px;font-size:13px;font-weight:700",
+    li:"font-size:15px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:3px solid #000;margin:24px 0"}
+};
+const DEMO_SRC=`# 把公众号排版交给插件
+
+写作时**只管专注内容**，发布时样式自动生成，无需再和公众号编辑器搏斗。
+
+## 它解决了什么
+
+- 公众号编辑器会剥离外部样式表，插件把 CSS \`全部内联\` 到每个标签
+- 本地图片自动压缩并上传到微信素材 CDN
+- KaTeX 公式、GFM 表格、脚注开箱即用
+
+> 所有处理都在本地完成，笔记内容不会经过第三方服务器。
+
+## 三步开始使用
+
+1. 下载插件并放入 \`​.obsidian/plugins/md-publisher/\`
+2. 配置公众号认证（AppID 或手动 token）
+3. 打开预览，选主题，一键发布
+
+---
+
+代码块同样支持高亮，样式随主题内联：
+
+\`\`\`js
+const note = await publish("我的笔记.md")
+await note.to("草稿箱")  // 完成 ✓
+\`\`\`
+
+完整能力见 [GitHub 仓库](https://github.com/volcanicll/obsidian-md-publisher)。`;
+const $in=document.getElementById("demoInput"),$out=document.getElementById("demoOutput"),
+      $pills=document.getElementById("demoPills"),$copy=document.getElementById("demoCopy"),
+      $count=document.getElementById("demoCount");
+let curTheme="professional",renderTimer=null;
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function inlineMd(s,t){
+  const codes=[];
+  s=s.replace(/`([^`]+)`/g,(m,c)=>{codes.push(c);return`\x00${codes.length-1}\x00`});
+  s=esc(s);
+  s=s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,txt,href)=>`<a href="${href}" style="${t.a}">${txt}</a>`);
+  s=s.replace(/\*\*([^*]+)\*\*/g,(m,c)=>`<strong style="${t.strong}">${c}</strong>`);
+  s=s.replace(/\*([^*]+)\*/g,(m,c)=>`<em>${c}</em>`);
+  return s.replace(/\x00(\d+)\x00/g,(m,i)=>`<code style="${t.code}">${esc(codes[i])}</code>`);
+}
+function mdToHtml(src,t){
+  const lines=src.replace(/\r/g,"").split("\n");const out=[];let i=0;
+  const isBlockHead=s=>/^(#{1,3} |[-*] |\d+\. |> |```|---)/.test(s);
+  while(i<lines.length){
+    const L=lines[i];
+    if(/^```/.test(L)){const buf=[];i++;while(i<lines.length&&!/^```/.test(lines[i]))buf.push(lines[i++]);i++;
+      out.push(`<pre style="${t.pre}"><code style="${t.preCode}">${esc(buf.join("\n"))}</code></pre>`);continue}
+    if(/^---\s*$/.test(L)){out.push(`<hr style="${t.hr}">`);i++;continue}
+    const h=L.match(/^(#{1,3}) (.*)$/);
+    if(h){const tag="h"+h[1].length;out.push(`<${tag} style="${t[tag]}">${inlineMd(h[2],t)}</${tag}>`);i++;continue}
+    if(/^> /.test(L)){const buf=[];while(i<lines.length&&/^> /.test(lines[i]))buf.push(lines[i++].replace(/^> /,""));
+      out.push(`<blockquote style="${t.quote}"><p style="margin:0">${inlineMd(buf.join(" "),t)}</p></blockquote>`);continue}
+    if(/^[-*] /.test(L)){const items=[];while(i<lines.length&&/^[-*] /.test(lines[i]))items.push(lines[i++].slice(2));
+      out.push(`<ul style="padding-left:1.4em;margin:0 0 16px">${items.map(x=>`<li style="${t.li}">${inlineMd(x,t)}</li>`).join("")}</ul>`);continue}
+    if(/^\d+\. /.test(L)){const items=[];while(i<lines.length&&/^\d+\. /.test(lines[i]))items.push(lines[i++].replace(/^\d+\. /,""));
+      out.push(`<ol style="padding-left:1.4em;margin:0 0 16px">${items.map(x=>`<li style="${t.li}">${inlineMd(x,t)}</li>`).join("")}</ol>`);continue}
+    if(/^\s*$/.test(L)){i++;continue}
+    const buf=[];
+    while(i<lines.length&&!/^\s*$/.test(lines[i])&&!isBlockHead(lines[i]))buf.push(lines[i++]);
+    out.push(`<p style="${t.p}">${inlineMd(buf.join(" "),t)}</p>`);
+  }
+  return out.join("\n");
+}
+function renderDemo(){
+  const t=DEMO_THEMES[curTheme];
+  $out.style.background=t.wrapBg||"#fff";
+  $out.innerHTML=`<div style="${t.wrap}">${mdToHtml($in.value,t)}</div>`;
+  $count.textContent=`${$in.value.length} 字符 · ${DEMO_THEMES[curTheme].label}`;
+}
+Object.entries(DEMO_THEMES).forEach(([key,t])=>{
+  const b=document.createElement("button");
+  b.type="button";b.className="pill";b.textContent=t.label;
+  b.addEventListener("click",()=>{
+    curTheme=key;
+    $pills.querySelectorAll(".pill").forEach(x=>x.classList.toggle("on",x===b));
+    renderDemo();
+  });
+  $pills.appendChild(b);
+});
+$pills.querySelector(".pill").classList.add("on");
+$in.value=DEMO_SRC;
+$in.addEventListener("input",()=>{clearTimeout(renderTimer);renderTimer=setTimeout(renderDemo,120)});
+renderDemo();
+$copy.addEventListener("click",async()=>{
+  const html=$out.innerHTML,plain=$out.innerText;
+  try{
+    await navigator.clipboard.write([new ClipboardItem({
+      "text/html":new Blob([html],{type:"text/html"}),
+      "text/plain":new Blob([plain],{type:"text/plain"})})]);
+  }catch(e){
+    const ta=document.createElement("textarea");ta.value=html;document.body.appendChild(ta);
+    ta.select();document.execCommand("copy");ta.remove();
+  }
+  $copy.textContent="✓ 已复制，去公众号粘贴";$copy.classList.add("ok");
+  setTimeout(()=>{$copy.textContent="复制排版结果";$copy.classList.remove("ok")},2000);
+});
 </script>
 </body>
 </html>
