@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown Publisher · 把 Obsidian 笔记一键发布到微信公众号</title>
+<meta name="description" content="Obsidian 插件：Markdown 自动排版为公众号格式，本地图片自动上传，一键发布到草稿箱。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Markdown Publisher · 把 Obsidian 笔记一键发布到微信公众号">
+<meta property="og:description" content="CSS 自动内联、图片自动上传、18 种排版主题，一键发布到公众号草稿箱。">
+<meta property="og:url" content="https://volcanicll.github.io/obsidian-md-publisher/">
+<meta name="twitter:card" content="summary">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1c1a17;
+  --ink-soft:#4c4842;
+  --ink-faint:#8a847a;
+  --paper:#faf7f1;
+  --paper-2:#f2ede3;
+  --line:#e3dcd0;
+  --green:#07c160;
+  --green-deep:#059a4c;
+  --green-ink:#0b5c33;
+  --serif:"Noto Serif SC", "Songti SC", serif;
+  --sans:"Noto Sans SC", "PingFang SC", sans-serif;
+  --mono:"JetBrains Mono", "SF Mono", monospace;
+  --max:1080px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{overflow-x:clip}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+::selection{background:var(--green);color:#fff}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 28px}
+a{color:inherit}
+
+/* ---------- 纸面纹理 ---------- */
+.paper-tex{position:relative}
+.paper-tex::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(rgba(28,26,23,.045) 1px, transparent 1px);background-size:22px 22px}
+
+/* ---------- 导航 ---------- */
+nav{position:sticky;top:0;z-index:50;background:rgba(250,247,241,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{font-family:var(--serif);font-weight:900;font-size:18px;display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand .dot{width:26px;height:26px;border-radius:7px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:15px;font-family:var(--sans);font-weight:700}
+.nav-links{display:flex;gap:28px;font-size:14px;color:var(--ink-soft)}
+.nav-links a{text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:var(--green-deep)}
+.nav-gh{display:flex;align-items:center;gap:6px;text-decoration:none;font-size:14px;font-weight:500;border:1px solid var(--ink);padding:6px 14px;border-radius:999px;transition:all .15s}
+.nav-gh:hover{background:var(--ink);color:var(--paper)}
+
+/* ---------- Hero ---------- */
+.hero{padding:88px 0 72px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:56px;align-items:center}
+.hero>*{min-width:0}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--green-ink);background:#e4f5ea;border:1px solid #c4e8d2;padding:5px 14px;border-radius:999px;margin-bottom:24px}
+.kicker::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green)}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(34px,4.6vw,52px);line-height:1.25;letter-spacing:.01em}
+h1 em{font-style:normal;color:var(--green-deep);border-bottom:5px solid rgba(7,193,96,.25)}
+.hero-sub{margin:22px 0 34px;font-size:17px;color:var(--ink-soft);max-width:30em}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:12px;transition:transform .15s,box-shadow .15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--green);color:#fff;box-shadow:0 4px 14px rgba(7,193,96,.3)}
+.btn-primary:hover{background:var(--green-deep);box-shadow:0 6px 18px rgba(7,193,96,.35)}
+.btn-ghost{border:1.5px solid var(--ink)}
+.btn-ghost:hover{background:var(--ink);color:var(--paper)}
+.hero-meta{margin-top:30px;display:flex;gap:22px;font-size:13px;color:var(--ink-faint);font-family:var(--mono)}
+.hero-meta b{color:var(--ink);font-weight:600}
+
+/* ---------- 仿公众号卡片 ---------- */
+.wx-card{background:#fff;border-radius:18px;box-shadow:0 2px 6px rgba(28,26,23,.06),0 24px 56px rgba(28,26,23,.13);border:1px solid var(--line);overflow:hidden;transform:rotate(1.2deg);transition:transform .3s}
+.wx-card:hover{transform:rotate(0)}
+.wx-card-head{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid #f0ece4}
+.wx-card-head .avatar{width:32px;height:32px;border-radius:8px;background:var(--green);display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}
+.wx-card-head .acct{font-size:13px;font-weight:700}
+.wx-card-head .time{font-size:11px;color:#b5aea2;margin-left:auto;font-family:var(--mono)}
+.wx-card-body{padding:22px 22px 26px}
+.wx-card-body .a-title{font-family:var(--serif);font-weight:700;font-size:19px;line-height:1.4;margin-bottom:14px}
+.wx-p{font-size:13.5px;color:#333;line-height:1.85;margin-bottom:12px}
+.wx-p .hl{color:var(--green-deep);font-weight:600}
+.wx-quote{border-left:3px solid var(--green);background:#f6fbf7;padding:10px 14px;font-size:12.5px;color:#555;border-radius:0 8px 8px 0;margin-bottom:14px}
+.wx-code{background:#1e1e28;color:#c8d3f5;font-family:var(--mono);line-height:1.7;padding:13px 15px;border-radius:8px;overflow:hidden;white-space:pre;font-size:min(11.5px,2.9vw)}
+.wx-code .k{color:#c792ea}.wx-code .s{color:#c3e88d}.wx-code .f{color:#82aaff}
+.wx-card-foot{padding:14px 22px 20px;display:flex;gap:18px;color:#c0b9ad;font-size:13px}
+.wx-card-foot span{display:flex;align-items:center;gap:5px}
+
+/* ---------- 功能区 ---------- */
+section{padding:84px 0}
+.sec-head{margin-bottom:48px}
+.sec-tag{font-family:var(--mono);font-size:12.5px;color:var(--green-deep);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:12px}
+h2{font-family:var(--serif);font-weight:900;font-size:clamp(26px,3.2vw,36px);line-height:1.35}
+.sec-head p{color:var(--ink-soft);margin-top:12px;max-width:38em}
+.features{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.feat{grid-column:span 2;border:1px solid var(--line);border-radius:16px;padding:26px 24px;background:#fff;transition:border-color .2s,transform .2s}
+.feat:hover{border-color:var(--green);transform:translateY(-3px)}
+.feat.wide{grid-column:span 3}
+.feat .ic{width:40px;height:40px;border-radius:11px;background:var(--paper-2);display:grid;place-items:center;font-size:19px;margin-bottom:16px}
+.feat h3{font-family:var(--serif);font-size:17px;font-weight:700;margin-bottom:8px}
+.feat p{font-size:14px;color:var(--ink-soft)}
+.feat p code{font-family:var(--mono);font-size:12px;background:var(--paper-2);padding:1px 6px;border-radius:5px;color:var(--green-ink)}
+
+/* ---------- 步骤区 ---------- */
+.steps{background:var(--ink);color:var(--paper);border-radius:26px;padding:64px 56px;position:relative;overflow:hidden}
+.steps::after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(7,193,96,.22),transparent 70%)}
+.steps .sec-tag{color:#4ade80}
+.steps h2{color:#fff}
+.steps .sec-head p{color:#a8a299}
+.step{display:grid;grid-template-columns:72px 1fr;gap:26px;padding:30px 0;border-top:1px dashed #3d3933;position:relative;z-index:1}
+.step:first-of-type{border-top:none;padding-top:10px}
+.step-num{font-family:var(--serif);font-weight:900;font-size:38px;color:var(--green);line-height:1}
+.step h3{font-size:18px;font-weight:700;color:#fff;margin-bottom:10px}
+.step p{font-size:14.5px;color:#b8b2a8;max-width:44em}
+.step p b{color:#fff;font-weight:600}
+.step p code{font-family:var(--mono);font-size:12.5px;background:#2b2823;padding:2px 8px;border-radius:6px;color:#7ee2a8}
+.step .tip{display:inline-block;margin-top:12px;font-size:13px;color:#7ee2a8;background:rgba(7,193,96,.1);border:1px solid rgba(7,193,96,.3);padding:6px 14px;border-radius:8px}
+
+/* ---------- 主题墙 ---------- */
+.themes{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.theme-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;transition:transform .2s,box-shadow .2s;cursor:default}
+.theme-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(28,26,23,.12)}
+.theme-swatch{height:74px;padding:16px;display:flex;gap:6px;align-items:flex-start}
+.theme-swatch i{display:block;height:8px;border-radius:4px}
+.theme-swatch i:nth-child(1){width:38%}
+.theme-swatch i:nth-child(2){width:24%;opacity:.55}
+.theme-swatch i:nth-child(3){width:15%;opacity:.3}
+.theme-card figcaption{padding:11px 16px;font-size:13.5px;font-weight:600;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.theme-card figcaption small{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);font-weight:400}
+
+/* ---------- 说明细节区 ---------- */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.detail{border:1px solid var(--line);border-radius:16px;background:#fff;padding:28px}
+.detail h3{font-family:var(--serif);font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.detail h3 .n{font-family:var(--mono);font-size:11px;color:var(--green-deep);background:#e4f5ea;border-radius:6px;padding:2px 8px;font-weight:600}
+.detail ul{list-style:none;font-size:14px;color:var(--ink-soft)}
+.detail li{padding:7px 0 7px 22px;position:relative}
+.detail li::before{content:"";position:absolute;left:2px;top:15px;width:7px;height:7px;border-radius:2px;background:var(--green);transform:rotate(45deg)}
+.detail li b{color:var(--ink);font-weight:600}
+.detail li code{font-family:var(--mono);font-size:12px;background:var(--paper-2);padding:1px 6px;border-radius:5px;color:var(--green-ink)}
+
+/* ---------- CTA ---------- */
+.cta{text-align:center;padding:96px 0}
+.cta h2{font-size:clamp(28px,3.6vw,42px)}
+.cta p{color:var(--ink-soft);margin:16px 0 34px}
+footer{border-top:1px solid var(--line);padding:32px 0;font-size:13px;color:var(--ink-faint);display:flex}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;width:100%}
+footer a{text-decoration:none;color:var(--ink-soft)}
+footer a:hover{color:var(--green-deep)}
+
+/* ---------- 入场动效 ---------- */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+
+@media (max-width:960px){
+  .hero{grid-template-columns:minmax(0,1fr);padding:56px 28px 48px}
+  .wx-card{width:100%;max-width:440px;margin:0 auto;transform:none}
+  .features{grid-template-columns:repeat(2,1fr)}
+  .feat,.feat.wide{grid-column:span 2}
+  .themes{grid-template-columns:repeat(2,1fr)}
+  .detail-grid{grid-template-columns:1fr}
+  .steps{padding:44px 28px}
+  .nav-links{display:none}
+}
+@media (max-width:520px){
+  .brand{font-size:16px}
+  .features{grid-template-columns:1fr}
+  .feat,.feat.wide{grid-column:span 1}
+  .themes{grid-template-columns:1fr}
+  section{padding:60px 0}
+  .hero-cta .btn{width:100%;justify-content:center}
+  .step{grid-template-columns:44px 1fr;gap:16px}
+  .step-num{font-size:30px}
+  .steps{border-radius:18px}
+  .cta .hero-cta{flex-direction:column;max-width:300px;margin:0 auto;width:100%}
+  footer .wrap{flex-direction:column;gap:6px}
+}
+</style>
+</head>
+<body class="paper-tex">
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><span class="dot">发</span>Markdown Publisher</a>
+    <div class="nav-links">
+      <a href="#features">功能</a>
+      <a href="#guide">使用说明</a>
+      <a href="#themes">主题</a>
+      <a href="#faq">注意事项</a>
+    </div>
+    <a class="nav-gh" href="https://github.com/volcanicll/obsidian-md-publisher" target="_blank" rel="noopener">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <div>
+    <span class="kicker">Obsidian 插件 · v1.1.5 · MIT 开源</span>
+    <h1>笔记写完，<br>公众号排版<em>一键搞定</em></h1>
+    <p class="hero-sub">Markdown Publisher 把 Obsidian 笔记自动排版成公众号格式：CSS 全部内联、本地图片自动上传、KaTeX 公式与代码高亮开箱即用，直接发布到草稿箱。</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#guide">开始使用</a>
+      <a class="btn btn-ghost" href="https://github.com/volcanicll/obsidian-md-publisher/releases" target="_blank" rel="noopener">下载安装包</a>
+    </div>
+    <div class="hero-meta">
+      <span><b>18</b> 排版主题</span>
+      <span><b>14</b> 代码高亮</span>
+      <span><b>0</b> 手动调格式</span>
+    </div>
+  </div>
+
+  <div class="wx-card" aria-hidden="true">
+    <div class="wx-card-head">
+      <div class="avatar">发</div>
+      <div class="acct">我的公众号</div>
+      <div class="time">昨天 21:30</div>
+    </div>
+    <div class="wx-card-body">
+      <div class="a-title">用 Obsidian 管理知识，一步发布到公众号</div>
+      <div class="wx-p">写笔记时只管专注内容，发布时样式<span class="hl">自动生成</span>，无需再被公众号编辑器折磨。</div>
+      <div class="wx-quote">所有 CSS 会被内联到每个标签上，完美兼容公众号编辑器。</div>
+      <div class="wx-code"><span class="k">const</span> note = <span class="k">await</span> <span class="f">publish</span>(<span class="s">"我的笔记.md"</span>)
+<span class="k">await</span> note.<span class="f">to</span>(<span class="s">"草稿箱"</span>)  <span class="k">// 完成 ✓</span></div>
+    </div>
+    <div class="wx-card-foot">
+      <span>♡ 256</span>
+      <span>↺ 38</span>
+      <span>✎ 12</span>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-tag">Features</span>
+      <h2>为公众号排版而生的每一个细节</h2>
+      <p>公众号编辑器会剥离外部样式表和大多数交互，这份"特殊性"全部由插件替你处理。</p>
+    </div>
+    <div class="features">
+      <div class="feat reveal"><div class="ic">🎨</div><h3>CSS 自动内联</h3><p>基于 unified 渲染管线加 <code>juice</code> 内联，输出 HTML 直接适配公众号编辑器，粘贴即用。</p></div>
+      <div class="feat reveal"><div class="ic">🖼️</div><h3>图片自动上传</h3><p>本地与网络图片自动压缩并上传至微信素材 CDN，GIF 保留动画，SVG 自动转 PNG。</p></div>
+      <div class="feat reveal"><div class="ic">✍️</div><h3>公式与表格</h3><p>KaTeX 数学公式渲染、GFM 表格、任务列表、脚注一应俱全，技术写作无短板。</p></div>
+      <div class="feat wide reveal"><div class="ic">🌓</div><h3>18 种排版主题 × 14 种代码高亮</h3><p>从 Newsprint 纸墨感到 Neo-Brutalism 潮流感，搭配 GitHub、Dracula、Nord 等代码主题，还支持自定义 CSS 覆盖。</p></div>
+      <div class="feat wide reveal"><div class="ic">📤</div><h3>直发草稿箱 + 草稿管理</h3><p>填写标题、作者、摘要后直接调用微信草稿箱 API 存稿；也可随时查看、删除草稿箱中的历史草稿。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="guide">
+  <div class="wrap">
+    <div class="steps reveal">
+      <div class="sec-head">
+        <span class="sec-tag">How to use</span>
+        <h2>三步完成配置与发布</h2>
+        <p>全程约 5 分钟。详细图文步骤见仓库中的 <a href="https://github.com/volcanicll/obsidian-md-publisher/blob/main/docs/USAGE.md" style="color:#7ee2a8">docs/USAGE.md</a>。</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>安装插件</h3>
+          <p>从 <b>Releases</b> 页下载 <code>main.js</code>、<code>manifest.json</code>、<code>styles.css</code> 三个文件，放入仓库的 <code>.obsidian/plugins/md-publisher/</code> 目录，然后在「设置 → 第三方插件」中启用。（社区插件商店审核中）</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>配置微信公众号认证</h3>
+          <p>在「设置 → Markdown Publisher」中二选一：<b>自动模式</b>填入 AppID 与 AppSecret，并把本机 IP 加入公众号后台的 IP 白名单；<b>手动 token 模式</b>直接粘贴后台获取的 access_token，无需白名单。填完点击「测试连接」验证。</p>
+          <span class="tip">💡 没有 IP 白名单条件？选手动 token 模式，token 约 2 小时更换一次</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>预览、复制或发布</h3>
+          <p>点击左侧边栏 <b>📄 图标</b>（或命令面板执行「打开排版预览」）打开实时预览，选好主题后：<b>复制</b>到公众号编辑器粘贴，或点<b>发布</b>直接存入草稿箱，也可打开<b>草稿面板</b>管理历史草稿。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="themes">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-tag">Themes</span>
+      <h2>总有一款排版配得上你的文章</h2>
+      <p>预览面板中即可实时切换。以下为部分主题：</p>
+    </div>
+    <div class="themes">
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fff"><i style="background:#333"></i><i style="background:#666"></i><i style="background:#999"></i></div><figcaption>Professional<small>默认</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#faf4ed"><i style="background:#575279"></i><i style="background:#ea9d34"></i><i style="background:#d7827e"></i></div><figcaption>Ayu Light<small>清新</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#0d1117"><i style="background:#e6edf3"></i><i style="background:#58a6ff"></i><i style="background:#3fb950"></i></div><figcaption>Terminal<small>极客</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#f5f5f4"><i style="background:#1c1917"></i><i style="background:#44403c"></i><i style="background:#78716c"></i></div><figcaption>Apple<small>简约</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#14100f"><i style="background:#f2e9de"></i><i style="background:#ff6b6b"></i><i style="background:#ffd93d"></i></div><figcaption>Midnight<small>暗色</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fdf6e3"><i style="background:#073642"></i><i style="background:#b58900"></i><i style="background:#cb4b16"></i></div><figcaption>Newsprint<small>纸墨</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fff"><i style="background:#000"></i><i style="background:#000;outline:2px solid #000;background:transparent"></i><i style="background:#ffd400"></i></div><figcaption>Neo-Brutalism<small>潮流</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fff7f0"><i style="background:#e0533d"></i><i style="background:#2b2118"></i><i style="background:#d9a679"></i></div><figcaption>Retro<small>复古</small></figcaption></figure>
+    </div>
+    <p style="margin-top:20px;font-size:13px;color:var(--ink-faint)">共 18 种排版主题、14 种代码高亮主题，均支持自定义 CSS 微调。</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-tag">Notes</span>
+      <h2>发布前需要知道的几件事</h2>
+    </div>
+    <div class="detail-grid">
+      <div class="detail reveal">
+        <h3><span class="n">账号</span>需要已认证的公众号</h3>
+        <ul>
+          <li>发布与草稿管理依赖微信<b>草稿箱 API</b>，需要<b>已认证的服务号或订阅号</b></li>
+          <li>AppID / AppSecret 位于「公众平台 → 设置与开发 → 基本配置」</li>
+          <li>个人订阅号完成认证后同样可用</li>
+        </ul>
+      </div>
+      <div class="detail reveal">
+        <h3><span class="n">安全</span>凭证只存在本机</h3>
+        <ul>
+          <li>AppSecret 以<b>明文</b>保存在本机 Obsidian 配置中，请勿共享配置文件</li>
+          <li>自动模式要求把本机 IP 加入公众号的 <b>IP 白名单</b></li>
+          <li>不想配白名单时，改用手动 token 模式即可</li>
+        </ul>
+      </div>
+      <div class="detail reveal">
+        <h3><span class="n">环境</span>桌面端专属</h3>
+        <ul>
+          <li>插件仅支持 <b>Obsidian 桌面版</b>（macOS / Windows / Linux）</li>
+          <li>要求 Obsidian <b>v1.0.0</b> 及以上</li>
+          <li>图片上传前会按 quality 0.8 默认压缩，超大图请提前瘦身</li>
+        </ul>
+      </div>
+      <div class="detail reveal">
+        <h3><span class="n">发布</span>两种产物任选</h3>
+        <ul>
+          <li><b>复制 HTML</b>：粘进公众号编辑器手动微调后再发</li>
+          <li><b>直接发布</b>：进草稿箱，可在手机或网页端终审后群发</li>
+          <li>发布前务必在预览面板确认排版效果</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap reveal">
+    <h2>下一篇文章，从排版工作中解放出来</h2>
+    <p>免费、开源、本地运行。装上它，专注写作就好。</p>
+    <div class="hero-cta" style="justify-content:center">
+      <a class="btn btn-primary" href="https://github.com/volcanicll/obsidian-md-publisher/releases" target="_blank" rel="noopener">立即下载</a>
+      <a class="btn btn-ghost" href="https://github.com/volcanicll/obsidian-md-publisher" target="_blank" rel="noopener">查看源码</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Markdown Publisher · MIT License · Made by <a href="https://github.com/volcanicll" target="_blank" rel="noopener">volcanic</a></span>
+    <span><a href="https://github.com/volcanicll/obsidian-md-publisher/issues" target="_blank" rel="noopener">反馈问题</a> · <a href="https://github.com/volcanicll/obsidian-md-publisher/blob/main/docs/USAGE.md">完整使用说明</a></span>
+  </div>
+</footer>
+
+<script>
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll(".reveal").forEach((el,i)=>{el.style.transitionDelay=(i%3)*60+"ms";io.observe(el)});
+</script>
+</body>
+</html>
