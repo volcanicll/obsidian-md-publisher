@@ -8,6 +8,7 @@ import type {
   WeChatDraftDeleteResponse
 } from './types'
 import { getWeChatErrorMessage } from './types'
+import { sanitizeFilename } from '../image-processor'
 
 const WECHAT_API_BASE = 'https://api.weixin.qq.com/cgi-bin'
 
@@ -161,12 +162,15 @@ export class WeChatApi {
   ): Promise<string> {
     const token = await this.getAccessToken()
 
+    // 文件名中的引号、反斜杠与控制字符会破坏 multipart 请求体结构，先清洗
+    const safeFilename = sanitizeFilename(filename)
+
     const url = `${WECHAT_API_BASE}/media/uploadimg?access_token=${encodeURIComponent(token)}`
 
     // Create form data with the image
     const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2)
 
-    const header = `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${safeFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`
     const footer = `\r\n--${boundary}--\r\n`
     
     const headerBytes = new TextEncoder().encode(header)
@@ -265,22 +269,37 @@ export class WeChatApi {
 
 /**
  * Extract title from markdown content
- * Uses the first H1 heading or returns a default title
+ * Uses the first H1 heading or returns a default title.
+ * H1 中的行内 Markdown 标记（加粗、链接、行内代码等）会被剥离，
+ * 避免星号等符号原样出现在公众号标题里。
  */
 export function extractTitleFromMarkdown(markdown: string): string {
   // Try to find first H1
   const h1Match = markdown.match(/^#\s+(.+)$/m)
   if (h1Match) {
-    return h1Match[1].trim()
+    return stripInlineMarkdown(h1Match[1])
   }
-  
+
   // Try to find title in YAML frontmatter
   const yamlMatch = markdown.match(/^---\n[\s\S]*?title:\s*["']?([^"'\n]+)["']?[\s\S]*?---/m)
   if (yamlMatch) {
-    return yamlMatch[1].trim()
+    return stripInlineMarkdown(yamlMatch[1])
   }
 
   return '未命名文章'
+}
+
+/** 去除行内 Markdown 标记，仅保留可读文本 */
+function stripInlineMarkdown(text: string): string {
+  return text
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .trim()
 }
 
 /**

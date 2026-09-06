@@ -32,9 +32,10 @@
 
 ### 📤 公众号发布
 - **API 直接发布**：一键将文章存入公众号草稿箱
-- **自动图片上传**：本地图片自动压缩、上传到微信 CDN；GIF 保留动画，SVG 自动转 PNG
-- **草稿管理**：在预览面板直接查看、删除草稿箱内容
-- **发布选项**：标题、作者、摘要、原文链接，以及「开启评论」「仅粉丝可评论」
+- **自动图片上传**：本地图片自动压缩、上传到微信 CDN；GIF 保留动画，SVG / WebP 自动转换为受支持格式，PNG 透明通道不丢失
+- **Obsidian 嵌入语法**：支持 `![[图片.png]]` 与 `![[图片.png|300]]` 的排版与上传
+- **草稿管理**：在预览面板分页查看、删除草稿箱内容
+- **发布选项**：标题、作者、摘要、原文链接，以及「开启评论」「仅粉丝可评论」；发布前自动校验微信字段长度限制
 - **KaTeX & GFM**：完整支持数学公式和 GitHub 风格 Markdown（表格、任务列表、脚注等）
 
 ### 🔑 灵活的认证方式
@@ -137,21 +138,22 @@ cd obsidian-md-publisher
 bun install
 bun run dev      # 开发模式（watch）
 bun run build    # 生产构建
-bun run test     # 运行测试
+bun run check    # lint + 类型检查 + 单元测试
 ```
 
 ### 贡献流程
 
 1. Fork 本仓库
 2. 创建特性分支（`git checkout -b feat/your-feature`）
-3. 提交更改，确保 `bun run build` 与 `bun run test` 通过
+3. 提交更改，确保 `bun run check` 与 `bun run build` 通过
 4. 提交 Pull Request，描述清楚改动与动机
 
 ### 🔧 维护与自动化
 
 本项目已建立自动化维护流程，降低重复性维护成本：
 
-- **发布流水线**：[`.github/workflows/release.yml`](.github/workflows/release.yml) 自动构建并发布 Release
+- **CI 流水线**：[`.github/workflows/ci.yml`](.github/workflows/ci.yml) 在 push / PR 时自动执行 lint、类型检查、单元测试与构建
+- **发布流水线**：[`.github/workflows/release.yml`](.github/workflows/release.yml) 在 tag 推送时校验版本一致性、运行完整检查后自动构建并发布 Release
 - **版本管理**：通过 [`.agent/skills/obsidian-version-manager`](.agent/skills/obsidian-version-manager) 自动同步 `package.json`、`manifest.json`、`versions.json` 的版本号
 - **AI 辅助维护**：借助 AI Agent 协助代码审查、PR 评审与发布检查清单，提升维护效率
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render } from '../src/lib/markdown/render'
+import { render, convertWikiEmbeds } from '../src/lib/markdown/render'
 
 describe('render pipeline', () => {
   it('renders markdown to HTML with inlined styles', async () => {
@@ -61,5 +61,45 @@ describe('render pipeline', () => {
     const html = await render({ markdown: md })
     expect(html).toContain('target="_blank"')
     expect(html).toContain('rel="noreferrer noopener"')
+  })
+})
+
+describe('convertWikiEmbeds', () => {
+  it('converts wiki embeds to standard markdown images', async () => {
+    expect(convertWikiEmbeds('![[images/photo.png]]')).toBe('![](images/photo.png)')
+  })
+
+  it('drops the size suffix from wiki embeds', async () => {
+    expect(convertWikiEmbeds('![[photo.png|300]]')).toBe('![](photo.png)')
+  })
+
+  it('encodes spaces in embed paths', async () => {
+    expect(convertWikiEmbeds('![[Pasted image 1.png]]')).toBe('![](Pasted%20image%201.png)')
+  })
+
+  it('leaves code fences and inline code untouched', () => {
+    const md = '```\n![[inside-fence.png]]\n```\n\n`![[inline.png]]`\n\n![[real.png]]'
+    const out = convertWikiEmbeds(md)
+    expect(out).toContain('![[inside-fence.png]]')
+    expect(out).toContain('`![[inline.png]]`')
+    expect(out).toContain('![](real.png)')
+  })
+
+  it('toggles fence state across multiple blocks', () => {
+    const md = '```\n![[a.png]]\n```\n\n![[outside.png]]\n\n~~~\n![[b.png]]\n~~~'
+    const out = convertWikiEmbeds(md)
+    expect(out).toContain('![[a.png]]')
+    expect(out).toContain('![](outside.png)')
+    expect(out).toContain('![[b.png]]')
+  })
+
+  it('keeps non-embed wikilinks as-is', () => {
+    expect(convertWikiEmbeds('[[some note]]')).toBe('[[some note]]')
+  })
+
+  it('renders wiki embeds into img tags', async () => {
+    const html = await render({ markdown: '![[photo.png]]\n' })
+    expect(html).toContain('<img')
+    expect(html).toContain('photo.png')
   })
 })

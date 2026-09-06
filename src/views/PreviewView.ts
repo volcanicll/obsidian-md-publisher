@@ -1,6 +1,12 @@
 import { ItemView, WorkspaceLeaf, MarkdownView, Menu, TFile, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
 import { render } from '../lib/markdown/render'
+import {
+  extractLocalImagePaths,
+  normalizeImagePath,
+  replaceImageSrc,
+  findVaultImageFile
+} from '../lib/image-processor'
 import { markdownStyles } from '../themes/markdown-style'
 import { codeThemes } from '../themes/code-theme'
 import { PublishModal } from './PublishModal'
@@ -261,6 +267,25 @@ export class PreviewView extends ItemView {
     return this.lastMarkdownContent
   }
 
+  /**
+   * 将 HTML 中的本地图片 src 重写为 Obsidian 资源 URL（app://…），
+   * 让预览面板能直接显示 vault 内图片；发布时仍按原路径读取上传。
+   */
+  private resolveLocalImages(html: string): string {
+    const activeFile = this.app.workspace.getActiveFile()
+    const activeFilePath = activeFile?.path ?? null
+    let resolved = html
+    for (const src of extractLocalImagePaths(html)) {
+      const normalized = normalizeImagePath(src, activeFilePath)
+      if (!normalized) continue
+      const file = findVaultImageFile(this.app, normalized)
+      if (file) {
+        resolved = replaceImageSrc(resolved, src, this.app.vault.getResourcePath(file))
+      }
+    }
+    return resolved
+  }
+
   async updatePreview(): Promise<void> {
     if (!this.previewContainer) return
 
@@ -275,7 +300,7 @@ export class PreviewView extends ItemView {
     }
 
     // Use ContextualFragment to avoid direct innerHTML usage
-    const fragment = document.createRange().createContextualFragment(html)
+    const fragment = document.createRange().createContextualFragment(this.resolveLocalImages(html))
     this.previewContainer.appendChild(fragment)
   }
 

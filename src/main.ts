@@ -2,6 +2,7 @@ import { Plugin, WorkspaceLeaf } from 'obsidian'
 import { BmMdSettingsTab } from './settings/SettingsTab'
 import { PreviewView, VIEW_TYPE_PREVIEW } from './views/PreviewView'
 import { DraftsModal } from './views/DraftsModal'
+import { WeChatApi } from './lib/wechat/wechat-api'
 
 interface BmMdSettings {
   markdownStyle: string
@@ -97,6 +98,31 @@ export default class BmMdPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings)
+  }
+
+  /**
+   * 按当前设置构造微信 API 客户端。
+   * 自动模式下 token 刷新后回写并持久化；手动模式下 token 永不自动刷新。
+   */
+  createWeChatApi(): WeChatApi {
+    const s = this.settings
+    return new WeChatApi(
+      {
+        appId: s.wechatAppId,
+        appSecret: s.wechatAppSecret,
+        accessToken: s.useManualToken ? s.manualAccessToken : s.wechatAccessToken,
+        tokenExpireTime: s.useManualToken ? s.manualTokenExpireTime : s.wechatTokenExpireTime,
+        manualMode: s.useManualToken
+      },
+      {
+        onTokenRefresh: async (token, expireTime) => {
+          if (s.useManualToken) return
+          s.wechatAccessToken = token
+          s.wechatTokenExpireTime = expireTime
+          await this.saveSettings()
+        }
+      }
+    )
   }
 
   async activateView() {

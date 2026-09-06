@@ -9,6 +9,11 @@ describe('extractTitleFromMarkdown', () => {
     expect(extractTitleFromMarkdown('# My Article\n\nBody')).toBe('My Article')
   })
 
+  it('strips inline markdown formatting from the heading', () => {
+    expect(extractTitleFromMarkdown('# **Bold** and `code` and [link](https://x.com)'))
+      .toBe('Bold and code and link')
+  })
+
   it('falls back to the frontmatter title when no H1 exists', () => {
     const md = '---\ntitle: "Frontmatter Title"\n---\nBody only\n'
     expect(extractTitleFromMarkdown(md)).toBe('Frontmatter Title')

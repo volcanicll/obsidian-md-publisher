@@ -23,6 +23,49 @@ export interface RenderOptions {
   openLinksInNewWindow?: boolean
 }
 
+/**
+ * 将 Obsidian wiki 嵌入语法（![[path.png]]、![[path.png|300]]）转换为
+ * 标准 Markdown 图片语法，供后续图片处理管线识别。尺寸后缀被丢弃；
+ * 图片尺寸交给主题 CSS 统一控制。
+ * 代码块与行内代码中的 wiki 嵌入保持原样，不做转换。
+ */
+export function convertWikiEmbeds(markdown: string): string {
+  const lines = markdown.split('\n')
+  let inFence = false
+  let fenceMarker = ''
+  let fenceLength = 0
+
+  const converted = lines.map((line) => {
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/)
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0]
+      if (!inFence) {
+        inFence = true
+        fenceMarker = marker
+        fenceLength = fenceMatch[1].length
+      } else if (marker === fenceMarker && fenceMatch[1].length >= fenceLength) {
+        inFence = false
+      }
+      return line
+    }
+    if (inFence) return line
+
+    // 保护行内代码片段
+    return line
+      .split(/(`[^`]*`)/)
+      .map((part) =>
+        part.length > 1 && part.startsWith('`') && part.endsWith('`')
+          ? part
+          : part.replace(/!\[\[([^\]|]+?)(?:\|[^\]]*)?\]\]/g, (_m, path: string) => {
+              // 链接目标中的空格必须编码，否则 CommonMark 不会将其解析为图片
+              return `![](${path.trim().replace(/ /g, '%20')})`
+            })
+      )
+      .join('')
+  })
+  return converted.join('\n')
+}
+
 const sanitizeSchema = {
   ...defaultSchema,
   protocols: {
@@ -96,7 +139,7 @@ export async function render(options: RenderOptions): Promise<string> {
   } = options
 
   const processor = createProcessor({ openLinksInNewWindow })
-  const html = (await processor.process(markdown)).toString()
+  const html = (await processor.process(convertWikiEmbeds(markdown))).toString()
 
   const wrapped = `<section id="bm-md">${html}</section>`
 

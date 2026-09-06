@@ -1,10 +1,11 @@
 import { Modal, App, Setting, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
+import { extractTitleFromMarkdown, extractDigestFromMarkdown } from '../lib/wechat/wechat-api'
 import {
-  WeChatApi,
-  extractTitleFromMarkdown,
-  extractDigestFromMarkdown
-} from '../lib/wechat/wechat-api'
+  isWeChatConfigured,
+  validateWeChatArticleFields,
+  WECHAT_LIMITS
+} from '../lib/wechat/config'
 import { processImages, DEFAULT_IMAGE_OPTIONS, type ProgressCallback } from '../lib/image-processor'
 
 export interface PublishModalOptions {
@@ -53,9 +54,7 @@ export class PublishModal extends Modal {
     contentEl.createEl('h2', { text: '发布到微信公众号草稿', cls: 'bm-md-modal-title' })
 
     // Check if WeChat is configured
-    const configured = this.plugin.settings.wechatAppId && this.plugin.settings.wechatAppSecret
-    const manualConfigured = this.plugin.settings.useManualToken && this.plugin.settings.manualAccessToken
-    if (!configured && !manualConfigured) {
+    if (!isWeChatConfigured(this.plugin.settings)) {
       contentEl.createEl('p', {
         text: '尚未配置微信公众号。请先在 设置 → Markdown Publisher 中填写 AppID 与 AppSecret，或启用手动 token 模式。',
         cls: 'bm-md-warning'
@@ -70,7 +69,7 @@ export class PublishModal extends Modal {
     // Article Title
     new Setting(contentEl)
       .setName('文章标题')
-      .setDesc('将显示在公众号文章顶部')
+      .setDesc(`将显示在公众号文章顶部，最多 ${WECHAT_LIMITS.title} 字`)
       .addText((text) => {
         text.inputEl.classList.add('bm-md-title-input')
         text
@@ -84,7 +83,7 @@ export class PublishModal extends Modal {
     // Article Author
     new Setting(contentEl)
       .setName('作者')
-      .setDesc('可选，显示在标题下方')
+      .setDesc(`可选，显示在标题下方，最多 ${WECHAT_LIMITS.author} 字`)
       .addText((text) => {
         text
           .setPlaceholder('作者名')
@@ -97,7 +96,7 @@ export class PublishModal extends Modal {
     // Article Digest
     new Setting(contentEl)
       .setName('摘要')
-      .setDesc('可选，显示在分享卡片中，最多 120 字')
+      .setDesc(`可选，显示在分享卡片中，最多 ${WECHAT_LIMITS.digest} 字`)
       .addTextArea((text) => {
         text.inputEl.classList.add('bm-md-digest-textarea')
         text
@@ -193,8 +192,14 @@ export class PublishModal extends Modal {
   async publish(): Promise<void> {
     if (this.isPublishing) return
 
-    if (!this.title.trim()) {
-      new Notice('请输入文章标题')
+    // 微信接口对标题/作者/摘要有长度限制，超限时给出明确提示而不是让接口报错
+    const validationError = validateWeChatArticleFields({
+      title: this.title,
+      author: this.author,
+      digest: this.digest
+    })
+    if (validationError) {
+      new Notice(validationError)
       return
     }
 
@@ -203,23 +208,7 @@ export class PublishModal extends Modal {
     this.updateProgress('初始化…')
 
     try {
-      const s = this.plugin.settings
-      const api = new WeChatApi(
-        {
-          appId: s.wechatAppId,
-          appSecret: s.wechatAppSecret,
-          accessToken: s.useManualToken ? s.manualAccessToken : s.wechatAccessToken,
-          tokenExpireTime: s.useManualToken ? s.manualTokenExpireTime : s.wechatTokenExpireTime,
-          manualMode: s.useManualToken
-        },
-        {
-          onTokenRefresh: async (token, expireTime) => {
-            this.plugin.settings.wechatAccessToken = token
-            this.plugin.settings.wechatTokenExpireTime = expireTime
-            await this.plugin.saveSettings()
-          }
-        }
-      )
+      const api = this.plugin.createWeChatApi()
 
       // Get active file path for resolving relative image paths
       const activeFile = this.app.workspace.getActiveFile()

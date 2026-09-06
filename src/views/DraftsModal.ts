@@ -1,39 +1,27 @@
 import { Modal, App, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
-import { WeChatApi } from '../lib/wechat/wechat-api'
 import type { WeChatDraftListItem } from '../lib/wechat/types'
+import { isWeChatConfigured } from '../lib/wechat/config'
+
+const PAGE_SIZE = 20
 
 /**
- * 管理公众号草稿箱：列出草稿、删除草稿。
+ * 管理公众号草稿箱：列出草稿（分页）、删除草稿。
  */
 export class DraftsModal extends Modal {
   private plugin: BmMdPlugin
   private contentElRef: HTMLElement | null = null
   private isLoading = false
+  private currentPage = 0
+  private totalCount: number | null = null
 
   constructor(app: App, plugin: BmMdPlugin) {
     super(app)
     this.plugin = plugin
   }
 
-  private get api(): WeChatApi {
-    const s = this.plugin.settings
-    return new WeChatApi(
-      {
-        appId: s.wechatAppId,
-        appSecret: s.wechatAppSecret,
-        accessToken: s.useManualToken ? s.manualAccessToken : s.wechatAccessToken,
-        tokenExpireTime: s.useManualToken ? s.manualTokenExpireTime : s.wechatTokenExpireTime,
-        manualMode: s.useManualToken,
-      },
-      {
-        onTokenRefresh: async (token, expireTime) => {
-          this.plugin.settings.wechatAccessToken = token
-          this.plugin.settings.wechatTokenExpireTime = expireTime
-          await this.plugin.saveSettings()
-        }
-      }
-    )
+  private get api() {
+    return this.plugin.createWeChatApi()
   }
 
   onOpen(): void {
@@ -43,37 +31,37 @@ export class DraftsModal extends Modal {
     contentEl.createEl('h2', { text: '公众号草稿', cls: 'bm-md-modal-title' })
     this.contentElRef = contentEl.createDiv({ cls: 'bm-md-drafts-content' })
 
-    // 未配置公众号时给出提示
-    if (!this.plugin.settings.wechatAppId || !this.plugin.settings.wechatAppSecret) {
+    // 未配置公众号时给出提示（含手动 token 模式）
+    if (!isWeChatConfigured(this.plugin.settings)) {
       contentEl.createEl('p', {
-        text: '尚未配置微信公众号。请先在 设置 → Markdown Publisher 中填写 AppID 与 AppSecret。',
+        text: '尚未配置微信公众号。请先在 设置 → Markdown Publisher 中填写 AppID 与 AppSecret，或启用手动 token 模式。',
         cls: 'bm-md-warning',
       })
       renderCloseButton(contentEl, '关闭', () => this.close())
       return
     }
 
-    this.renderLoading()
-    void this.loadDrafts()
+    void this.loadDrafts(0)
   }
 
   private renderLoading(): void {
     if (!this.contentElRef) return
     this.contentElRef.empty()
-    const p = this.contentElRef.createEl('p', {
+    this.contentElRef.createEl('p', {
       text: '正在获取草稿列表…',
-      cls: 'bm-md-info',
+      cls: 'bm-md-info bm-md-progress-text',
     })
-    p.classList.add('bm-md-progress-text')
   }
 
-  private async loadDrafts(): Promise<void> {
+  private async loadDrafts(page: number): Promise<void> {
     if (this.isLoading) return
     this.isLoading = true
+    this.currentPage = page
     this.renderLoading()
 
     try {
-      const data = await this.api.listDrafts(0, 20)
+      const data = await this.api.listDrafts(page * PAGE_SIZE, PAGE_SIZE)
+      this.totalCount = data.total_count
       this.renderList(data.item || [])
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
@@ -81,6 +69,11 @@ export class DraftsModal extends Modal {
     } finally {
       this.isLoading = false
     }
+  }
+
+  private get totalPages(): number {
+    if (this.totalCount === null) return 1
+    return Math.max(1, Math.ceil(this.totalCount / PAGE_SIZE))
   }
 
   private renderList(items: WeChatDraftListItem[]): void {
@@ -110,6 +103,38 @@ export class DraftsModal extends Modal {
         void this.confirmAndDelete(item.media_id, title)
       })
     }
+
+    this.renderPagination()
+  }
+
+  /** 分页控制：上一页 / 页码 / 下一页 */
+  private renderPagination(): void {
+    if (!this.contentElRef || this.totalPages <= 1) return
+
+    const pagination = this.contentElRef.createDiv({ cls: 'bm-md-drafts-pagination' })
+
+    const prevBtn = pagination.createEl('button', {
+      text: '上一页',
+      cls: 'bm-md-cancel-btn',
+    })
+    prevBtn.disabled = this.currentPage <= 0
+    prevBtn.addEventListener('click', () => {
+      void this.loadDrafts(this.currentPage - 1)
+    })
+
+    pagination.createSpan({
+      text: `第 ${this.currentPage + 1} / ${this.totalPages} 页`,
+      cls: 'bm-md-drafts-page-info',
+    })
+
+    const nextBtn = pagination.createEl('button', {
+      text: '下一页',
+      cls: 'bm-md-cancel-btn',
+    })
+    nextBtn.disabled = this.currentPage >= this.totalPages - 1
+    nextBtn.addEventListener('click', () => {
+      void this.loadDrafts(this.currentPage + 1)
+    })
   }
 
   private renderError(message: string): void {
@@ -128,9 +153,13 @@ export class DraftsModal extends Modal {
     try {
       await this.api.deleteDraft(mediaId)
       new Notice(`已删除草稿「${title}」`)
-      // 重新加载列表
-      this.isLoading = false
-      void this.loadDrafts()
+      // 当前页删除后为空时回退一页
+      let page = this.currentPage
+      if (this.totalCount !== null && page > 0) {
+        const remainingOnPage = this.totalCount - page * PAGE_SIZE
+        if (remainingOnPage <= 1) page -= 1
+      }
+      void this.loadDrafts(page)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       new Notice(`删除失败：${message}`)

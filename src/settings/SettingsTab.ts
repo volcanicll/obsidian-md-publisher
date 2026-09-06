@@ -2,7 +2,7 @@ import { App, PluginSettingTab, Setting, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
 import { markdownStyles } from '../themes/markdown-style'
 import { codeThemes } from '../themes/code-theme'
-import { WeChatApi } from '../lib/wechat/wechat-api'
+import { isWeChatConfigured } from '../lib/wechat/config'
 
 const MANUAL_TOKEN_TTL_MS = 2 * 60 * 60 * 1000 // 微信 access_token 有效期约 2 小时
 
@@ -198,11 +198,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
       button
         .setButtonText('测试')
         .onClick(async () => {
-          const s = this.plugin.settings
-          const autoReady = s.wechatAppId && s.wechatAppSecret
-          const manualReady = s.useManualToken && s.manualAccessToken
-
-          if (!autoReady && !manualReady) {
+          if (!isWeChatConfigured(this.plugin.settings)) {
             new Notice('请先填写公众号凭证或手动 token')
             return
           }
@@ -212,22 +208,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
           statusEl.setText('')
           statusEl.removeClass('bm-md-status-success', 'bm-md-status-error')
 
-          const api = new WeChatApi(
-            {
-              appId: s.wechatAppId,
-              appSecret: s.wechatAppSecret,
-              accessToken: s.useManualToken ? s.manualAccessToken : s.wechatAccessToken,
-              tokenExpireTime: s.useManualToken ? s.manualTokenExpireTime : s.wechatTokenExpireTime,
-              manualMode: s.useManualToken
-            },
-            {
-              onTokenRefresh: async (token, expireTime) => {
-                this.plugin.settings.wechatAccessToken = token
-                this.plugin.settings.wechatTokenExpireTime = expireTime
-                await this.plugin.saveSettings()
-              }
-            }
-          )
+          const api = this.plugin.createWeChatApi()
 
           try {
             // 拉取一条草稿即可验证 token 与接口连通性
