@@ -1,6 +1,6 @@
 {
   "name": "obsidian-md-publisher",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "description": "One-click publish Markdown notes to WeChat Official Account.",
   "main": "main.js",
   "scripts": {
