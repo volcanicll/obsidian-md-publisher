@@ -286,10 +286,9 @@ export class PreviewView extends ItemView {
       return
     }
 
-    // 用 <template> 解析已消毒的 HTML，避免直接操作文档 DOM
-    const template = document.createElement('template')
-    template.innerHTML = this.resolveLocalImages(html)
-    this.previewContainer.appendChild(template.content)
+    // DOMParser 解析已消毒的 HTML，再整体迁移节点，避免直接写 innerHTML
+    const doc = new DOMParser().parseFromString(this.resolveLocalImages(html), 'text/html')
+    this.previewContainer.replaceChildren(...Array.from(doc.body.childNodes))
   }
 
   async openPublishModal(): Promise<void> {

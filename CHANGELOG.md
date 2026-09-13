@@ -14,7 +14,7 @@
 - TypeScript 开启 `useUnknownInCatchVariables`，收窄 catch 类型
 - 构建脚本移除 `builtin-modules` 依赖，内置模块清单直接维护
 - 样式移除 `!important`，改用双类选择器提升特异性
-- README 增加英文简介；manifest `minAppVersion` 提升至 1.2.0
+- README 增加英文简介；manifest `minAppVersion` 提升至 1.7.2（revealLeaf 等 API 的实际要求）
 
 ---
 
