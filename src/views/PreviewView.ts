@@ -198,26 +198,13 @@ export class PreviewView extends ItemView {
     }
 
     try {
-      // 优先使用 ClipboardItem（桌面 Chromium），否则回退到富文本复制
-      if (typeof ClipboardItem !== 'undefined') {
-        const htmlBlob = new Blob([html], { type: 'text/html' })
-        const textBlob = new Blob([html], { type: 'text/plain' })
-        const item = new ClipboardItem({
-          'text/html': htmlBlob,
-          'text/plain': textBlob,
-        })
-        await navigator.clipboard.write([item])
-      } else {
-        const textarea = document.createElement('textarea')
-        textarea.value = html
-        document.body.appendChild(textarea)
-        textarea.select()
-        const ok = document.execCommand('copy')
-        document.body.removeChild(textarea)
-        if (!ok) {
-          throw new Error('execCommand 复制失败')
-        }
-      }
+      const htmlBlob = new Blob([html], { type: 'text/html' })
+      const textBlob = new Blob([html], { type: 'text/plain' })
+      const item = new ClipboardItem({
+        'text/html': htmlBlob,
+        'text/plain': textBlob,
+      })
+      await navigator.clipboard.write([item])
       new Notice('已复制公众号 HTML 格式')
     } catch (err) {
       console.error('复制失败:', err)
@@ -247,11 +234,11 @@ export class PreviewView extends ItemView {
     }
   }
 
-  private debounceTimer: ReturnType<typeof setTimeout> | null = null
+  private debounceTimer: number | null = null
 
   debounceUpdatePreview(): void {
-    if (this.debounceTimer) clearTimeout(this.debounceTimer)
-    this.debounceTimer = setTimeout(() => {
+    if (this.debounceTimer) window.clearTimeout(this.debounceTimer)
+    this.debounceTimer = window.setTimeout(() => {
       void this.updatePreview()
     }, 300)
   }
@@ -299,9 +286,10 @@ export class PreviewView extends ItemView {
       return
     }
 
-    // Use ContextualFragment to avoid direct innerHTML usage
-    const fragment = document.createRange().createContextualFragment(this.resolveLocalImages(html))
-    this.previewContainer.appendChild(fragment)
+    // 用 <template> 解析已消毒的 HTML，避免直接操作文档 DOM
+    const template = document.createElement('template')
+    template.innerHTML = this.resolveLocalImages(html)
+    this.previewContainer.appendChild(template.content)
   }
 
   async openPublishModal(): Promise<void> {
@@ -326,7 +314,7 @@ export class PreviewView extends ItemView {
   }
 
   onClose(): Promise<void> {
-    if (this.debounceTimer) clearTimeout(this.debounceTimer)
+    if (this.debounceTimer) window.clearTimeout(this.debounceTimer)
     return Promise.resolve()
   }
 }

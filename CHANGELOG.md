@@ -2,6 +2,22 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。
 
+## [1.2.1] - 2026-09-13
+
+### Changed
+
+- 🛡️ **自动审核整改**：针对 Obsidian Community 自动扫描的整改与加固
+- 预览面板改用 `<template>` 解析已消毒 HTML，替代 `createContextualFragment`
+- `setTimeout` / `clearTimeout` 改用 `window.` 前缀（弹窗窗口兼容性）
+- 删除草稿确认改用 Obsidian 原生 Modal，替代 `window.confirm`
+- 移除已废弃的 `document.execCommand` 复制回退路径
+- TypeScript 开启 `useUnknownInCatchVariables`，收窄 catch 类型
+- 构建脚本移除 `builtin-modules` 依赖，内置模块清单直接维护
+- 样式移除 `!important`，改用双类选择器提升特异性
+- README 增加英文简介；manifest `minAppVersion` 提升至 1.2.0
+
+---
+
 ## [1.2.0] - 2026-09-06
 
 ### Added

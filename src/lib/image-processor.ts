@@ -76,7 +76,7 @@ export function isWeChatSupportedImageType(contentType: string): boolean {
  */
 export function sanitizeFilename(filename: string, fallback = 'image'): string {
   const base = filename.split(/[\\/]/).pop() || ''
-  const cleaned = base.replace(/["\r\n\\]/g, '').replace(/[\x00-\x1f\x7f]/g, '').trim()
+  const cleaned = base.replace(/["\r\n\\]/g, '').replace(/\p{Cc}/gu, '').trim()
   return cleaned || fallback
 }
 
@@ -246,7 +246,7 @@ function loadImageElement(data: ArrayBuffer, mime?: string): Promise<HTMLImageEl
     img.onload = () => {
       resolve(img)
       // 保留 URL 直到绘制完成后再回收：onload 之后 canvas.drawImg 仍需可解码
-      setTimeout(() => URL.revokeObjectURL(url), 0)
+      window.setTimeout(() => URL.revokeObjectURL(url), 0)
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)

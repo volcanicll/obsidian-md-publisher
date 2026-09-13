@@ -327,8 +327,8 @@
 	border: 1px solid var(--background-modifier-border);
 }
 
-.bm-md-hidden {
-	display: none !important;
+.bm-md-progress-container.bm-md-hidden {
+  display: none;
 }
 
 .bm-md-progress-text {

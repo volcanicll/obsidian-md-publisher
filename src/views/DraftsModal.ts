@@ -1,9 +1,48 @@
-import { Modal, App, Notice } from 'obsidian'
+import { Modal, App, Notice, Setting } from 'obsidian'
 import type BmMdPlugin from '../main'
 import type { WeChatDraftListItem } from '../lib/wechat/types'
 import { isWeChatConfigured } from '../lib/wechat/config'
 
 const PAGE_SIZE = 20
+
+/**
+ * 删除草稿的确认弹窗（Obsidian 原生样式，替代 window.confirm）。
+ */
+class ConfirmDeleteModal extends Modal {
+  private title: string
+  private onConfirm: () => void
+
+  constructor(app: App, title: string, onConfirm: () => void) {
+    super(app)
+    this.title = title
+    this.onConfirm = onConfirm
+  }
+
+  onOpen(): void {
+    const { contentEl } = this
+    contentEl.empty()
+    contentEl.createEl('p', {
+      text: `确定删除草稿「${this.title}」吗？此操作不可撤销。`,
+      cls: 'bm-md-warning',
+    })
+    new Setting(contentEl).addButton((button) => {
+      button
+        .setButtonText('删除')
+        .setWarning()
+        .onClick(() => {
+          this.close()
+          this.onConfirm()
+        })
+    })
+    new Setting(contentEl).addButton((button) => {
+      button.setButtonText('取消').onClick(() => this.close())
+    })
+  }
+
+  onClose(): void {
+    this.contentEl.empty()
+  }
+}
 
 /**
  * 管理公众号草稿箱：列出草稿（分页）、删除草稿。
@@ -147,9 +186,12 @@ export class DraftsModal extends Modal {
   }
 
   private async confirmAndDelete(mediaId: string, title: string): Promise<void> {
-    const confirmed = window.confirm(`确定删除草稿「${title}」吗？此操作不可撤销。`)
-    if (!confirmed) return
+    new ConfirmDeleteModal(this.app, title, () => {
+      void this.deleteDraft(mediaId, title)
+    }).open()
+  }
 
+  private async deleteDraft(mediaId: string, title: string): Promise<void> {
     try {
       await this.api.deleteDraft(mediaId)
       new Notice(`已删除草稿「${title}」`)

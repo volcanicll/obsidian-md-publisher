@@ -3,10 +3,12 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Obsidian-1.0%2B-purple?style=for-the-badge&logo=obsidian" alt="Obsidian Version">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/version-1.2.0-green?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.1-green?style=for-the-badge" alt="Version">
 </p>
 
 > **一键发布 Markdown 到微信公众号**
+
+Markdown Publisher is an Obsidian plugin that converts Markdown notes into beautifully typeset WeChat Official Account articles in one click — CSS fully inlined, local images uploaded automatically, delivered straight to your WeChat draft box.
 
 一款专注于微信公众号排版的 Obsidian 插件：将 Markdown 笔记转换为适合公众号的精美排版，自动内联 CSS、自动上传本地图片，直接存入公众号草稿箱。
 

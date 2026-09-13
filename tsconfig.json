@@ -11,6 +11,7 @@
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,
+    "useUnknownInCatchVariables": true,
     "lib": [
       "DOM",
       "ES2018"
