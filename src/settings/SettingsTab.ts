@@ -204,7 +204,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
           }
 
           button.setButtonText('测试中…')
-          button.setDisabled(true)
+          button.buttonEl.disabled = true
           statusEl.setText('')
           statusEl.removeClass('bm-md-status-success', 'bm-md-status-error')
 
@@ -223,7 +223,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
             new Notice('连接失败：' + message)
           } finally {
             button.setButtonText('测试')
-            button.setDisabled(false)
+            button.buttonEl.disabled = false
           }
         })
     })

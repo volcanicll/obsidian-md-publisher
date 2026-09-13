@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Obsidian-1.0%2B-purple?style=for-the-badge&logo=obsidian" alt="Obsidian Version">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/version-1.2.1-green?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.2-green?style=for-the-badge" alt="Version">
 </p>
 
 > **一键发布 Markdown 到微信公众号**
