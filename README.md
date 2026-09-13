@@ -159,6 +159,15 @@ bun run check    # lint + 类型检查 + 单元测试
 
 如果你在使用中遇到问题，欢迎在 [Issues](https://github.com/volcanicll/obsidian-md-publisher/issues) 提出。
 
+## 📦 第三方组件
+
+插件打包了以下开源项目的产物，在此致谢（许可均为 MIT 或兼容许可）：
+
+- [highlight.js](https://highlightjs.org/) — 代码高亮引擎与官方主题样式
+- [Dracula 主题](https://github.com/dracula/highlight.js) — 高亮主题（vendored 自 highlight.js v10 官方样式）
+- [KaTeX](https://katex.org/) — 数学公式排版与内联样式
+- [juice](https://github.com/Automattic/juice) — CSS 内联处理
+
 ## 📄 开源协议
 
 [MIT](LICENSE)
