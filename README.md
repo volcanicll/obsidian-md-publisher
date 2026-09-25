@@ -8,9 +8,7 @@
 
 > **一键发布 Markdown 到微信公众号**
 
-Markdown Publisher is an Obsidian plugin that converts Markdown notes into beautifully typeset WeChat Official Account articles in one click — CSS fully inlined, local images uploaded automatically, delivered straight to your WeChat draft box.
-
-一款专注于微信公众号排版的 Obsidian 插件：将 Markdown 笔记转换为适合公众号的精美排版，自动内联 CSS、自动上传本地图片，直接存入公众号草稿箱。
+在 Obsidian 里写好笔记，一键变成排版精美的公众号文章：样式自动处理好，图片自动上传到微信，直接存入草稿箱，不需要再手动调整格式。
 
 <p align="center">
   <a href="https://volcanicll.github.io/obsidian-md-publisher/">🌍 在线落地页</a> ·
@@ -19,30 +17,25 @@ Markdown Publisher is an Obsidian plugin that converts Markdown notes into beaut
   <a href="https://github.com/volcanicll/obsidian-md-publisher/issues">💬 反馈问题</a>
 </p>
 
-## ✨ 核心功能
+## ✨ 它能做什么
 
-### 🎨 排版主题
-精心设计的 18 种排版主题，适配各种内容风格：
-- **极简风**: Ayu Light、Professional、GreenSimple
-- **开发者**: Terminal、Apple、Midnight
-- **创意风**: Bauhaus、Neo-Brutalism、Maximalism、Playful Geometric
-- **经典风**: Retro、Newsprint、Novel、Lawning
-- **自然风**: Botanical、Organic、Blueprint、Sketch
+### 🎨 精心设计的排版主题
+内置 11 种排版主题，覆盖常见的公众号内容风格，选定后整篇文章的标题、引用、表格、代码都会呈现统一的设计感：
+- **经典风**: Ayu Light、Apple、Bauhaus、Lawning、Novel
+- **设计师系列**: 墨韵 Ink（新中式书卷）、科技蓝 Tech（深度长文）、青瓷 Celadon（清新卡片）、志刊 Editorial（黑白杂志）、暖橘 Ember（温暖情绪）、极简 Mono（纯文字排版），整体效果见 [主题设计稿](docs/theme-preview.html)
 
-### 🌈 代码高亮主题
-14 款官方 [highlight.js](https://highlightjs.org/) 主题：GitHub (明/暗)、Monokai、Dracula、Nord、One Dark/Light、Atom One Dark/Light、VS/VS2015、Xcode、Kimbie (明/暗)。
+另有 14 款代码高亮主题（GitHub、Monokai、Dracula、Nord 等），写技术文章时同样得体。
 
-### 📤 公众号发布
-- **API 直接发布**：一键将文章存入公众号草稿箱
-- **自动图片上传**：本地图片自动压缩、上传到微信 CDN；GIF 保留动画，SVG / WebP 自动转换为受支持格式，PNG 透明通道不丢失
-- **Obsidian 嵌入语法**：支持 `![[图片.png]]` 与 `![[图片.png|300]]` 的排版与上传
-- **草稿管理**：在预览面板分页查看、删除草稿箱内容
-- **发布选项**：标题、作者、摘要、原文链接，以及「开启评论」「仅粉丝可评论」；发布前自动校验微信字段长度限制
-- **KaTeX & GFM**：完整支持数学公式和 GitHub 风格 Markdown（表格、任务列表、脚注等）
+### 📤 一键发布到公众号
+- **直接存入草稿箱**：填好标题、作者、摘要，一键送达公众号草稿箱，打开手机即可预览发表
+- **复制粘贴也可以**：不想配置 API？点击复制，到公众号后台粘贴，排版原样保留
+- **图片全自动**：文中的本地图片自动压缩并上传到微信 CDN，动图保留动画，格式不兼容时自动转换，不用手动处理任何一张图
+- **草稿箱管理**：在插件里就能分页查看、删除草稿箱内容
+- **数学公式与表格**：支持 LaTeX 公式、表格、任务列表、脚注等完整 Markdown 能力
 
-### 🔑 灵活的认证方式
-- **自动模式**：使用 AppID/AppSecret 自动获取 token（需将本机 IP 加入公众号白名单）
-- **手动 token 模式**：绕过 IP 白名单限制，粘贴 access_token 即可使用（有效期约 2 小时）
+### 🔑 简单灵活的授权
+- **自动模式**：填入公众号的 AppID / AppSecret 即可长期使用
+- **手动 token 模式**：不想配 IP 白名单，或家庭宽带 IP 经常变化？粘贴一个临时 token 就能用
 
 ## 📦 安装
 
@@ -58,23 +51,14 @@ Markdown Publisher is an Obsidian plugin that converts Markdown notes into beaut
    ```
 3. 在 **设置 → 社区插件** 中启用
 
-### 开发者构建
-
-```bash
-git clone https://github.com/volcanicll/obsidian-md-publisher.git
-cd obsidian-md-publisher
-bun install      # 或 npm install
-bun run build    # 或 npm run build
-```
-
 ## 🚀 快速开始
 
-1. **打开预览**: 点击侧边栏 📄 图标或运行 `打开排版预览` 命令
-2. **选择样式**: 在预览面板顶部选择排版主题与代码高亮主题
-3. **复制或发布**:
-   - 点击 **复制** 复制公众号 HTML 格式（含内联样式），可粘贴到公众号编辑器
-   - 点击 **发布** 直接存入公众号草稿箱（需先配置）
-   - 点击 **草稿** 管理公众号草稿箱
+1. **打开预览**：点击侧边栏 📄 图标，或运行 `打开排版预览` 命令
+2. **挑一个主题**：在预览面板顶部切换排版主题与代码高亮，实时看到效果
+3. **复制或发布**：
+   - 点 **复制**，到公众号编辑器粘贴即可
+   - 点 **发布**，直接存入公众号草稿箱（需先完成下方配置）
+   - 点 **草稿**，管理公众号草稿箱
 
 ## ⚙️ 微信公众号配置
 
@@ -87,7 +71,7 @@ bun run build    # 或 npm run build
 
 > ⚠️ **注意**：Obsidian 会将 AppSecret 明文保存在本机配置中。若担心泄露，建议使用下方的手动 token 模式。
 
-### 手动 token 模式（推荐用于 IP 频繁变化）
+### 手动 token 模式（IP 经常变化时推荐）
 
 1. 从公众号后台 / 开发工具获取一个 `access_token`
 2. 在 **设置 → 微信公众号** 中开启 **使用手动 token**
@@ -95,71 +79,9 @@ bun run build    # 或 npm run build
 
 这种方式不需要配置 IP 白名单，特别适合家庭宽带、VPN、移动网络等 IP 经常变化的场景。
 
-## 🏗️ 项目结构
+## 🤝 反馈与贡献
 
-```
-docs/
-├── index.html                 # 项目落地页（GitHub Pages 部署）
-└── USAGE.md                   # 完整使用说明
-src/
-├── main.ts                    # 插件生命周期与注册
-├── lib/
-│   ├── markdown/render.ts     # Unified/remark/rehype 渲染管线（含 KaTeX CSS 内联）
-│   ├── wechat/                # 微信 API、认证与草稿管理
-│   └── image-processor.ts     # 本地图片提取、压缩、SVG 转换与上传
-├── themes/
-│   ├── markdown-style/        # 18 种排版主题
-│   └── code-theme/            # 14 种官方 highlight.js 主题
-├── views/
-│   ├── PreviewView.ts         # 实时预览面板
-│   ├── PublishModal.ts        # 发布界面
-│   └── DraftsModal.ts         # 草稿箱管理
-└── settings/
-    └── SettingsTab.ts         # 插件设置 UI
-tests/                         # vitest 单元测试
-```
-
-## 🛠️ 技术栈
-
-- **运行时 / 构建**: [Bun](https://bun.sh/) + [esbuild](https://esbuild.github.io/)
-- **Markdown**: [unified](https://unifiedjs.com/) + [remark](https://github.com/remarkjs/remark) + [rehype](https://github.com/rehypejs/rehype)
-- **样式处理**: [juice](https://github.com/Automattic/juice)（CSS 内联）
-- **数学公式**: [KaTeX](https://katex.org/)
-- **代码高亮**: [highlight.js](https://highlightjs.org/)
-- **测试**: [vitest](https://vitest.dev/)
-
-## 🤝 贡献
-
-欢迎贡献！无论是新主题、Bug 修复还是文档改进，都非常欢迎。
-
-### 本地开发
-
-```bash
-git clone https://github.com/volcanicll/obsidian-md-publisher.git
-cd obsidian-md-publisher
-bun install
-bun run dev      # 开发模式（watch）
-bun run build    # 生产构建
-bun run check    # lint + 类型检查 + 单元测试
-```
-
-### 贡献流程
-
-1. Fork 本仓库
-2. 创建特性分支（`git checkout -b feat/your-feature`）
-3. 提交更改，确保 `bun run check` 与 `bun run build` 通过
-4. 提交 Pull Request，描述清楚改动与动机
-
-### 🔧 维护与自动化
-
-本项目已建立自动化维护流程，降低重复性维护成本：
-
-- **CI 流水线**：[`.github/workflows/ci.yml`](.github/workflows/ci.yml) 在 push / PR 时自动执行 lint、类型检查、单元测试与构建
-- **发布流水线**：[`.github/workflows/release.yml`](.github/workflows/release.yml) 在 tag 推送时校验版本一致性、运行完整检查后自动构建并发布 Release
-- **版本管理**：通过 [`.agent/skills/obsidian-version-manager`](.agent/skills/obsidian-version-manager) 自动同步 `package.json`、`manifest.json`、`versions.json` 的版本号
-- **AI 辅助维护**：借助 AI Agent 协助代码审查、PR 评审与发布检查清单，提升维护效率
-
-如果你在使用中遇到问题，欢迎在 [Issues](https://github.com/volcanicll/obsidian-md-publisher/issues) 提出。
+遇到问题或有新主题的想法，欢迎在 [Issues](https://github.com/volcanicll/obsidian-md-publisher/issues) 提出；代码贡献请参考仓库内的开发文档。
 
 ## 📦 第三方组件
 
