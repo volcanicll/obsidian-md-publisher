@@ -77,7 +77,7 @@ const COMMON_STYLE = `
 }
 `
 
-export const markdownStyles: MarkdownStyle[] = [
+const markdownStylesCore: MarkdownStyle[] = [
   {
     id: 'ayu-light',
     name: 'Ayu Light',
@@ -92,185 +92,12 @@ export const markdownStyles: MarkdownStyle[] = [
     `
   },
   {
-    id: 'professional',
-    name: 'Professional',
-    css: COMMON_STYLE + `
-#bm-md { font-family: Georgia, "Times New Roman", serif; line-height: 1.9; color: #333; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #1a1a1a; font-weight: 700; }
-#bm-md h2 { border-bottom: 1px solid #eee; padding-bottom: 8px; }
-#bm-md a { color: #0066cc; text-decoration: none; }
-#bm-md blockquote { border-left: 4px solid #0066cc; background: #f9f9f9; padding: 12px 16px; font-style: italic; }
-#bm-md code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; }
-#bm-md pre { background: #f4f4f4; padding: 16px; border: 1px solid #e0e0e0; }
-    `
-  },
-  {
-    id: 'green-simple',
-    name: 'GreenSimple',
-    css: COMMON_STYLE + `
-#bm-md { font-family: -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.8; color: #333; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #2e7d32; font-weight: 600; }
-#bm-md h2 { border-left: 4px solid #2e7d32; padding-left: 12px; }
-#bm-md a { color: #43a047; text-decoration: none; }
-#bm-md blockquote { border-left: 4px solid #81c784; background: #f1f8e9; padding: 12px 16px; }
-#bm-md code { background: #e8f5e9; padding: 2px 6px; border-radius: 4px; color: #2e7d32; }
-#bm-md pre { background: #f1f8e9; padding: 16px; }
-    `
-  },
-  {
-    id: 'terminal',
-    name: 'Terminal',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "SF Mono", Monaco, Consolas, monospace; line-height: 1.7; color: #00ff00; background: #1e1e1e; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #00ff00; font-weight: 600; }
-#bm-md h1::before { content: "# "; }
-#bm-md h2::before { content: "## "; }
-#bm-md a { color: #00bcd4; text-decoration: none; }
-#bm-md blockquote { border-left: 4px solid #00ff00; background: #2d2d2d; padding: 12px 16px; color: #aaa; }
-#bm-md code { background: #2d2d2d; padding: 2px 6px; border-radius: 4px; color: #ff6b6b; }
-#bm-md pre { background: #0d0d0d; padding: 16px; border: 1px solid #333; }
-    `
-  },
-  {
-    id: 'retro',
-    name: 'Retro',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Courier New", Courier, monospace; line-height: 1.8; color: #3d2914; background: #f4e4c1; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #8b4513; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-#bm-md h1 { border-bottom: 3px double #8b4513; }
-#bm-md a { color: #b22222; text-decoration: none; }
-#bm-md blockquote { border-left: 4px solid #8b4513; background: #efe0c0; padding: 12px 16px; }
-#bm-md code { background: #d4c4a0; padding: 2px 6px; border-radius: 0; }
-#bm-md pre { background: #efe0c0; padding: 16px; border: 2px solid #8b4513; }
-    `
-  },
-  {
-    id: 'bauhaus',
-    name: 'Bauhaus',
-    css: COMMON_STYLE + `
-#bm-md { font-family: Futura, "Trebuchet MS", sans-serif; line-height: 1.7; color: #1a1a1a; }
-#bm-md h1 { color: #e63946; font-weight: 900; text-transform: uppercase; }
-#bm-md h2 { color: #1d3557; background: #f1faee; padding: 8px 16px; border-radius: 4px; }
-#bm-md h3 { color: #457b9d; }
-#bm-md a { color: #e63946; font-weight: 600; text-decoration: none; }
-#bm-md blockquote { border-left: 8px solid #e63946; background: #f1faee; padding: 12px 16px; }
-#bm-md code { background: #a8dadc; padding: 2px 6px; border-radius: 0; }
-#bm-md pre { background: #1d3557; color: #f1faee; padding: 16px; }
-    `
-  },
-  {
-    id: 'blueprint',
-    name: 'Blueprint',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Segoe UI", Roboto, sans-serif; line-height: 1.8; color: #fff; background: #0a4d8c; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #fff; font-weight: 600; }
-#bm-md h1 { border-bottom: 2px solid #fff; }
-#bm-md a { color: #7fc8f8; text-decoration: none; }
-#bm-md blockquote { border-left: 4px solid #fff; background: rgba(255,255,255,0.1); padding: 12px 16px; }
-#bm-md code { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; }
-#bm-md pre { background: #063a69; padding: 16px; }
-    `
-  },
-  {
-    id: 'botanical',
-    name: 'Botanical',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Palatino Linotype", Palatino, serif; line-height: 1.9; color: #3c4a3e; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #2d5a27; font-weight: 600; }
-#bm-md a { color: #6b8e23; text-decoration: none; }
-#bm-md blockquote { border-left: 4px solid #6b8e23; background: #f0f7e6; padding: 12px 16px; }
-#bm-md code { background: #e8f4e0; padding: 2px 6px; border-radius: 4px; color: #2d5a27; }
-#bm-md pre { background: #f0f7e6; padding: 16px; }
-    `
-  },
-  {
-    id: 'maximalism',
-    name: 'Maximalism',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Comic Sans MS", cursive, sans-serif; line-height: 1.8; color: #333; background: linear-gradient(135deg, #fff5f5, #f5f5ff, #f5fff5); }
-#bm-md h1 { color: #ff1493; text-shadow: 2px 2px #ffd700; }
-#bm-md h2 { color: #00ced1; }
-#bm-md h3 { color: #ff6347; }
-#bm-md a { color: #ff1493; font-weight: 700; text-decoration: none; }
-#bm-md blockquote { border-left: 6px solid #ff1493; background: #fffacd; padding: 12px 16px; }
-#bm-md code { background: #e0ffff; padding: 2px 6px; border-radius: 8px; color: #ff6347; }
-#bm-md pre { background: #fffacd; padding: 16px; border: 2px dashed #ff1493; }
-    `
-  },
-  {
-    id: 'neo-brutalism',
-    name: 'Neo-Brutalism',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Arial Black", Gadget, sans-serif; line-height: 1.7; color: #000; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #000; font-weight: 900; text-transform: uppercase; }
-#bm-md h1 { background: #ffde59; padding: 8px 16px; border: 3px solid #000; display: inline-block; }
-#bm-md h2 { border-bottom: 3px solid #000; }
-#bm-md a { color: #000; background: #ffde59; font-weight: 700; text-decoration: none; }
-#bm-md blockquote { border: 3px solid #000; background: #f0f0f0; padding: 12px 16px; }
-#bm-md code { background: #ffde59; padding: 2px 6px; border: 2px solid #000; font-family: monospace; }
-#bm-md pre { background: #f0f0f0; padding: 16px; border: 3px solid #000; }
-    `
-  },
-  {
-    id: 'newsprint',
-    name: 'Newsprint',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Times New Roman", Times, serif; line-height: 1.6; color: #1a1a1a; column-count: 1; }
-#bm-md h1 { font-weight: 900; border-bottom: 4px double #000; text-transform: uppercase; }
-#bm-md h2 { font-weight: 700; }
-#bm-md a { color: #0056b3; text-decoration: underline; }
-#bm-md blockquote { border-left: 3px solid #666; padding-left: 16px; font-style: italic; color: #444; }
-#bm-md code { background: #f0f0f0; padding: 2px 4px; font-family: "Courier New", monospace; }
-#bm-md pre { background: #f8f8f8; padding: 16px; border: 1px solid #ddd; }
-    `
-  },
-  {
-    id: 'organic',
-    name: 'Organic',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Segoe UI", Roboto, sans-serif; line-height: 1.8; color: #4a4a4a; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #6b4423; font-weight: 600; }
-#bm-md a { color: #8fbc8f; text-decoration: none; }
-#bm-md blockquote { border-left: 4px solid #deb887; background: #faf0e6; padding: 12px 16px; border-radius: 0 8px 8px 0; }
-#bm-md code { background: #f5f5dc; padding: 2px 6px; border-radius: 4px; }
-#bm-md pre { background: #faf0e6; padding: 16px; }
-    `
-  },
-  {
-    id: 'playful-geometric',
-    name: 'Playful Geometric',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Poppins", "Segoe UI", sans-serif; line-height: 1.8; color: #333; }
-#bm-md h1 { color: #6c5ce7; font-weight: 700; }
-#bm-md h2 { color: #00b894; padding-left: 16px; border-left: 6px solid #fd79a8; }
-#bm-md h3 { color: #fdcb6e; }
-#bm-md a { color: #e17055; font-weight: 600; text-decoration: none; }
-#bm-md blockquote { border-left: 6px solid #6c5ce7; background: #f8f9fa; padding: 12px 16px; border-radius: 0 12px 12px 0; }
-#bm-md code { background: #dfe6e9; padding: 2px 8px; border-radius: 6px; }
-#bm-md pre { background: #2d3436; color: #dfe6e9; padding: 16px; border-radius: 12px; }
-    `
-  },
-  {
-    id: 'sketch',
-    name: 'Sketch',
-    css: COMMON_STYLE + `
-#bm-md { font-family: "Segoe UI", sans-serif; line-height: 1.8; color: #333; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #2c3e50; font-weight: 600; }
-#bm-md h1 { border-bottom: 2px dashed #3498db; padding-bottom: 8px; }
-#bm-md a { color: #3498db; text-decoration: none; }
-#bm-md blockquote { border-left: 4px dashed #e74c3c; background: #fdf2f2; padding: 12px 16px; }
-#bm-md code { background: #ecf0f1; padding: 2px 6px; border-radius: 4px; }
-#bm-md pre { background: #2c3e50; color: #ecf0f1; padding: 16px; }
-    `
-  },
-  {
     id: 'apple',
     name: 'Apple',
     css: COMMON_STYLE + `
 #bm-md { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; line-height: 1.6; color: #1d1d1f; letter-spacing: -0.01em; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #1d1d1f; font-weight: 700; letter-spacing: -0.015em; }
 #bm-md a { color: #0066cc; text-decoration: none; }
-#bm-md a:hover { text-decoration: underline; }
 #bm-md blockquote { border-left: 4px solid #d2d2d7; padding-left: 16px; color: #86868b; font-style: italic; }
 #bm-md code { font-family: "SF Mono", Menlo, monospace; font-size: 0.9em; background: #f5f5f7; padding: 2px 6px; border-radius: 4px; color: #1d1d1f; }
 #bm-md pre { background: #f5f5f7; padding: 16px; border-radius: 8px; overflow-x: auto; color: #1d1d1f; font-family: "SF Mono", Menlo, monospace; line-height: 1.4; }
@@ -279,19 +106,17 @@ export const markdownStyles: MarkdownStyle[] = [
     `
   },
   {
-    id: 'midnight',
-    name: 'Midnight',
+    id: 'bauhaus',
+    name: 'Bauhaus',
     css: COMMON_STYLE + `
-#bm-md { font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.7; color: #94a3b8; background: #0f172a; }
-#bm-md h1, #bm-md h2, #bm-md h3 { color: #e2e8f0; font-weight: 700; letter-spacing: -0.025em; }
-#bm-md h1 { background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; }
-#bm-md h2 { border-bottom: 1px solid #1e293b; padding-bottom: 0.3em; }
-#bm-md a { color: #38bdf8; text-decoration: none; transition: color 0.2s; }
-#bm-md a:hover { color: #7dd3fc; }
-#bm-md blockquote { border-left: 3px solid #38bdf8; background: #1e293b; color: #cbd5e1; padding: 12px 20px; border-radius: 0 4px 4px 0; font-style: italic; }
-#bm-md code { font-family: "JetBrains Mono", Consolas, monospace; background: #1e293b; color: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; border: 1px solid #334155; }
-#bm-md pre { background: #020617; padding: 16px; border-radius: 8px; border: 1px solid #1e293b; overflow-x: auto; }
-#bm-md hr { border-color: #334155; margin: 2em 0; }
+#bm-md { font-family: Futura, "Trebuchet MS", sans-serif; line-height: 1.7; color: #1a1a1a; }
+#bm-md h1 { color: #e63946; font-weight: 900; }
+#bm-md h2 { color: #1d3557; background: #f1faee; padding: 8px 16px; border-radius: 4px; }
+#bm-md h3 { color: #457b9d; }
+#bm-md a { color: #e63946; font-weight: 600; text-decoration: none; }
+#bm-md blockquote { border-left: 8px solid #e63946; background: #f1faee; padding: 12px 16px; }
+#bm-md code { background: #a8dadc; padding: 2px 6px; border-radius: 0; }
+#bm-md pre { background: #1d3557; color: #f1faee; padding: 16px; }
     `
   },
   {
@@ -302,11 +127,10 @@ export const markdownStyles: MarkdownStyle[] = [
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #2d4536; font-family: -apple-system, sans-serif; font-weight: 600; }
 #bm-md h1 { border-bottom: 3px solid #abc4b3; padding-bottom: 10px; display: inline-block; padding-right: 20px; }
 #bm-md h2 { color: #4a6c56; }
-#bm-md a { color: #5c8d70; text-decoration: none; border-bottom: 1px solid #abc4b3; transition: border-color 0.2s; }
-#bm-md a:hover { border-bottom-color: #2d4536; }
+#bm-md a { color: #5c8d70; text-decoration: none; border-bottom: 1px solid #abc4b3; }
 #bm-md blockquote { border-left: 4px solid #abc4b3; background: #f3f6f4; padding: 16px 20px; font-style: italic; color: #586b5d; border-radius: 8px; }
 #bm-md code { background: #e8ede9; color: #2d4536; padding: 2px 6px; border-radius: 4px; font-family: "Menlo", monospace; font-size: 0.9em; }
-#bm-md pre { background: #2d4536; color: #e8ede9; padding: 16px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+#bm-md pre { background: #2d4536; color: #e8ede9; padding: 16px; border-radius: 8px; }
 #bm-md ul li::marker { color: #abc4b3; }
     `
   },
@@ -321,7 +145,7 @@ export const markdownStyles: MarkdownStyle[] = [
 #bm-md p { margin-bottom: 1.5em; text-indent: 2em; text-align: justify; }
 #bm-md a { color: #8b4513; text-decoration: underline; text-underline-offset: 4px; }
 #bm-md blockquote { border-left: none; padding: 20px 40px; font-style: italic; color: #555; background: transparent; position: relative; text-align: center; }
-#bm-md blockquote::before { content: "“"; font-size: 3em; color: #dcdcdc; position: absolute; top: 0; left: 10px; font-family: serif; }
+#bm-md blockquote::before { content: "\u201c"; font-size: 3em; color: #dcdcdc; position: absolute; top: 0; left: 10px; font-family: serif; }
 #bm-md code { background: transparent; font-style: italic; color: #555; font-family: inherit; }
 #bm-md pre { background: #efebe4; padding: 20px; border: 1px solid #dcdcdc; border-radius: 2px; font-size: 0.9em; line-height: 1.5; font-family: "Courier New", monospace; text-indent: 0; text-align: left; }
 #bm-md ul, #bm-md ol { margin-left: 2em; margin-bottom: 1.5em; }
@@ -329,6 +153,153 @@ export const markdownStyles: MarkdownStyle[] = [
     `
   },
 ]
+
+// ---- Designer series -------------------------------------------------------
+// 六套有明确立场的排版主题，针对公众号移动端阅读场景设计：
+// 仅内联样式可用（juice 处理）、系统字体栈、无 hover / 无外部资源。
+
+const SANS_CN =
+  '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+const SERIF_CN =
+  'Georgia, "Noto Serif SC", "Source Han Serif SC", "Songti SC", SimSun, serif'
+
+export const designerMarkdownStyles: MarkdownStyle[] = [
+  {
+    id: 'ink-wash',
+    name: '墨韵 Ink',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 2.05; letter-spacing: 0.4px; color: #2b2b2b; background: #fcfbf7; padding: 24px 22px; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #1a1a1a; font-weight: 600; }
+#bm-md h1 { font-size: 1.55em; text-align: center; letter-spacing: 2px; margin-top: 1.2em; }
+#bm-md h2 { font-size: 1.22em; text-align: center; letter-spacing: 1px; margin-top: 2em; }
+#bm-md h2::before { content: "「"; color: #b03a2e; margin-right: 4px; }
+#bm-md h2::after { content: "」"; color: #b03a2e; margin-left: 4px; }
+#bm-md h3 { font-size: 1.05em; border-left: 3px solid #b03a2e; padding-left: 10px; }
+#bm-md a { color: #b03a2e; text-decoration: none; border-bottom: 1px solid #dcb5ae; }
+#bm-md strong { color: #8c2f24; font-weight: 600; }
+#bm-md blockquote { border-left: 3px solid #b03a2e; background: #f5f0e6; padding: 14px 18px; color: #5a5248; font-style: normal; }
+#bm-md code { font-family: Menlo, Consolas, monospace; font-size: 0.86em; background: #efe9db; color: #8c3b2e; padding: 2px 6px; border-radius: 3px; }
+#bm-md pre { background: #2b2926; padding: 16px; border-radius: 4px; }
+#bm-md pre code { background: transparent; color: #e8e2d5; padding: 0; }
+#bm-md img { border-radius: 2px; border: 1px solid #e5dfd0; box-shadow: none; }
+#bm-md hr { border: none; border-top: 1px solid #d8d2c2; width: 42%; margin: 2.4em auto; }
+#bm-md table th { background: #f5f0e6; color: #1a1a1a; }
+#bm-md table th, #bm-md table td { border: 1px solid #e0d9c8; padding: 8px 12px; }
+    `,
+  },
+  {
+    id: 'tech-note',
+    name: '科技蓝 Tech',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.9; letter-spacing: 0.3px; color: #333333; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #111827; font-weight: 600; }
+#bm-md h1 { font-size: 1.5em; }
+#bm-md h2 { font-size: 1.2em; background: #f5f8ff; border-left: 4px solid #2563eb; border-radius: 0 4px 4px 0; padding: 8px 14px; margin-top: 1.8em; }
+#bm-md h3 { font-size: 1.05em; color: #1d4ed8; }
+#bm-md a { color: #2563eb; text-decoration: none; border-bottom: 1px solid #bfdbfe; }
+#bm-md strong { color: #111827; }
+#bm-md blockquote { border-left: 3px solid #93c5fd; background: #f8fafc; padding: 14px 16px; color: #475569; font-style: normal; border-radius: 0 4px 4px 0; }
+#bm-md code { font-family: Menlo, Consolas, monospace; font-size: 0.86em; background: #eef2ff; color: #1d4ed8; padding: 2px 6px; border-radius: 4px; }
+#bm-md pre { background: #0f172a; padding: 16px; border-radius: 8px; }
+#bm-md pre code { background: transparent; color: #e2e8f0; padding: 0; }
+#bm-md img { border-radius: 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+#bm-md hr { border: none; border-top: 1px solid #e5e7eb; margin: 2.2em 0; }
+#bm-md table th { background: #f5f8ff; color: #1e293b; }
+#bm-md table th, #bm-md table td { border: 1px solid #e5e7eb; padding: 8px 12px; }
+#bm-md table tr:nth-child(even) td { background: #fafbfd; }
+    `,
+  },
+  {
+    id: 'celadon',
+    name: '青瓷 Celadon',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.85; letter-spacing: 0.3px; color: #3d4b47; background: #fbfdfc; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #134e4a; font-weight: 600; }
+#bm-md h1 { font-size: 1.45em; text-align: center; }
+#bm-md h2 { font-size: 1.2em; text-align: center; margin-top: 2em; }
+#bm-md h2::after { content: ""; display: block; width: 36px; height: 3px; background: #14b8a6; border-radius: 2px; margin: 8px auto 0; }
+#bm-md h3 { font-size: 1.05em; }
+#bm-md h3::before { content: ""; display: inline-block; width: 7px; height: 7px; background: #14b8a6; border-radius: 50%; margin-right: 8px; vertical-align: 2px; }
+#bm-md a { color: #0d9488; text-decoration: none; }
+#bm-md strong { color: #0f766e; font-weight: 600; }
+#bm-md blockquote { border: none; background: #ecfdf5; padding: 16px 18px; color: #365551; font-style: normal; border-radius: 12px; }
+#bm-md code { font-family: Menlo, Consolas, monospace; font-size: 0.86em; background: #e6f5f1; color: #0f766e; padding: 2px 7px; border-radius: 6px; }
+#bm-md pre { background: #134e4a; padding: 16px; border-radius: 12px; }
+#bm-md pre code { background: transparent; color: #ccfbf1; padding: 0; }
+#bm-md img { border-radius: 12px; box-shadow: none; }
+#bm-md hr { border: none; border-top: 1px solid #cce8e2; margin: 2.2em auto; width: 60%; }
+#bm-md table th { background: #ecfdf5; color: #134e4a; }
+#bm-md table th, #bm-md table td { border: 1px solid #d5ece5; padding: 8px 12px; }
+    `,
+  },
+  {
+    id: 'editorial',
+    name: '志刊 Editorial',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 1.95; color: #111111; letter-spacing: 0.3px; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #111111; font-weight: 700; }
+#bm-md h1 { font-size: 1.6em; border-top: 3px solid #111111; border-bottom: 1px solid #111111; padding: 14px 0 12px; letter-spacing: 1px; line-height: 1.4; }
+#bm-md h2 { font-size: 1.15em; letter-spacing: 2px; border-bottom: 2px solid #111111; padding-bottom: 8px; margin-top: 2.2em; }
+#bm-md h2::before { content: ""; display: inline-block; width: 9px; height: 9px; background: #d4301e; margin-right: 10px; }
+#bm-md h3 { font-size: 1em; letter-spacing: 1.5px; }
+#bm-md a { color: #d4301e; text-decoration: none; border-bottom: 1px solid #d4301e; }
+#bm-md strong { font-weight: 700; }
+#bm-md blockquote { border-top: 1px solid #111111; border-bottom: 1px solid #111111; border-left: none; background: transparent; padding: 16px 4px; color: #333333; font-size: 1.04em; font-weight: 500; font-style: normal; border-radius: 0; }
+#bm-md code { font-family: Menlo, Consolas, monospace; font-size: 0.85em; background: #f2f2f2; color: #111111; padding: 2px 6px; border-radius: 0; }
+#bm-md pre { background: #111111; padding: 16px; border-radius: 0; }
+#bm-md pre code { background: transparent; color: #f5f5f5; padding: 0; }
+#bm-md img { border-radius: 0; box-shadow: none; }
+#bm-md hr { border: none; border-top: 1px solid #111111; margin: 2.4em 0; }
+#bm-md table th { border-bottom: 2px solid #111111; background: transparent; }
+#bm-md table th, #bm-md table td { border: none; border-bottom: 1px solid #dddddd; padding: 8px 12px; }
+    `,
+  },
+  {
+    id: 'ember',
+    name: '暖橘 Ember',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.9; letter-spacing: 0.4px; color: #4a403a; background: #fffaf4; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #3d2e24; font-weight: 600; }
+#bm-md h1 { font-size: 1.45em; text-align: center; }
+#bm-md h2 { font-size: 1.2em; margin-top: 2em; }
+#bm-md h2::before { content: ""; display: inline-block; width: 8px; height: 8px; background: #e8833a; border-radius: 50%; margin-right: 10px; vertical-align: 2px; }
+#bm-md h3 { font-size: 1.05em; color: #b45309; }
+#bm-md a { color: #d97b29; text-decoration: none; border-bottom: 1px solid #f3d0ab; }
+#bm-md strong { color: #c2571b; font-weight: 600; }
+#bm-md blockquote { border-left: 4px solid #f3c98b; background: #fdf3e3; padding: 16px 18px; color: #6b5544; font-style: normal; border-radius: 0 10px 10px 0; }
+#bm-md code { font-family: Menlo, Consolas, monospace; font-size: 0.86em; background: #fdeedc; color: #b45309; padding: 2px 6px; border-radius: 4px; }
+#bm-md pre { background: #3b2f2a; padding: 16px; border-radius: 10px; }
+#bm-md pre code { background: transparent; color: #f5e9d9; padding: 0; }
+#bm-md img { border-radius: 10px; box-shadow: none; }
+#bm-md hr { border: none; border-top: 1px solid #f0dcc4; width: 55%; margin: 2.2em auto; }
+#bm-md table th { background: #fdf3e3; color: #3d2e24; }
+#bm-md table th, #bm-md table td { border: 1px solid #f0e2cf; padding: 8px 12px; }
+    `,
+  },
+  {
+    id: 'mono-prose',
+    name: '极简 Mono',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.9; color: #000000; letter-spacing: 0.2px; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #000000; font-weight: 700; }
+#bm-md h1 { font-size: 1.35em; margin-top: 1.6em; }
+#bm-md h2 { font-size: 1.15em; margin-top: 2.2em; }
+#bm-md h3 { font-size: 1em; }
+#bm-md a { color: #000000; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+#bm-md strong { font-weight: 700; }
+#bm-md blockquote { border-left: 2px solid #000000; background: transparent; padding: 2px 0 2px 16px; color: #555555; font-style: normal; border-radius: 0; }
+#bm-md code { font-family: Menlo, Consolas, monospace; font-size: 0.85em; background: #f2f2f2; color: #000000; padding: 2px 5px; border-radius: 2px; }
+#bm-md pre { background: #f7f7f7; padding: 16px; border: 1px solid #e5e5e5; border-radius: 4px; }
+#bm-md pre code { background: transparent; color: #000000; padding: 0; }
+#bm-md img { border-radius: 0; box-shadow: none; }
+#bm-md hr { border: none; border-top: 1px solid #e5e5e5; margin: 2.2em 0; }
+#bm-md table th, #bm-md table td { border: none; border-bottom: 1px solid #e5e5e5; padding: 8px 4px; }
+    `,
+  },
+]
+
+// 完整主题列表：内置主题 + 设计师系列，供设置面板与渲染查找使用
+export const markdownStyles: MarkdownStyle[] = [...markdownStylesCore, ...designerMarkdownStyles]
 
 export function getMarkdownStyleCss(styleId: string): string {
   const style = markdownStyles.find(s => s.id === styleId)
