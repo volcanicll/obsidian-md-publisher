@@ -5,8 +5,10 @@ import { extractTitleFromMarkdown, extractDigestFromMarkdown } from '../lib/wech
 import {
   isWeChatConfigured,
   validateWeChatArticleFields,
+  charLength,
   WECHAT_LIMITS
 } from '../lib/wechat/config'
+import { PublishPreviewModal } from './PublishPreviewModal'
 import {
   compressImage,
   generateDefaultCover,
@@ -49,6 +51,7 @@ export class PublishModal extends Modal {
   private onlyFansCanComment: boolean
   private isPublishing: boolean = false
   private progressEl: HTMLElement | null = null
+  private previewBtn: HTMLButtonElement | null = null
 
   constructor(app: App, options: PublishModalOptions) {
     super(app)
@@ -64,6 +67,24 @@ export class PublishModal extends Modal {
     this.contentSourceUrl = ''
     this.needOpenComment = this.plugin.settings.defaultOpenComment
     this.onlyFansCanComment = this.plugin.settings.defaultFansOnlyComment
+  }
+
+  /** 给输入控件挂实时长度计数；超限时计数变红，编辑期即可发现，不必等到发布 */
+  private attachLengthCounter(
+    setting: Setting,
+    limit: number,
+    getValue: () => string
+  ): void {
+    const counter = setting.controlEl.createSpan({ cls: 'bm-md-field-count' })
+    const update = () => {
+      const len = charLength(getValue())
+      counter.setText(`${len} / ${limit}`)
+      counter.classList.toggle('bm-md-count-over', len > limit)
+    }
+    update()
+    setting.controlEl.addEventListener('change', update)
+    // input 事件覆盖逐字输入，change 覆盖粘贴与程序赋值
+    setting.controlEl.addEventListener('input', update)
   }
 
   onOpen(): void {
@@ -88,7 +109,7 @@ export class PublishModal extends Modal {
     }
 
     // Article Title
-    new Setting(contentEl)
+    const titleSetting = new Setting(contentEl)
       .setName('文章标题')
       .setDesc(`将显示在公众号文章顶部，最多 ${WECHAT_LIMITS.title} 字`)
       .addText((text) => {
@@ -100,9 +121,10 @@ export class PublishModal extends Modal {
             this.title = value
           })
       })
+    this.attachLengthCounter(titleSetting, WECHAT_LIMITS.title, () => this.title)
 
     // Article Author
-    new Setting(contentEl)
+    const authorSetting = new Setting(contentEl)
       .setName('作者')
       .setDesc(`可选，显示在标题下方，最多 ${WECHAT_LIMITS.author} 字`)
       .addText((text) => {
@@ -113,9 +135,10 @@ export class PublishModal extends Modal {
             this.author = value
           })
       })
+    this.attachLengthCounter(authorSetting, WECHAT_LIMITS.author, () => this.author)
 
     // Article Digest
-    new Setting(contentEl)
+    const digestSetting = new Setting(contentEl)
       .setName('摘要')
       .setDesc(`可选，显示在分享卡片中，最多 ${WECHAT_LIMITS.digest} 字`)
       .addTextArea((text) => {
@@ -127,6 +150,7 @@ export class PublishModal extends Modal {
             this.digest = value
           })
       })
+    this.attachLengthCounter(digestSetting, WECHAT_LIMITS.digest, () => this.digest)
 
     // Cover image
     new Setting(contentEl)
@@ -191,19 +215,40 @@ export class PublishModal extends Modal {
     // Action buttons
     const buttonContainer = contentEl.createDiv({ cls: 'bm-md-button-container' })
 
+    const previewBtn = buttonContainer.createEl('button', {
+      text: '预览效果',
+      cls: 'bm-md-btn bm-md-preview-btn'
+    })
+    previewBtn.addEventListener('click', () => {
+      new PublishPreviewModal(this.app, {
+        plugin: this.plugin,
+        form: {
+          title: this.title,
+          author: this.author,
+          digest: this.digest,
+          coverPath: this.coverPath,
+          contentSourceUrl: this.contentSourceUrl
+        },
+        html: this.html
+      }).open()
+    })
+
     const cancelBtn = buttonContainer.createEl('button', {
       text: '取消',
-      cls: 'bm-md-cancel-btn'
+      cls: 'bm-md-btn bm-md-cancel-btn'
     })
     cancelBtn.addEventListener('click', () => this.close())
 
     const publishBtn = buttonContainer.createEl('button', {
       text: '保存到草稿',
-      cls: 'mod-cta bm-md-publish-btn'
+      cls: 'bm-md-btn bm-md-btn-primary bm-md-publish-btn'
     })
     publishBtn.addEventListener('click', () => {
       void this.publish()
     })
+
+    // 设置面板按钮状态时把预览按钮一并禁用
+    this.previewBtn = previewBtn
   }
 
   private updateProgress(message: string): void {
@@ -222,6 +267,9 @@ export class PublishModal extends Modal {
     }
     if (cancelBtn) {
       cancelBtn.disabled = !enabled
+    }
+    if (this.previewBtn) {
+      this.previewBtn.disabled = !enabled
     }
   }
 

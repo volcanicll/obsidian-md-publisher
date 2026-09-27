@@ -43,6 +43,8 @@ const context = await esbuild.context({
   format: 'cjs',
   target: 'es2018',
   logLevel: 'info',
+  // 生产构建压缩：mermaid 依赖体积大，压缩后显著减小 main.js
+  minify: prod,
   loader: { '.css': 'text' },
   sourcemap: prod ? false : 'inline',
   treeShaking: true,

@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
-import { markdownStyles } from '../themes/markdown-style'
 import { codeThemes } from '../themes/code-theme'
 import { isWeChatConfigured } from '../lib/wechat/config'
 
@@ -23,12 +22,12 @@ export class BmMdSettingsTab extends PluginSettingTab {
       .setName('排版')
       .setHeading()
 
-    // Markdown Style Selection
+    // Markdown Style Selection（含 vault 导入的自定义主题与「自定义」入口）
     new Setting(containerEl)
       .setName('排版主题')
-      .setDesc('选择默认的 Markdown 排版样式')
+      .setDesc('选择默认的 Markdown 排版样式；自定义主题文件夹中的主题会一并列出')
       .addDropdown(dropdown => {
-        markdownStyles.forEach(style => {
+        this.plugin.getMarkdownStyleList().forEach(style => {
           dropdown.addOption(style.id, style.name)
         })
         dropdown
@@ -36,6 +35,32 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.markdownStyle = value
             await this.plugin.saveSettings()
+          })
+      })
+
+    // Custom theme folder
+    new Setting(containerEl)
+      .setName('自定义主题文件夹')
+      .setDesc(
+        'vault 内的文件夹路径，其中每个 .css 文件都是一套主题（自动叠加通用基础样式）。' +
+        '文件首行用 name 注释（例如「name: 我的企业风」）可指定主题名，否则用文件名。'
+      )
+      .addText(text => {
+        text
+          .setPlaceholder('.obsidian/plugins/md-publisher/themes')
+          .setValue(this.plugin.settings.customThemeFolder)
+          .onChange(async (value) => {
+            this.plugin.settings.customThemeFolder = value.trim()
+            await this.plugin.saveSettings()
+          })
+      })
+      .addButton(button => {
+        button
+          .setButtonText('重新扫描')
+          .onClick(async () => {
+            await this.plugin.refreshCustomThemes()
+            new Notice(`已加载 ${this.plugin.customThemes.length} 套自定义主题`)
+            this.display()
           })
       })
 
@@ -58,7 +83,9 @@ export class BmMdSettingsTab extends PluginSettingTab {
     // Custom CSS
     new Setting(containerEl)
       .setName('自定义 CSS')
-      .setDesc('附加样式，会覆盖主题中的同名规则')
+      .setDesc(
+        '附加样式，会覆盖主题中的同名规则；配合「自定义 Custom」主题可从零搭建排版'
+      )
       .addTextArea(text => {
         text.inputEl.classList.add('bm-md-custom-css-textarea')
         text
@@ -66,6 +93,23 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.customCss)
           .onChange(async (value) => {
             this.plugin.settings.customCss = value
+            await this.plugin.saveSettings()
+          })
+      })
+
+    // 预览行为
+    new Setting(containerEl)
+      .setName('预览')
+      .setHeading()
+
+    new Setting(containerEl)
+      .setName('双向滚动同步')
+      .setDesc('在编辑器与预览面板之间按比例同步滚动位置，方便长文定位')
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.scrollSync)
+          .onChange(async (value) => {
+            this.plugin.settings.scrollSync = value
             await this.plugin.saveSettings()
           })
       })
@@ -95,6 +139,23 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.defaultFansOnlyComment)
           .onChange(async (value) => {
             this.plugin.settings.defaultFansOnlyComment = value
+            await this.plugin.saveSettings()
+          })
+      })
+
+    // 敏感词自定义词表
+    new Setting(containerEl)
+      .setName('敏感词补充词表')
+      .setDesc(
+        '发布前校验时额外扫描的词条，用逗号或换行分隔；内置词表覆盖极限用语、医疗夸大、收益承诺与诱导互动'
+      )
+      .addTextArea(text => {
+        text.inputEl.classList.add('bm-md-sensitive-words-textarea')
+        text
+          .setPlaceholder('词条一, 词条二\n词条三')
+          .setValue(this.plugin.settings.sensitiveWords)
+          .onChange(async (value) => {
+            this.plugin.settings.sensitiveWords = value
             await this.plugin.saveSettings()
           })
       })

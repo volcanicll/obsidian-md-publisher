@@ -145,7 +145,10 @@ export class DraftsModal extends Modal {
       }
       info.createDiv({ cls: 'bm-md-draft-meta', text: metaParts.join(' · ') })
 
-      const del = row.createDiv({ cls: 'bm-md-draft-delete', text: '删除' })
+      const del = row.createEl('button', {
+        text: '删除',
+        cls: 'bm-md-btn bm-md-btn-danger bm-md-draft-delete',
+      })
       del.addEventListener('click', () => {
         void this.confirmAndDelete(item.media_id, title)
       })
@@ -162,7 +165,7 @@ export class DraftsModal extends Modal {
 
     const prevBtn = pagination.createEl('button', {
       text: '上一页',
-      cls: 'bm-md-cancel-btn',
+      cls: 'bm-md-btn bm-md-page-btn',
     })
     prevBtn.disabled = this.currentPage <= 0
     prevBtn.addEventListener('click', () => {
@@ -176,7 +179,7 @@ export class DraftsModal extends Modal {
 
     const nextBtn = pagination.createEl('button', {
       text: '下一页',
-      cls: 'bm-md-cancel-btn',
+      cls: 'bm-md-btn bm-md-page-btn',
     })
     nextBtn.disabled = this.currentPage >= this.totalPages - 1
     nextBtn.addEventListener('click', () => {

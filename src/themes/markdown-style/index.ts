@@ -5,7 +5,7 @@ export interface MarkdownStyle {
 }
 
 // 共享基础：移动端优先的宽度、行宽与滚动容器，各主题只负责「气质层」
-const COMMON_STYLE = `
+export const COMMON_STYLE = `
 #bm-md {
   font-size: 14px;
   line-height: 1.75;
@@ -231,12 +231,91 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md ul li::marker, #bm-md ol li::marker { color: #9c5b23; }
     `,
   },
+
+  // -- 素纸墨蓝 Kami --------------------------------------------------------
+  // kami（紙）设计语言：暖纸底、墨蓝单强调色、衬线正文、发丝线。
+  // 层级靠字号、留白与对齐建立，记号只保留承担结构信息的那几笔。
+  {
+    id: 'letter',
+    name: '信笺 Letter',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 2.1; letter-spacing: 0.4px; color: #3f3a30; background: #f5f4ed; }
+#bm-md h1, #bm-md h2, #bm-md h3 { font-family: ${SERIF_CN}; font-weight: 600; }
+#bm-md h1 { font-size: 1.5em; text-align: center; color: #262218; letter-spacing: 2px; margin-top: 1.3em; }
+#bm-md h2 { font-size: 1.12em; color: #1b365d; border-bottom: 1px solid #d8d3c4; padding-bottom: 8px; margin-top: 2.2em; }
+#bm-md h3 { font-size: 1.02em; color: #1b365d; }
+#bm-md p { margin-bottom: 1.15em; }
+#bm-md a { color: #1b365d; text-decoration: none; border-bottom: 1px solid #b3bfd2; }
+#bm-md strong { color: #1b365d; font-weight: 600; }
+#bm-md blockquote { border: none; background: transparent; padding: 0 0 0 1.2em; color: #6f6759; font-style: normal; }
+#bm-md blockquote p { margin: 0; }
+#bm-md code { font-family: ${MONO}; font-size: 0.85em; background: #e9e6d9; color: #1b365d; padding: 2px 6px; border-radius: 3px; }
+#bm-md pre { background: #1b2b47; padding: 16px; border-radius: 4px; }
+#bm-md pre code { background: transparent; color: #e6e3d5; padding: 0; }
+#bm-md img { border-radius: 4px; }
+#bm-md hr { border: none; border-top: 1px solid #d8d3c4; margin: 2.6em 0; }
+#bm-md table th { border-top: 1px solid #3f3a30; border-bottom: 1px solid #3f3a30; background: transparent; color: #3f3a30; }
+#bm-md table td { border: none; border-bottom: 1px solid #e3dfd2; }
+#bm-md table tr:last-child td { border-bottom: 1px solid #3f3a30; }
+#bm-md table th, #bm-md table td { padding: 8px 12px; text-align: left; }
+#bm-md ul li::marker, #bm-md ol li::marker { color: #1b365d; }
+    `,
+  },
+  {
+    id: 'rubbing',
+    name: '拓本 Rubbing',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 1.95; letter-spacing: 0.3px; color: #26241f; }
+#bm-md h1, #bm-md h2, #bm-md h3 { font-family: ${SERIF_CN}; color: #1a1815; font-weight: 700; }
+#bm-md h1 { font-size: 1.5em; text-align: center; letter-spacing: 2px; }
+#bm-md h2 { font-size: 1.12em; border-bottom: 1px solid #d9d4c7; padding-bottom: 7px; margin-top: 2.2em; }
+#bm-md h2::before { content: ""; display: inline-block; width: 8px; height: 8px; background: #1b365d; margin-right: 10px; }
+#bm-md h3 { font-size: 1.02em; color: #1b365d; letter-spacing: 1px; }
+#bm-md a { color: #1b365d; text-decoration: underline; text-underline-offset: 3px; }
+#bm-md strong { font-weight: 700; }
+#bm-md blockquote { border-left: 2px solid #1b365d; background: transparent; padding: 2px 0 2px 16px; color: #5c574c; font-style: normal; }
+#bm-md blockquote p { margin: 0; }
+#bm-md code { font-family: ${MONO}; font-size: 0.85em; background: #edeade; color: #1b365d; padding: 2px 6px; border-radius: 2px; }
+#bm-md pre { background: #22201b; padding: 16px; border-radius: 2px; }
+#bm-md pre code { background: transparent; color: #e6e3d5; padding: 0; }
+#bm-md img { border-radius: 0; }
+#bm-md hr { border: none; border-top: 2px solid #1a1815; width: 30%; margin: 2.4em auto; }
+#bm-md table th { border-top: 2px solid #1a1815; border-bottom: 1px solid #1a1815; background: transparent; color: #1a1815; }
+#bm-md table td { border: none; border-bottom: 1px solid #e3dfd2; }
+#bm-md table tr:last-child td { border-bottom: 2px solid #1a1815; }
+#bm-md table th, #bm-md table td { padding: 7px 12px; text-align: left; }
+    `,
+  },
 ]
 
 // 完整主题列表，供设置面板与渲染查找使用
 export const markdownStyles: MarkdownStyle[] = [...designerMarkdownStyles]
 
-export function getMarkdownStyleCss(styleId: string): string {
-  const style = markdownStyles.find(s => s.id === styleId)
+/**
+ * 「自定义」主题入口：不预设任何气质层，完全由设置里的「自定义 CSS」
+ * 决定最终效果（渲染时 customCss 会拼接在 COMMON_STYLE 之后）。
+ */
+export const customStyleEntry: MarkdownStyle = {
+  id: 'custom',
+  name: '自定义 Custom',
+  css: COMMON_STYLE,
+}
+
+/**
+ * 供设置面板与预览菜单消费的完整主题列表：
+ * 内置主题 + vault 导入的自定义主题 + 「自定义」入口。
+ */
+export function getAllMarkdownStyles(customThemes: MarkdownStyle[] = []): MarkdownStyle[] {
+  return [...designerMarkdownStyles, ...customThemes, customStyleEntry]
+}
+
+export function getMarkdownStyleCss(
+  styleId: string,
+  customThemes: MarkdownStyle[] = []
+): string {
+  if (styleId === customStyleEntry.id) {
+    return customStyleEntry.css
+  }
+  const style = [...designerMarkdownStyles, ...customThemes].find(s => s.id === styleId)
   return style?.css || markdownStyles[0].css
 }

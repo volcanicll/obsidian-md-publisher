@@ -51,6 +51,8 @@ export class Plugin {
 
 export class PluginSettingTab {}
 
+export function setIcon(_parent: HTMLElement | string, _iconId: string): void {}
+
 export class ItemView {
   leaf: unknown
   constructor(leaf?: unknown) {

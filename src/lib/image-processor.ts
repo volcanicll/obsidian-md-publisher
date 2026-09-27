@@ -134,6 +134,38 @@ export function extractRemoteImagePaths(html: string): string[] {
   return paths
 }
 
+/**
+ * Extract base64 data-URL images (e.g. Mermaid 渲染产物)。
+ * 返回完整的 data: src 列表，供 processImages 解码上传。
+ */
+export function extractDataUrlImages(html: string): string[] {
+  const paths: string[] = []
+  const imgRegex = /<img[^>]+src=["'](data:image\/(?:png|jpeg|gif);base64,[^"']+)["'][^>]*>/gi
+  let match: RegExpExecArray | null
+
+  while ((match = imgRegex.exec(html)) !== null) {
+    if (match[1]) paths.push(match[1])
+  }
+
+  return paths
+}
+
+/** base64 data URL → ArrayBuffer；格式非法返回 null */
+export function decodeDataUrl(dataUrl: string): ArrayBuffer | null {
+  const m = dataUrl.match(/^data:image\/(?:png|jpeg|gif);base64,([A-Za-z0-9+/=]+)$/)
+  if (!m) return null
+  try {
+    const binary = atob(m[1])
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+    return bytes.buffer
+  } catch {
+    return null
+  }
+}
+
 /** 从外链 URL 的路径部分取文件名，供 multipart 上传使用 */
 function remoteFilename(src: string): string {
   try {
@@ -452,6 +484,27 @@ export async function convertSvgToPng(
 }
 
 /**
+ * 将 HTML 中本地图片的 src 重写为 Obsidian 资源 URL（app://…），
+ * 让预览界面直接显示 vault 内图片；发布时仍按原路径读取上传。
+ */
+export function resolveLocalImageSrcs(
+  html: string,
+  app: App,
+  activeFilePath: string | null
+): string {
+  let resolved = html
+  for (const src of extractLocalImagePaths(html)) {
+    const normalized = normalizeImagePath(src, activeFilePath)
+    if (!normalized) continue
+    const file = findVaultImageFile(app, normalized)
+    if (file) {
+      resolved = replaceImageSrc(resolved, src, app.vault.getResourcePath(file))
+    }
+  }
+  return resolved
+}
+
+/**
  * Process all images in HTML content:
  * 1. Extract local and remote image paths
  * 2. Read from vault / download from the remote URL
@@ -472,7 +525,11 @@ export async function processImages(
   options: ImageProcessorOptions = DEFAULT_IMAGE_OPTIONS,
   onProgress?: ProgressCallback
 ): Promise<{ html: string; results: ImageProcessResult[]; errors: string[] }> {
-  const allPaths = [...extractLocalImagePaths(html), ...extractRemoteImagePaths(html)]
+  const allPaths = [
+    ...extractLocalImagePaths(html),
+    ...extractRemoteImagePaths(html),
+    ...extractDataUrlImages(html),
+  ]
 
   if (allPaths.length === 0) {
     return { html, results: [], errors: [] }
@@ -486,10 +543,13 @@ export async function processImages(
 
   for (const rawPath of allPaths) {
     current++
+    const isData = rawPath.startsWith('data:')
     const isRemote = rawPath.startsWith('http://') || rawPath.startsWith('https://')
-    const normalizedPath = isRemote
+    const normalizedPath = isData
       ? rawPath
-      : normalizeImagePath(rawPath, activeFilePath)
+      : isRemote
+        ? rawPath
+        : normalizeImagePath(rawPath, activeFilePath)
 
     if (!normalizedPath) {
       errors.push(`Could not normalize path: ${rawPath}`)
@@ -503,24 +563,30 @@ export async function processImages(
       continue
     }
 
-    const baseName = isRemote
-      ? remoteFilename(rawPath)
-      : normalizedPath.split('/').pop() || ''
+    const baseName = isData
+      ? `embedded-${current}.png`
+      : isRemote
+        ? remoteFilename(rawPath)
+        : normalizedPath.split('/').pop() || ''
     const filename = sanitizeFilename(baseName || 'image.png')
 
     if (onProgress) {
       onProgress(current, allPaths.length, filename)
     }
 
-    // Read image from vault or download from the remote URL
-    const imageData = isRemote
-      ? await fetchRemoteImage(rawPath)
-      : await readImageFromVault(app, normalizedPath)
+    // Read image from vault / download from the remote URL / decode data URL
+    const imageData = isData
+      ? decodeDataUrl(rawPath)
+      : isRemote
+        ? await fetchRemoteImage(rawPath)
+        : await readImageFromVault(app, normalizedPath)
     if (!imageData) {
       errors.push(
-        isRemote
-          ? `Failed to download remote image: ${rawPath}`
-          : `Image not found in vault: ${normalizedPath}`
+        isData
+          ? `Failed to decode embedded image: ${filename}`
+          : isRemote
+            ? `Failed to download remote image: ${rawPath}`
+            : `Image not found in vault: ${normalizedPath}`
       )
       continue
     }

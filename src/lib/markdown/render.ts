@@ -12,8 +12,10 @@ import rehypeExternalLinks from 'rehype-external-links'
 import rehypeStringify from 'rehype-stringify'
 import juice from 'juice'
 import katexCss from 'katex/dist/katex.min.css'
-import { getMarkdownStyleCss } from '../../themes/markdown-style'
+import { getMarkdownStyleCss, type MarkdownStyle } from '../../themes/markdown-style'
 import { getCodeThemeCss } from '../../themes/code-theme'
+import { transformCallouts } from './callouts'
+import { renderMermaidBlocks } from './mermaid'
 
 export interface RenderOptions {
   markdown: string
@@ -21,6 +23,8 @@ export interface RenderOptions {
   codeTheme?: string
   customCss?: string
   openLinksInNewWindow?: boolean
+  /** vault 导入的自定义主题，用于解析 file: 前缀的主题 id */
+  customThemes?: MarkdownStyle[]
 }
 
 /**
@@ -136,15 +140,21 @@ export async function render(options: RenderOptions): Promise<string> {
     codeTheme = 'github',
     customCss = '',
     openLinksInNewWindow = true,
+    customThemes = [],
   } = options
 
   const processor = createProcessor({ openLinksInNewWindow })
-  const html = (await processor.process(convertWikiEmbeds(markdown))).toString()
+  let html = (await processor.process(convertWikiEmbeds(markdown))).toString()
+
+  // Mermaid 图表转位图（依赖 DOM；失败时保留代码块）
+  html = await renderMermaidBlocks(html)
+  // Obsidian Callout 转公众号卡片（内联样式，需在 sanitize 后、juice 前注入）
+  html = transformCallouts(html)
 
   const wrapped = `<section id="bm-md">${html}</section>`
 
   // Combine all CSS: KaTeX + markdown style + code theme + custom CSS
-  const markdownStyleCss = getMarkdownStyleCss(markdownStyle)
+  const markdownStyleCss = getMarkdownStyleCss(markdownStyle, customThemes)
   const codeThemeCss = getCodeThemeCss(codeTheme)
   const combinedCss = [katexStyle, markdownStyleCss, codeThemeCss, customCss]
     .filter(Boolean)

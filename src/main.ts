@@ -3,11 +3,17 @@ import { BmMdSettingsTab } from './settings/SettingsTab'
 import { PreviewView, VIEW_TYPE_PREVIEW } from './views/PreviewView'
 import { DraftsModal } from './views/DraftsModal'
 import { WeChatApi } from './lib/wechat/wechat-api'
+import { loadCustomThemes, CUSTOM_THEME_FOLDER_DEFAULT } from './lib/custom-themes'
+import { getAllMarkdownStyles, type MarkdownStyle } from './themes/markdown-style'
 
 interface BmMdSettings {
   markdownStyle: string
   codeTheme: string
   customCss: string
+  // 预览与校验
+  scrollSync: boolean
+  customThemeFolder: string
+  sensitiveWords: string
   // WeChat Official Account settings
   wechatAppId: string
   wechatAppSecret: string
@@ -26,6 +32,10 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   markdownStyle: 'mist',
   codeTheme: 'github',
   customCss: '',
+  // 预览与校验
+  scrollSync: true,
+  customThemeFolder: CUSTOM_THEME_FOLDER_DEFAULT,
+  sensitiveWords: '',
   // WeChat defaults
   wechatAppId: '',
   wechatAppSecret: '',
@@ -41,9 +51,12 @@ const DEFAULT_SETTINGS: BmMdSettings = {
 
 export default class BmMdPlugin extends Plugin {
   settings: BmMdSettings = DEFAULT_SETTINGS
+  /** vault 导入的自定义主题缓存，随插件加载与设置变更刷新 */
+  customThemes: MarkdownStyle[] = []
 
   async onload() {
     await this.loadSettings()
+    await this.refreshCustomThemes()
 
     // Register the preview view
     try {
@@ -99,6 +112,21 @@ export default class BmMdPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings)
+  }
+
+  /** 重新扫描自定义主题文件夹，并刷新缓存的列表 */
+  async refreshCustomThemes(): Promise<void> {
+    try {
+      this.customThemes = await loadCustomThemes(this.app, this.settings.customThemeFolder)
+    } catch (err) {
+      console.warn('自定义主题扫描失败:', err)
+      this.customThemes = []
+    }
+  }
+
+  /** 全量主题列表：内置 + vault 导入 + 「自定义」入口 */
+  getMarkdownStyleList(): MarkdownStyle[] {
+    return getAllMarkdownStyles(this.customThemes)
   }
 
   /**

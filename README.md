@@ -21,9 +21,12 @@ Markdown Publisher 把「写」和「发」之间的排版工作全部自动化�
 
 **Markdown Publisher** is an Obsidian plugin that turns your notes into WeChat Official Account-ready articles and saves them straight to your draft box.
 
-- **Six designer themes** ("Paper Press" set), plus 14 official highlight.js code themes
+- **Eight designer themes** ("Paper Press" set), plus 14 official highlight.js code themes, custom themes from a vault folder, and a fully custom option
 - **Fully inlined CSS**, so pasted or published HTML keeps its styling in the WeChat editor
 - **Automatic image handling**: local images are compressed and uploaded to the WeChat CDN, external images are re-hosted, GIF animations are preserved, and SVG/WebP are converted
+- **Mermaid diagrams** render to crisp PNG images and upload automatically; **Obsidian Callouts** become styled cards; **note embeds** (`![[note]]`, `![[note#heading]]`) are inlined as quote blocks
+- **Pre-publish preview & checks**: a phone-frame mock of the actual WeChat article, link validity checking, heuristic sensitive-word detection, and live field-length counters
+- **Bidirectional scroll sync** between the editor and the preview pane
 - **Automatic covers**: uses your chosen cover, the article's first image, or a generated title card
 - **Fails safely**: if any image fails to upload, publishing is cancelled instead of leaving a broken draft
 - **KaTeX math**, GFM tables, task lists, footnotes, and Obsidian `![[image.png]]` embeds
@@ -32,29 +35,34 @@ Install it from the Obsidian community plugins browser (search for "Markdown Pub
 
 ---
 
-<img width="100%" src="docs/assets/theme-showcase.png" alt="六套排版主题对比">
+<img width="100%" src="docs/assets/theme-showcase.png" alt="八套排版主题对比">
 
-## 🎨 六套排版主题，一套设计语言
+## 🎨 八套排版主题，一套设计语言
 
-不做「换汤不换药」的配色套餐，而是三组不同的版式语言，每组两套：
+不做「换汤不换药」的配色套餐，而是四组不同的版式语言，每组两套：
 
 | 家族 | 主题 | 适合 |
 |------|------|------|
 | 柔和轻氧 | **晨雾 Mist**（默认）· 蜜桃 Peach | 生活、科普、职场、成长 |
 | 学院学术 | **学报 Journal** · 笔记 Notes | 长文、深度阅读、学习笔记 |
 | 杂志风尚 | **封面 Cover** · 别册 Booklet | 人物、品牌、文化、散文 |
+| 素纸墨蓝 | **信笺 Letter** · 拓本 Rubbing | 书信散文、慢读；资料整理、严肃长文 |
 
 所有主题都针对公众号移动端阅读设计：只用内联样式、系统字体栈、无 hover、无外部资源，预览即发布效果。另有 14 款代码高亮主题（GitHub、Monokai、Dracula、Nord 等），写技术文章同样得体。
 
 ## 📤 发布链路，交给它
 
 - **直接存入草稿箱**：填好标题、作者、摘要，一键送达草稿箱，手机上预览后群发。
+- **发布前预览与校验**：手机框模拟公众号文章页实际效果；支持链接有效性检查、敏感词检测（内置词表 + 自定义词条）、字段长度核查，结果仅提示不拦截。
+- **内容格式兼容**：Mermaid 图表自动转 PNG 并上传；Callout 提示框转为公众号卡片样式（支持折叠写法）；`![[笔记名]]` 与 `![[笔记名#标题]]` 嵌入转为引用块。
 - **封面自动处理**：自动用正文首图作封面；全文无图时可指定封面图，或按文章标题自动生成标题卡片封面。
 - **图片全自动**：本地图片自动压缩上传，外链图片自动转存；GIF 保留动画，WebP / BMP / SVG 自动转 PNG，PNG 转 JPEG 时自动铺白底，不出现黑底。
 - **失败即中止**：任一图片上传失败就取消发布并明确提示，绝不产出残留本地路径的裂图草稿。
 - **草稿箱管理**：在插件内分页查看、删除草稿箱内容。
 - **也可以只复制**：不想配置 API？点「复制」，到公众号后台粘贴，排版原样保留。
 - **完整 Markdown 能力**：GFM 表格、任务列表、脚注、删除线，KaTeX 行内与块级公式，代码块高亮，Obsidian `![[图片.png]]` 嵌入语法。
+- **预览即所得**：编辑器与预览面板双向滚动同步，长文定位不迷路；重渲染时保持阅读位置。
+- **主题随心定制**：「自定义 Custom」入口配合自定义 CSS 从零搭建排版；也可在 vault 主题文件夹中放入 .css 文件直接作为主题使用。
 
 ## 🔑 授权不折腾
 
