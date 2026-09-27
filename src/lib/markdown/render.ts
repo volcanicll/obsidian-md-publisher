@@ -132,7 +132,7 @@ const katexStyle = katexCss.replace(/@font-face\s*\{[^}]*\}/g, '')
 export async function render(options: RenderOptions): Promise<string> {
   const {
     markdown,
-    markdownStyle = 'ayu-light',
+    markdownStyle = 'mist',
     codeTheme = 'github',
     customCss = '',
     openLinksInNewWindow = true,

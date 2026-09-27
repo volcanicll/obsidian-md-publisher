@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import {
   extractLocalImagePaths,
+  extractRemoteImagePaths,
   normalizeImagePath,
   detectImageType,
   replaceImageSrc,
@@ -10,7 +11,7 @@ import {
   findVaultImageFile,
   processImages
 } from '../src/lib/image-processor'
-import { TFile } from 'obsidian'
+import { TFile, setRequestUrlMock } from './obsidian-stub'
 
 describe('extractLocalImagePaths', () => {
   it('extracts relative image paths', () => {
@@ -31,6 +32,21 @@ describe('extractLocalImagePaths', () => {
 
   it('returns empty array for content without images', () => {
     expect(extractLocalImagePaths('<p>no images</p>')).toEqual([])
+  })
+})
+
+describe('extractRemoteImagePaths', () => {
+  it('extracts http(s) image sources', () => {
+    const html = '<img src="https://cdn.com/a.png"><img src="http://x.com/b.jpg">'
+    expect(extractRemoteImagePaths(html)).toEqual([
+      'https://cdn.com/a.png',
+      'http://x.com/b.jpg',
+    ])
+  })
+
+  it('skips relative, app:// and data URIs', () => {
+    const html = '<img src="a.png"><img src="app://h/x.png"><img src="data:image/png;base64,AA">'
+    expect(extractRemoteImagePaths(html)).toEqual([])
   })
 })
 
@@ -266,5 +282,69 @@ describe('processImages', () => {
     expect(results).toEqual([])
     expect(errors.length).toBe(1)
     expect(out).toContain('src="missing.png"')
+  })
+
+  it('carries the processed bytes back for cover reuse', async () => {
+    const app = makeAppWithImages(['a.png'])
+    const api = makeApi()
+
+    const { results } = await processImages('<img src="a.png">', app, api as never, null)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].filename).toBe('a.png')
+    expect(new Uint8Array(results[0].data)).toEqual(new Uint8Array(PNG_BYTES))
+    expect(results[0].contentType).toBe('image/png')
+  })
+
+  it('downloads remote images and re-hosts them on WeChat', async () => {
+    setRequestUrlMock(async (param) => {
+      expect(param.url).toBe('https://cdn.com/pic.png')
+      return { json: {}, arrayBuffer: PNG_BYTES }
+    })
+
+    const app = makeAppWithImages([])
+    const api = makeApi()
+
+    const { html: out, results, errors } = await processImages(
+      '<img src="https://cdn.com/pic.png">',
+      app,
+      api as never,
+      null
+    )
+
+    expect(errors).toEqual([])
+    expect(api.urls).toHaveLength(1)
+    expect(out).toContain(api.urls[0])
+    expect(out).not.toContain('cdn.com')
+    expect(results[0].originalPath).toBe('https://cdn.com/pic.png')
+
+    setRequestUrlMock(null)
+  })
+
+  it('records remote download failures as errors and keeps the src', async () => {
+    setRequestUrlMock(async () => {
+      throw new Error('network down')
+    })
+
+    const app = makeAppWithImages([])
+    const api = makeApi()
+
+    const { html: out, results, errors } = await processImages(
+      '<img src="https://cdn.com/pic.png">',
+      app,
+      api as never,
+      null
+    )
+
+    expect(api.urls).toHaveLength(0)
+    expect(results).toEqual([])
+    expect(errors[0]).toContain('Failed to download remote image')
+    expect(out).toContain('src="https://cdn.com/pic.png"')
+
+    setRequestUrlMock(null)
+  })
+
+  afterEach(() => {
+    setRequestUrlMock(null)
   })
 })

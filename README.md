@@ -1,46 +1,60 @@
 # Markdown Publisher
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Obsidian-1.0%2B-purple?style=for-the-badge&logo=obsidian" alt="Obsidian Version">
+  <img src="https://img.shields.io/badge/Obsidian-1.7.2%2B-purple?style=for-the-badge&logo=obsidian" alt="Obsidian 1.7.2+">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/version-1.2.2-green?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/github/v/release/volcanicll/obsidian-md-publisher?style=for-the-badge&color=green" alt="Version">
 </p>
 
-> **一键发布 Markdown 到微信公众号**
+> **在 Obsidian 写好笔记，一键排成公众号文章，直接存进草稿箱。**
 
-在 Obsidian 里写好笔记，一键变成排版精美的公众号文章：样式自动处理好，图片自动上传到微信，直接存入草稿箱，不需要再手动调整格式。
+Markdown Publisher 把「写」和「发」之间的排版工作全部自动化：套上设计师主题、内联全部样式、压缩并上传图片、转存外链图片、生成封面，最后把成稿送进微信公众号草稿箱。你只需要在手机上确认，然后群发。
 
 <p align="center">
-  <a href="https://volcanicll.github.io/obsidian-md-publisher/">🌍 在线落地页</a> ·
+  <a href="https://volcanicll.github.io/obsidian-md-publisher/">🌍 在线体验</a> ·
   <a href="./docs/USAGE.md">📖 完整使用说明</a> ·
-  <a href="https://github.com/volcanicll/obsidian-md-publisher/releases">⬇️ 下载安装</a> ·
+  <a href="#-安装">⬇️ 安装</a> ·
   <a href="https://github.com/volcanicll/obsidian-md-publisher/issues">💬 反馈问题</a>
 </p>
 
-## ✨ 它能做什么
+<img width="100%" src="docs/assets/theme-showcase.png" alt="六套排版主题对比">
 
-### 🎨 精心设计的排版主题
-内置 11 种排版主题，覆盖常见的公众号内容风格，选定后整篇文章的标题、引用、表格、代码都会呈现统一的设计感：
-- **经典风**: Ayu Light、Apple、Bauhaus、Lawning、Novel
-- **设计师系列**: 墨韵 Ink（新中式书卷）、科技蓝 Tech（深度长文）、青瓷 Celadon（清新卡片）、志刊 Editorial（黑白杂志）、暖橘 Ember（温暖情绪）、极简 Mono（纯文字排版），整体效果见 [主题设计稿](docs/theme-preview.html)
+## 🎨 六套排版主题，一套设计语言
 
-另有 14 款代码高亮主题（GitHub、Monokai、Dracula、Nord 等），写技术文章时同样得体。
+不做「换汤不换药」的配色套餐，而是三组不同的版式语言，每组两套：
 
-### 📤 一键发布到公众号
-- **直接存入草稿箱**：填好标题、作者、摘要，一键送达公众号草稿箱，打开手机即可预览发表
-- **复制粘贴也可以**：不想配置 API？点击复制，到公众号后台粘贴，排版原样保留
-- **图片全自动**：文中的本地图片自动压缩并上传到微信 CDN，动图保留动画，格式不兼容时自动转换，不用手动处理任何一张图
-- **草稿箱管理**：在插件里就能分页查看、删除草稿箱内容
-- **数学公式与表格**：支持 LaTeX 公式、表格、任务列表、脚注等完整 Markdown 能力
+| 家族 | 主题 | 适合 |
+|------|------|------|
+| 柔和轻氧 | **晨雾 Mist**（默认）· 蜜桃 Peach | 生活、科普、职场、成长 |
+| 学院学术 | **学报 Journal** · 笔记 Notes | 长文、深度阅读、学习笔记 |
+| 杂志风尚 | **封面 Cover** · 别册 Booklet | 人物、品牌、文化、散文 |
 
-### 🔑 简单灵活的授权
-- **自动模式**：填入公众号的 AppID / AppSecret 即可长期使用
-- **手动 token 模式**：不想配 IP 白名单，或家庭宽带 IP 经常变化？粘贴一个临时 token 就能用
+所有主题都针对公众号移动端阅读设计：只用内联样式、系统字体栈、无 hover、无外部资源，预览即发布效果。另有 14 款代码高亮主题（GitHub、Monokai、Dracula、Nord 等），写技术文章同样得体。
+
+## 📤 发布链路，交给它
+
+- **直接存入草稿箱**：填好标题、作者、摘要，一键送达草稿箱，手机上预览后群发。
+- **封面自动处理**：自动用正文首图作封面；全文无图时可指定封面图，或按文章标题自动生成标题卡片封面。
+- **图片全自动**：本地图片自动压缩上传，外链图片自动转存；GIF 保留动画，WebP / BMP / SVG 自动转 PNG，PNG 转 JPEG 时自动铺白底，不出现黑底。
+- **失败即中止**：任一图片上传失败就取消发布并明确提示，绝不产出残留本地路径的裂图草稿。
+- **草稿箱管理**：在插件内分页查看、删除草稿箱内容。
+- **也可以只复制**：不想配置 API？点「复制」，到公众号后台粘贴，排版原样保留。
+- **完整 Markdown 能力**：GFM 表格、任务列表、脚注、删除线，KaTeX 行内与块级公式，代码块高亮，Obsidian `![[图片.png]]` 嵌入语法。
+
+## 🔑 授权不折腾
+
+- **自动模式**：填入公众号 AppID / AppSecret 即可长期使用（需配置 IP 白名单）。
+- **手动 token 模式**：不想配白名单，或家庭宽带 IP 经常变化？粘贴一个临时 token 就能用。
 
 ## 📦 安装
 
-### 社区插件商店（审核中）
-本插件正在提交到 Obsidian 社区插件商店，敬请期待。
+### 社区插件市场（推荐）
+
+插件已上架 Obsidian 社区插件市场：
+
+1. 打开 **设置 → 第三方插件 → 浏览**
+2. 搜索 **Markdown Publisher**
+3. 安装并启用
 
 ### 手动安装
 
@@ -49,11 +63,11 @@
    ```
    .obsidian/plugins/md-publisher/
    ```
-3. 在 **设置 → 社区插件** 中启用
+3. 在 **设置 → 第三方插件** 中启用
 
 ## 🚀 快速开始
 
-1. **打开预览**：点击侧边栏 📄 图标，或运行 `打开排版预览` 命令
+1. **打开预览**：点击侧边栏 📄 图标，或运行命令 `打开排版预览`
 2. **挑一个主题**：在预览面板顶部切换排版主题与代码高亮，实时看到效果
 3. **复制或发布**：
    - 点 **复制**，到公众号编辑器粘贴即可
@@ -77,7 +91,14 @@
 2. 在 **设置 → 微信公众号** 中开启 **使用手动 token**
 3. 粘贴 access_token（有效期约 2 小时，过期后重新粘贴即可）
 
-这种方式不需要配置 IP 白名单，特别适合家庭宽带、VPN、移动网络等 IP 经常变化的场景。
+这种方式不需要配置 IP 白名单，特别适合家庭宽带、VPN、移动网络等 IP 经常变化的场景。更多细节见 [完整使用说明](./docs/USAGE.md)。
+
+## ❓ 常见问题
+
+- **测试连接失败？** 检查 AppID / AppSecret、IP 白名单（自动模式），或 token 是否过期（手动模式）。
+- **报错「IP 不在白名单」？** 换网络后本机 IP 会变。可改用手动 token 模式绕过。
+- **为什么没有移动端？** 插件依赖桌面端能力，仅支持 Obsidian 桌面版。
+- **发布的样式错乱？** 公众号编辑器会过滤部分标签，先在预览面板确认效果，必要时用「自定义 CSS」调整。
 
 ## 🤝 反馈与贡献
 

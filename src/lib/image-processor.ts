@@ -1,4 +1,4 @@
-import { App, TFile } from 'obsidian'
+import { App, TFile, requestUrl } from 'obsidian'
 import { WeChatApi } from './wechat/wechat-api'
 
 export interface ImageProcessorOptions {
@@ -18,6 +18,11 @@ export const DEFAULT_IMAGE_OPTIONS: ImageProcessorOptions = {
 export interface ImageProcessResult {
   originalPath: string
   wechatUrl: string
+  /** 清洗后的文件名，供封面复用上传时使用 */
+  filename: string
+  /** 处理（压缩/转码）后的图片字节，供封面以永久素材形式复用上传 */
+  data: ArrayBuffer
+  contentType: string
 }
 
 export type ProgressCallback = (current: number, total: number, filename: string) => void
@@ -108,6 +113,45 @@ export function extractLocalImagePaths(html: string): string[] {
   }
 
   return paths
+}
+
+/**
+ * Extract remote http(s) image paths from HTML content.
+ * 微信对外站图片 CDN 兼容性差，外链图片也需下载后转存到微信 CDN。
+ */
+export function extractRemoteImagePaths(html: string): string[] {
+  const paths: string[] = []
+  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi
+  let match: RegExpExecArray | null
+
+  while ((match = imgRegex.exec(html)) !== null) {
+    const src = match[1]
+    if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
+      paths.push(src)
+    }
+  }
+
+  return paths
+}
+
+/** 从外链 URL 的路径部分取文件名，供 multipart 上传使用 */
+function remoteFilename(src: string): string {
+  try {
+    const url = new URL(src)
+    return url.pathname.split('/').pop() || ''
+  } catch {
+    return ''
+  }
+}
+
+/** 下载外链图片；失败返回 null（调用方计入 errors） */
+async function fetchRemoteImage(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const response = await requestUrl({ url, method: 'GET' })
+    return response.arrayBuffer
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -408,12 +452,15 @@ export async function convertSvgToPng(
 }
 
 /**
- * Process all local images in HTML content:
- * 1. Extract local image paths
- * 2. Read from vault
+ * Process all images in HTML content:
+ * 1. Extract local and remote image paths
+ * 2. Read from vault / download from the remote URL
  * 3. Compress if needed (GIF 保留动画，SVG/WebP 等转为微信支持的格式)
  * 4. Upload to WeChat (同一图片只上传一次，复用 URL)
  * 5. Replace URLs in HTML
+ *
+ * 结果中保留处理后的字节（data/contentType/filename），
+ * 供发布流程把首图以永久素材形式再上传为封面 thumb_media_id。
  *
  * @returns Processed HTML with WeChat URLs and list of results
  */
@@ -425,9 +472,9 @@ export async function processImages(
   options: ImageProcessorOptions = DEFAULT_IMAGE_OPTIONS,
   onProgress?: ProgressCallback
 ): Promise<{ html: string; results: ImageProcessResult[]; errors: string[] }> {
-  const localPaths = extractLocalImagePaths(html)
+  const allPaths = [...extractLocalImagePaths(html), ...extractRemoteImagePaths(html)]
 
-  if (localPaths.length === 0) {
+  if (allPaths.length === 0) {
     return { html, results: [], errors: [] }
   }
 
@@ -437,9 +484,12 @@ export async function processImages(
   let processedHtml = html
   let current = 0
 
-  for (const rawPath of localPaths) {
+  for (const rawPath of allPaths) {
     current++
-    const normalizedPath = normalizeImagePath(rawPath, activeFilePath)
+    const isRemote = rawPath.startsWith('http://') || rawPath.startsWith('https://')
+    const normalizedPath = isRemote
+      ? rawPath
+      : normalizeImagePath(rawPath, activeFilePath)
 
     if (!normalizedPath) {
       errors.push(`Could not normalize path: ${rawPath}`)
@@ -453,16 +503,25 @@ export async function processImages(
       continue
     }
 
-    const filename = sanitizeFilename(normalizedPath.split('/').pop() || 'image.png')
+    const baseName = isRemote
+      ? remoteFilename(rawPath)
+      : normalizedPath.split('/').pop() || ''
+    const filename = sanitizeFilename(baseName || 'image.png')
 
     if (onProgress) {
-      onProgress(current, localPaths.length, filename)
+      onProgress(current, allPaths.length, filename)
     }
 
-    // Read image from vault
-    const imageData = await readImageFromVault(app, normalizedPath)
+    // Read image from vault or download from the remote URL
+    const imageData = isRemote
+      ? await fetchRemoteImage(rawPath)
+      : await readImageFromVault(app, normalizedPath)
     if (!imageData) {
-      errors.push(`Image not found in vault: ${normalizedPath}`)
+      errors.push(
+        isRemote
+          ? `Failed to download remote image: ${rawPath}`
+          : `Image not found in vault: ${normalizedPath}`
+      )
       continue
     }
 
@@ -498,6 +557,9 @@ export async function processImages(
       results.push({
         originalPath: normalizedPath,
         wechatUrl,
+        filename,
+        data: processedData,
+        contentType,
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -506,4 +568,70 @@ export async function processImages(
   }
 
   return { html: processedHtml, results, errors }
+}
+
+/** 公众号封面比例 2.35:1 */
+const COVER_WIDTH = 900
+const COVER_HEIGHT = 383
+
+/** 逐字符换行；超出最大行数时在末行截断并加省略号 */
+function wrapCoverTitle(
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  maxWidth: number,
+  maxLines: number
+): string[] {
+  const chars = Array.from(title.trim())
+  const lines: string[] = []
+  let index = 0
+
+  for (let lineCount = 0; lineCount < maxLines && index < chars.length; lineCount++) {
+    let line = ''
+    while (index < chars.length && (!line || ctx.measureText(line + chars[index]).width <= maxWidth)) {
+      line += chars[index++]
+    }
+    if (lineCount === maxLines - 1 && index < chars.length) {
+      while (line && ctx.measureText(line + '…').width > maxWidth) {
+        line = Array.from(line).slice(0, -1).join('')
+      }
+      line += '…'
+    }
+    lines.push(line)
+  }
+  return lines
+}
+
+/**
+ * 生成默认封面：深色底 + 白色文章标题。
+ * 正文没有任何图片时，微信 news 草稿仍必须有封面，
+ * 用标题卡片兜底，保证发布链路始终可用。
+ */
+export async function generateDefaultCover(title: string): Promise<CompressedImage> {
+  const canvas = document.createElement('canvas')
+  canvas.width = COVER_WIDTH
+  canvas.height = COVER_HEIGHT
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('Canvas context unavailable')
+  }
+
+  ctx.fillStyle = '#313d4f'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillStyle = '#5b8def'
+  ctx.fillRect(0, canvas.height - 8, canvas.width, 8)
+
+  ctx.font = 'bold 44px "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#ffffff'
+
+  const lines = wrapCoverTitle(ctx, title, canvas.width - 160, 3)
+  const lineHeight = 64
+  const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2
+  lines.forEach((line, i) => {
+    ctx.fillText(line, canvas.width / 2, startY + i * lineHeight)
+  })
+
+  const data = await canvasToBuffer(canvas, 'image/jpeg', 0.9)
+  return { data, contentType: 'image/jpeg' }
 }

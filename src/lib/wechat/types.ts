@@ -83,6 +83,7 @@ export const WECHAT_ERROR_CODES: Record<number, string> = {
   [40002]: '不合法的凭证类型',
   [40013]: '不合法的 AppID',
   [40014]: '不合法的 access_token',
+  [40007]: '不合法的媒体文件 ID（封面须用永久素材 media_id，正文图片接口返回的 URL 不能当封面）',
   [40125]: '不合法的 AppSecret',
   [40164]: '调用接口的IP地址不在白名单中',
   [41001]: '缺少 access_token 参数',

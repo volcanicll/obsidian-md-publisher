@@ -128,14 +128,22 @@ export class DraftsModal extends Modal {
     }
 
     for (const item of items) {
-      const newsItem = item.content?.news_item?.[0]
-      const title = newsItem?.title || '未命名草稿'
+      const newsItems = item.content?.news_item ?? []
+      const title = newsItems[0]?.title || '未命名草稿'
       const time = new Date(item.update_time * 1000).toLocaleString('zh-CN')
 
       const row = this.contentElRef.createDiv({ cls: 'bm-md-draft-row' })
       const info = row.createDiv({ cls: 'bm-md-draft-info' })
       info.createDiv({ cls: 'bm-md-draft-title', text: title })
-      info.createDiv({ cls: 'bm-md-draft-meta', text: `更新于 ${time}` })
+      const metaParts = [`更新于 ${time}`]
+      if (newsItems.length > 1) {
+        // 多图文草稿：首篇做标题，其余标题在元信息行中列出
+        metaParts.push(
+          `共 ${newsItems.length} 篇图文`,
+          newsItems.slice(1).map((n) => n.title || '未命名').join(' / ')
+        )
+      }
+      info.createDiv({ cls: 'bm-md-draft-meta', text: metaParts.join(' · ') })
 
       const del = row.createDiv({ cls: 'bm-md-draft-delete', text: '删除' })
       del.addEventListener('click', () => {

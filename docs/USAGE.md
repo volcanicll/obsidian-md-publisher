@@ -2,13 +2,21 @@
 
 Markdown Publisher 是一款 Obsidian 插件，用于把 Markdown 笔记自动排版成微信公众号格式，并直接发布到公众号草稿箱：CSS 全部内联、本地图片自动上传、支持 KaTeX 公式与代码高亮。
 
-> 环境要求：Obsidian 桌面版（macOS / Windows / Linux）v1.0.0 及以上；已认证的微信公众号（订阅号或服务号）。
+> 环境要求：Obsidian 桌面版（macOS / Windows / Linux）v1.7.2 及以上；已认证的微信公众号（订阅号或服务号）。
 
 ---
 
 ## 一、安装插件
 
-插件社区商店审核中，目前请手动安装：
+### 社区插件市场（推荐）
+
+插件已上架 Obsidian 社区插件市场：
+
+1. 打开 Obsidian → **设置 → 第三方插件 → 浏览**
+2. 搜索 **Markdown Publisher**
+3. 点击 **安装**，然后 **启用**
+
+### 手动安装
 
 1. 前往 [Releases](https://github.com/volcanicll/obsidian-md-publisher/releases)，下载最新版本的三个文件：
    - `main.js`
@@ -49,7 +57,7 @@ Markdown Publisher 是一款 Obsidian 插件，用于把 Markdown 笔记自动�
 - 点击左侧边栏的 📄 图标（打开排版预览），或
 - 使用命令面板（`Ctrl/Cmd + P`）执行 **Markdown Publisher: 打开排版预览**。
 
-预览面板实时渲染当前笔记，右侧可切换排版主题与代码高亮主题。笔记中的本地图片会直接显示在预览中。
+预览面板实时渲染当前笔记，顶部可切换排版主题与代码高亮主题。笔记中的本地图片会直接显示在预览中。
 
 ### 三种输出方式
 
@@ -76,9 +84,13 @@ Markdown Publisher 是一款 Obsidian 插件，用于把 Markdown 笔记自动�
 
 ### 主题与样式
 
-- 内置 **18 种排版主题**（Professional、Ayu Light、Terminal、Apple、Midnight、Newsprint、Neo-Brutalism 等）。
-- 内置 **14 种代码高亮主题**（GitHub、Monokai、Dracula、Nord、One Dark 等）。
-- 设置中可为两者指定默认值，并在「自定义 CSS」中覆盖任意主题规则（会内联生效）。
+内置 **6 套排版主题**，统一设计语言「纸上编辑部」，分三个家族：
+
+- **柔和轻氧**：晨雾 Mist（默认，通用首选）、蜜桃 Peach（温暖陪伴）
+- **学院学术**：学报 Journal（深度长文、三线表）、笔记 Notes（手帐感、荧光笔重点）
+- **杂志风尚**：封面 Cover（刊物级黑白红）、别册 Booklet（纸质文艺小册）
+
+另内置 **14 款代码高亮主题**（GitHub、Monokai、Dracula、Nord 等）。设置中可为两者指定默认值，并在「自定义 CSS」中覆盖任意主题规则（会内联生效）。整体效果见 [主题设计稿](./theme-preview.html)。
 
 ## 四、支持的内容格式
 
@@ -94,6 +106,7 @@ Markdown Publisher 是一款 Obsidian 插件，用于把 Markdown 笔记自动�
 - WebP / BMP / AVIF 等微信不支持的格式自动转为 PNG 后上传
 - PNG 保留透明通道；需要转 JPEG 压缩时自动铺白底，不会出现黑底
 - 同一图片在文中出现多次时只上传一次，复用微信 URL
+- 任一图片上传或下载失败时会取消发布并明确提示，不会产出残留本地路径的裂图草稿
 
 ## 五、常见问题
 
@@ -116,4 +129,4 @@ Markdown Publisher 是一款 Obsidian 插件，用于把 Markdown 笔记自动�
 
 ## 许可与反馈
 
-本项目基于 [MIT License](https://github.com/volcanicll/obsidian-md-publisher/blob/main/LICENSE) 开源。遇到问题或功能建议，欢迎到 [Issues](https://github.com/volcanicll/obsidian-md-publisher/issues) 反馈。
+本项目基于 [MIT License](../LICENSE) 开源。遇到问题或功能建议，欢迎到 [Issues](https://github.com/volcanicll/obsidian-md-publisher/issues) 反馈。

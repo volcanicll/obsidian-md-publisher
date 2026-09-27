@@ -3,7 +3,7 @@
   "name": "Markdown Publisher",
   "version": "1.2.2",
   "minAppVersion": "1.7.2",
-  "description": "One-Click Publish Markdown to WeChat Official Account.",
+  "description": "Publish Markdown notes to WeChat Official Account drafts with one click. Includes 6 designer themes, automatic image upload, KaTeX math, and code highlighting.",
   "author": "volcanic",
   "authorUrl": "https://github.com/volcanicll",
   "isDesktopOnly": true

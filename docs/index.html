@@ -7,7 +7,7 @@
 <meta name="description" content="Obsidian 插件：Markdown 自动排版为公众号格式，本地图片自动上传，一键发布到草稿箱。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Markdown Publisher · 把 Obsidian 笔记一键发布到微信公众号">
-<meta property="og:description" content="CSS 自动内联、图片自动上传、18 种排版主题，一键发布到公众号草稿箱。">
+<meta property="og:description" content="六套设计师排版主题、CSS 自动内联、图片自动上传，一键把 Markdown 发布到公众号草稿箱。">
 <meta property="og:url" content="https://volcanicll.github.io/obsidian-md-publisher/">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -223,7 +223,7 @@ footer a:hover{color:var(--green-deep)}
 
 <header class="wrap hero">
   <div>
-    <span class="kicker">Obsidian 插件 · v1.1.5 · MIT 开源</span>
+    <span class="kicker">Obsidian 桌面插件 · v1.2.2 · MIT 开源</span>
     <h1>笔记写完，<br>公众号排版<em>一键搞定</em></h1>
     <p class="hero-sub">Markdown Publisher 把 Obsidian 笔记自动排版成公众号格式：CSS 全部内联、本地图片自动上传、KaTeX 公式与代码高亮开箱即用，直接发布到草稿箱。</p>
     <div class="hero-cta">
@@ -231,7 +231,7 @@ footer a:hover{color:var(--green-deep)}
       <a class="btn btn-ghost" href="https://github.com/volcanicll/obsidian-md-publisher/releases" target="_blank" rel="noopener">下载安装包</a>
     </div>
     <div class="hero-meta">
-      <span><b>18</b> 排版主题</span>
+      <span><b>6</b> 套排版主题</span>
       <span><b>14</b> 代码高亮</span>
       <span><b>0</b> 手动调格式</span>
     </div>
@@ -269,7 +269,7 @@ footer a:hover{color:var(--green-deep)}
       <div class="feat reveal"><div class="ic">🎨</div><h3>CSS 自动内联</h3><p>基于 unified 渲染管线加 <code>juice</code> 内联，输出 HTML 直接适配公众号编辑器，粘贴即用。</p></div>
       <div class="feat reveal"><div class="ic">🖼️</div><h3>图片自动上传</h3><p>本地与网络图片自动压缩并上传至微信素材 CDN，GIF 保留动画，SVG 自动转 PNG。</p></div>
       <div class="feat reveal"><div class="ic">✍️</div><h3>公式与表格</h3><p>KaTeX 数学公式渲染、GFM 表格、任务列表、脚注一应俱全，技术写作无短板。</p></div>
-      <div class="feat wide reveal"><div class="ic">🌓</div><h3>18 种排版主题 × 14 种代码高亮</h3><p>从 Newsprint 纸墨感到 Neo-Brutalism 潮流感，搭配 GitHub、Dracula、Nord 等代码主题，还支持自定义 CSS 覆盖。</p></div>
+      <div class="feat wide reveal"><div class="ic">🌓</div><h3>六套设计师主题 × 14 种代码高亮</h3><p>统一设计语言「纸上编辑部」，柔和轻氧、学院学术、杂志风尚三家族各两套，搭配 GitHub、Dracula、Nord 等代码主题，还支持自定义 CSS 覆盖。</p></div>
       <div class="feat wide reveal"><div class="ic">📤</div><h3>直发草稿箱 + 草稿管理</h3><p>填写标题、作者、摘要后直接调用微信草稿箱 API 存稿；也可随时查看、删除草稿箱中的历史草稿。</p></div>
     </div>
   </div>
@@ -312,7 +312,7 @@ footer a:hover{color:var(--green-deep)}
         <div class="step-num">1</div>
         <div>
           <h3>安装插件</h3>
-          <p>从 <b>Releases</b> 页下载 <code>main.js</code>、<code>manifest.json</code>、<code>styles.css</code> 三个文件，放入仓库的 <code>.obsidian/plugins/md-publisher/</code> 目录，然后在「设置 → 第三方插件」中启用。（社区插件商店审核中）</p>
+          <p>已在 <b>Obsidian 社区插件市场</b>上架：打开「设置 → 第三方插件 → 浏览」，搜索 <b>Markdown Publisher</b> 即可一键安装。也可从 <b>Releases</b> 页下载 <code>main.js</code>、<code>manifest.json</code>、<code>styles.css</code> 手动放入 <code>.obsidian/plugins/md-publisher/</code>。</p>
         </div>
       </div>
 
@@ -341,19 +341,17 @@ footer a:hover{color:var(--green-deep)}
     <div class="sec-head reveal">
       <span class="sec-tag">Themes</span>
       <h2>总有一款排版配得上你的文章</h2>
-      <p>预览面板中即可实时切换。以下为部分主题：</p>
+      <p>预览面板中即可实时切换，以下是全部六套：</p>
     </div>
     <div class="themes">
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fff"><i style="background:#333"></i><i style="background:#666"></i><i style="background:#999"></i></div><figcaption>Professional<small>默认</small></figcaption></figure>
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#faf4ed"><i style="background:#575279"></i><i style="background:#ea9d34"></i><i style="background:#d7827e"></i></div><figcaption>Ayu Light<small>清新</small></figcaption></figure>
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#0d1117"><i style="background:#e6edf3"></i><i style="background:#58a6ff"></i><i style="background:#3fb950"></i></div><figcaption>Terminal<small>极客</small></figcaption></figure>
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#f5f5f4"><i style="background:#1c1917"></i><i style="background:#44403c"></i><i style="background:#78716c"></i></div><figcaption>Apple<small>简约</small></figcaption></figure>
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#14100f"><i style="background:#f2e9de"></i><i style="background:#ff6b6b"></i><i style="background:#ffd93d"></i></div><figcaption>Midnight<small>暗色</small></figcaption></figure>
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fdf6e3"><i style="background:#073642"></i><i style="background:#b58900"></i><i style="background:#cb4b16"></i></div><figcaption>Newsprint<small>纸墨</small></figcaption></figure>
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fff"><i style="background:#000"></i><i style="background:#000;outline:2px solid #000;background:transparent"></i><i style="background:#ffd400"></i></div><figcaption>Neo-Brutalism<small>潮流</small></figcaption></figure>
-      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fff7f0"><i style="background:#e0533d"></i><i style="background:#2b2118"></i><i style="background:#d9a679"></i></div><figcaption>Retro<small>复古</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fbfcfd"><i style="background:#4a5a68"></i><i style="background:#9db9cd"></i><i style="background:#5b87a8"></i></div><figcaption>晨雾 Mist<small>默认 · 通用</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fff9f6"><i style="background:#b04a38"></i><i style="background:#f0a08c"></i><i style="background:#fce8e2"></i></div><figcaption>蜜桃 Peach<small>温暖陪伴</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#f6f8fb"><i style="background:#111111"></i><i style="background:#1e3a5f"></i><i style="background:#c9c9c9"></i></div><figcaption>学报 Journal<small>深度长文</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#fdfcf6"><i style="background:#3b5bdb"></i><i style="background:#748ffc"></i><i style="background:#ffec99"></i></div><figcaption>笔记 Notes<small>手帐学习</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#ffffff"><i style="background:#111111"></i><i style="background:#c8102e"></i><i style="background:#f2f2f2"></i></div><figcaption>封面 Cover<small>刊物黑白红</small></figcaption></figure>
+      <figure class="theme-card reveal"><div class="theme-swatch" style="background:#faf6ef"><i style="background:#2e241b"></i><i style="background:#9c5b23"></i><i style="background:#c8b08e"></i></div><figcaption>别册 Booklet<small>纸质文艺</small></figcaption></figure>
     </div>
-    <p style="margin-top:20px;font-size:13px;color:var(--ink-faint)">共 18 种排版主题、14 种代码高亮主题，均支持自定义 CSS 微调。</p>
+    <p style="margin-top:20px;font-size:13px;color:var(--ink-faint)">共 6 套排版主题、14 种代码高亮主题，均支持自定义 CSS 微调。</p>
   </div>
 </section>
 
@@ -384,7 +382,7 @@ footer a:hover{color:var(--green-deep)}
         <h3><span class="n">环境</span>桌面端专属</h3>
         <ul>
           <li>插件仅支持 <b>Obsidian 桌面版</b>（macOS / Windows / Linux）</li>
-          <li>要求 Obsidian <b>v1.0.0</b> 及以上</li>
+          <li>要求 Obsidian <b>v1.7.2</b> 及以上</li>
           <li>图片上传前会按 quality 0.8 默认压缩，超大图请提前瘦身</li>
         </ul>
       </div>
@@ -425,55 +423,80 @@ document.querySelectorAll(".reveal").forEach((el,i)=>{el.style.transitionDelay=(
 <script>
 /* ---------- 在线排版体验 ---------- */
 const DEMO_THEMES={
-  professional:{label:"Professional",wrap:"font-family:-apple-system,'PingFang SC',sans-serif;color:#333",
-    h1:"font-size:22px;font-weight:700;color:#1f1f1f;margin:26px 0 16px;text-align:center",
-    h2:"font-size:18px;font-weight:700;color:#1f1f1f;margin:24px 0 14px;border-left:4px solid #07c160;padding-left:10px",
-    h3:"font-size:16px;font-weight:700;color:#333;margin:20px 0 12px",
-    p:"font-size:15px;line-height:1.9;letter-spacing:.4px;margin:0 0 16px",
-    strong:"color:#07c160;font-weight:700",
-    a:"color:#07c160;text-decoration:none;border-bottom:1px solid rgba(7,193,96,.4)",
-    quote:"border-left:3px solid #07c160;background:#f6fbf7;padding:12px 16px;margin:0 0 16px;font-size:14px;color:#555",
-    pre:"background:#f6f8fa;border:1px solid #eaecef;border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0 0 16px",
-    preCode:"font-family:Menlo,Consolas,monospace;font-size:13px;color:#24292f;line-height:1.7",
-    code:"background:#f0f0f0;color:#c7254e;padding:2px 6px;border-radius:4px;font-size:13px",
-    li:"font-size:15px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:1px solid #e5e5e5;margin:24px 0"},
-  newsprint:{label:"Newsprint 纸墨",wrap:"font-family:Georgia,'Noto Serif SC','Songti SC',serif;color:#2b2118",
-    h1:"font-size:24px;font-weight:700;color:#1a120b;margin:26px 0 16px;text-align:center;letter-spacing:.05em",
-    h2:"font-size:19px;font-weight:700;color:#1a120b;margin:24px 0 14px;border-bottom:2px solid #b58900;padding-bottom:6px",
-    h3:"font-size:16px;font-weight:700;color:#3a2d1e;margin:20px 0 12px",
-    p:"font-size:15px;line-height:2;margin:0 0 16px;text-indent:0",
-    strong:"color:#8a5a00;font-weight:700",
-    a:"color:#8a5a00;text-decoration:none;border-bottom:1px dotted #8a5a00",
-    quote:"border-left:3px double #b58900;background:#fdf9ef;padding:12px 16px;margin:0 0 16px;font-size:14px;color:#5c4a32;font-style:italic",
-    pre:"background:#fdf6e3;border:1px solid #e8dcbe;padding:14px 16px;overflow-x:auto;margin:0 0 16px",
-    preCode:"font-family:Menlo,Consolas,monospace;font-size:13px;color:#584e3a;line-height:1.7",
-    code:"background:#f3ecd8;color:#8a5a00;padding:2px 6px;font-size:13px",
-    li:"font-size:15px;line-height:2;margin:0 0 6px",hr:"border:none;border-top:1px solid #d8c9a5;margin:24px 0"},
-  terminal:{label:"Terminal 极客",wrap:"font-family:Menlo,Consolas,'JetBrains Mono',monospace;color:#c9d1d9",
-    h1:"font-size:20px;font-weight:700;color:#58a6ff;margin:26px 0 16px",
-    h2:"font-size:17px;font-weight:700;color:#7ee787;margin:24px 0 14px",
-    h3:"font-size:15px;font-weight:700;color:#ff7b72;margin:20px 0 12px",
-    p:"font-size:14px;line-height:1.9;margin:0 0 16px",
-    strong:"color:#fff;font-weight:700",
-    a:"color:#58a6ff;text-decoration:none;border-bottom:1px dashed #58a6ff",
-    quote:"border-left:3px solid #3fb950;background:#161b22;padding:12px 16px;margin:0 0 16px;font-size:13px;color:#8b949e",
-    pre:"background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px 16px;overflow-x:auto;margin:0 0 16px",
-    preCode:"font-family:Menlo,Consolas,monospace;font-size:12.5px;color:#c9d1d9;line-height:1.7",
-    code:"background:#161b22;color:#79c0ff;padding:2px 6px;border-radius:4px;font-size:12.5px",
-    li:"font-size:14px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:1px dashed #30363d;margin:24px 0",wrapBg:"#0d1117"},
-  brutalism:{label:"Neo-Brutalism 潮流",wrap:"font-family:'Noto Sans SC','PingFang SC',sans-serif;color:#111",
-    h1:"font-size:23px;font-weight:900;color:#111;margin:26px 0 16px;background:#ffd400;display:inline-block;padding:4px 12px;border:2px solid #000;box-shadow:4px 4px 0 #000",
-    h2:"font-size:18px;font-weight:900;color:#111;margin:24px 0 14px;border-bottom:3px solid #000;padding-bottom:4px",
-    h3:"font-size:16px;font-weight:900;color:#111;margin:20px 0 12px",
+  mist:{label:"晨雾 Mist",wrap:"font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;color:#4a5a68;background:#fbfcfd;font-size:15px;line-height:2;letter-spacing:.3px",
+    h1:"font-size:22px;font-weight:600;color:#2c3e4e;margin:22px 0 12px;text-align:center;line-height:1.3",
+    h2:"font-size:17px;font-weight:600;color:#2c3e4e;margin:30px 0 12px;text-align:center;line-height:1.4",
+    h3:"font-size:15px;font-weight:600;color:#3f6485;margin:22px 0 10px",
+    p:"font-size:15px;line-height:2;letter-spacing:.3px;margin:0 0 16px",
+    strong:"color:#2c3e4e;font-weight:600",
+    a:"color:#3f6485;text-decoration:none;border-bottom:1px solid #c3d4e0",
+    quote:"background:#f0f5f9;border-radius:14px;padding:16px 20px;margin:0 0 16px;color:#5a6b78;font-size:14px",
+    pre:"background:#2e3f4e;border-radius:12px;padding:16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,'Courier New',monospace;font-size:13px;color:#dce7ef;line-height:1.7",
+    code:"font-family:Menlo,Consolas,'Courier New',monospace;background:#e8eff5;color:#3f6485;padding:2px 7px;border-radius:6px;font-size:13px",
+    li:"font-size:15px;line-height:2;margin:0 0 6px",hr:"border:none;border-top:1px solid #dfe6ec;width:50%;margin:32px auto"},
+  peach:{label:"蜜桃 Peach",wrap:"font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;color:#4d4340;background:#fff9f6;font-size:15px;line-height:1.95;letter-spacing:.3px",
+    h1:"font-size:22px;font-weight:600;color:#3d322e;margin:22px 0 12px;text-align:center",
+    h2:"font-size:15.5px;font-weight:600;display:table;background:#fce8e2;color:#b04a38;border-radius:999px;padding:7px 18px;margin:30px auto 12px",
+    h3:"font-size:15px;font-weight:600;color:#c2543f;margin:22px 0 10px",
+    p:"font-size:15px;line-height:1.95;letter-spacing:.3px;margin:0 0 16px",
+    strong:"color:#b04a38;font-weight:600",
+    a:"color:#c2543f;text-decoration:none;border-bottom:1px solid #f2cabb",
+    quote:"border-left:4px solid #f2b8a8;background:#fdf0ec;border-radius:0 14px 14px 0;padding:15px 19px;margin:0 0 16px;color:#6d5c55;font-size:14px",
+    pre:"background:#453732;border-radius:14px;padding:16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,'Courier New',monospace;font-size:13px;color:#f6e8e1;line-height:1.7",
+    code:"font-family:Menlo,Consolas,'Courier New',monospace;background:#fae7e0;color:#b04a38;padding:2px 7px;border-radius:6px;font-size:13px",
+    li:"font-size:15px;line-height:1.95;margin:0 0 6px",hr:"border:none;border-top:1px solid #f5ddd4;width:55%;margin:32px auto"},
+  journal:{label:"学报 Journal",wrap:"font-family:Georgia,'Noto Serif SC','Source Han Serif SC','Songti SC',SimSun,serif;color:#222222;font-size:15px;line-height:2;letter-spacing:.3px",
+    h1:"font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-size:22px;font-weight:700;color:#111111;margin:22px 0 14px;text-align:center;letter-spacing:1px",
+    h2:"font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-size:17px;font-weight:700;color:#111111;margin:32px 0 12px;border-bottom:1px solid #c9c9c9;padding-bottom:7px;letter-spacing:.5px",
+    h3:"font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;font-size:15px;font-weight:700;color:#1e3a5f;margin:22px 0 10px",
+    p:"font-size:15px;line-height:2;text-align:justify;text-indent:2em;margin:0 0 16px",
+    strong:"font-weight:700",
+    a:"color:#1e3a5f;text-decoration:underline;text-underline-offset:3px",
+    quote:"border-left:3px solid #1e3a5f;background:#f6f8fb;border-radius:0 3px 3px 0;padding:13px 18px;margin:0 0 16px;color:#444444;font-size:14px",
+    pre:"background:#1c2733;border-radius:4px;padding:16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,'Courier New',monospace;font-size:13px;color:#dfe6ee;line-height:1.7",
+    code:"font-family:Menlo,Consolas,'Courier New',monospace;background:#eef1f6;color:#1e3a5f;padding:2px 6px;border-radius:3px;font-size:13px",
+    li:"font-size:15px;line-height:2;margin:0 0 6px",hr:"border:none;border-top:1px solid #cccccc;width:60%;margin:32px auto"},
+  notes:{label:"笔记 Notes",wrap:"font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;color:#2f3a4c;background:#fdfcf6;font-size:15px;line-height:1.9;letter-spacing:.2px",
+    h1:"font-size:21px;font-weight:700;color:#222b3a;margin:22px 0 12px",
+    h2:"font-size:17px;font-weight:700;color:#222b3a;margin:30px 0 12px;border-bottom:2px dashed #aebadb;padding-bottom:6px",
+    h3:"font-size:15px;font-weight:700;color:#3b5bdb;margin:22px 0 10px",
+    p:"font-size:15px;line-height:1.9;letter-spacing:.2px;margin:0 0 16px",
+    strong:"font-weight:700;background:linear-gradient(transparent 62%,#ffec99 0)",
+    a:"color:#3b5bdb;text-decoration:none;border-bottom:1px dashed #91a7ff",
+    quote:"border:1px dashed #aebadb;background:#f4f6fd;border-radius:8px;padding:14px 18px;margin:0 0 16px;color:#4a5568;font-size:14px",
+    pre:"background:#242b3d;border-radius:8px;padding:16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,'Courier New',monospace;font-size:13px;color:#dde4f5;line-height:1.7",
+    code:"font-family:Menlo,Consolas,'Courier New',monospace;background:#edf1fb;color:#3b5bdb;padding:2px 6px;border-radius:4px;font-size:13px",
+    li:"font-size:15px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:2px dashed #c9d1e8;margin:30px 0"},
+  cover:{label:"封面 Cover",wrap:"font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;color:#262626;font-size:15px;line-height:1.9",
+    h1:"font-family:Georgia,'Noto Serif SC','Source Han Serif SC','Songti SC',SimSun,serif;font-size:24px;font-weight:600;color:#111111;border-top:3px solid #111111;border-bottom:1px solid #111111;padding:16px 0 13px;margin:22px 0 16px;letter-spacing:1px;line-height:1.4",
+    h2:"font-family:Georgia,'Noto Serif SC','Source Han Serif SC','Songti SC',SimSun,serif;font-size:18px;font-weight:600;color:#111111;margin:30px 0 12px;border-bottom:1px solid #111111;padding-bottom:7px;letter-spacing:.5px",
+    h3:"font-family:Georgia,'Noto Serif SC','Source Han Serif SC','Songti SC',SimSun,serif;font-size:15px;font-weight:600;color:#111111;margin:22px 0 10px;letter-spacing:2px",
     p:"font-size:15px;line-height:1.9;margin:0 0 16px",
-    strong:"background:#ff6b6b;color:#fff;font-weight:700;padding:0 4px",
-    a:"color:#111;font-weight:700;text-decoration:none;background:#ffd400;border:1.5px solid #000;padding:0 4px",
-    quote:"border:2px solid #000;background:#fff;box-shadow:4px 4px 0 #000;padding:12px 16px;margin:0 0 20px;font-size:14px;font-weight:600",
-    pre:"background:#111;border:2px solid #000;box-shadow:6px 6px 0 #ffd400;padding:14px 16px;overflow-x:auto;margin:0 0 20px",
-    preCode:"font-family:Menlo,Consolas,monospace;font-size:13px;color:#7ee787;line-height:1.7",
-    code:"background:#111;color:#ffd400;padding:2px 6px;font-size:13px;font-weight:700",
-    li:"font-size:15px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:3px solid #000;margin:24px 0"}
+    strong:"color:#111111;font-weight:700",
+    a:"color:#c8102e;text-decoration:none;border-bottom:1px solid #c8102e",
+    quote:"border-top:1px solid #111111;border-bottom:1px solid #111111;background:transparent;padding:15px 4px;margin:0 0 16px;color:#111111;font-size:15px;font-weight:500",
+    pre:"background:#111111;padding:16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,'Courier New',monospace;font-size:13px;color:#f5f5f5;line-height:1.7",
+    code:"font-family:Menlo,Consolas,'Courier New',monospace;background:#f2f2f2;color:#111111;padding:2px 6px;font-size:13px",
+    li:"font-size:15px;line-height:1.9;margin:0 0 6px",hr:"border:none;border-top:2px solid #111111;margin:32px 0"},
+  booklet:{label:"别册 Booklet",wrap:"font-family:Georgia,'Noto Serif SC','Source Han Serif SC','Songti SC',SimSun,serif;color:#40342a;background:#faf6ef;font-size:15px;line-height:2.05;letter-spacing:.4px",
+    h1:"font-size:22px;font-weight:600;color:#2e241b;margin:20px 0 14px;text-align:center;letter-spacing:1.5px",
+    h2:"font-size:17px;font-weight:600;color:#2e241b;margin:30px 0 12px;border-bottom:1px dotted #c8b08e;padding-bottom:7px",
+    h3:"font-size:15px;font-weight:600;color:#7c4a1e;margin:22px 0 10px",
+    p:"font-size:15px;line-height:2.05;letter-spacing:.4px;margin:0 0 16px",
+    strong:"color:#6e3f16;font-weight:600",
+    a:"color:#8a5220;text-decoration:none;border-bottom:1px solid #dcc9a8",
+    quote:"border:1px solid #e6dcc8;background:#f5efe3;border-radius:2px;padding:14px 18px;margin:0 0 16px;color:#5c4f3f;font-size:14px",
+    pre:"background:#33291f;border-radius:4px;padding:16px;overflow-x:auto;margin:0 0 16px",
+    preCode:"font-family:Menlo,Consolas,'Courier New',monospace;font-size:13px;color:#ece2cf;line-height:1.7",
+    code:"font-family:Menlo,Consolas,'Courier New',monospace;background:#f0e8da;color:#7c4a1e;padding:2px 6px;border-radius:3px;font-size:13px",
+    li:"font-size:15px;line-height:2.05;margin:0 0 6px",hr:"border:none;border-top:1px solid #ddd2ba;width:40%;margin:32px auto"}
 };
+
 const DEMO_SRC=`# 把公众号排版交给插件
 
 写作时**只管专注内容**，发布时样式自动生成，无需再和公众号编辑器搏斗。
@@ -505,7 +528,7 @@ await note.to("草稿箱")  // 完成 ✓
 const $in=document.getElementById("demoInput"),$out=document.getElementById("demoOutput"),
       $pills=document.getElementById("demoPills"),$copy=document.getElementById("demoCopy"),
       $count=document.getElementById("demoCount");
-let curTheme="professional",renderTimer=null;
+let curTheme="mist",renderTimer=null;
 const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 function inlineMd(s,t){
   const codes=[];

@@ -1,29 +1,49 @@
 import { Modal, App, Setting, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
+import type { WeChatApi } from '../lib/wechat/wechat-api'
 import { extractTitleFromMarkdown, extractDigestFromMarkdown } from '../lib/wechat/wechat-api'
 import {
   isWeChatConfigured,
   validateWeChatArticleFields,
   WECHAT_LIMITS
 } from '../lib/wechat/config'
-import { processImages, DEFAULT_IMAGE_OPTIONS, type ProgressCallback } from '../lib/image-processor'
+import {
+  compressImage,
+  generateDefaultCover,
+  normalizeImagePath,
+  processImages,
+  readImageFromVault,
+  DEFAULT_IMAGE_OPTIONS,
+  type ImageProcessResult,
+  type ProgressCallback
+} from '../lib/image-processor'
+
+export interface PublishModalContent {
+  html: string
+}
 
 export interface PublishModalOptions {
   markdown: string
   html: string
   plugin: BmMdPlugin
+  /**
+   * 发布时重新获取最新渲染结果：弹窗打开期间笔记可能继续被编辑，
+   * 不提供时退回打开弹窗时的快照。
+   */
+  loadContent?: () => Promise<PublishModalContent | null>
 }
 
 /**
  * 发布到微信公众号草稿箱的确认弹窗。
  */
 export class PublishModal extends Modal {
-  private markdown: string
   private html: string
   private plugin: BmMdPlugin
+  private loadContent?: () => Promise<PublishModalContent | null>
   private title: string
   private digest: string
   private author: string
+  private coverPath: string
   private contentSourceUrl: string
   private needOpenComment: boolean
   private onlyFansCanComment: boolean
@@ -32,14 +52,15 @@ export class PublishModal extends Modal {
 
   constructor(app: App, options: PublishModalOptions) {
     super(app)
-    this.markdown = options.markdown
     this.html = options.html
     this.plugin = options.plugin
+    this.loadContent = options.loadContent
 
     // Extract defaults from markdown
-    this.title = extractTitleFromMarkdown(this.markdown)
-    this.digest = extractDigestFromMarkdown(this.markdown)
+    this.title = extractTitleFromMarkdown(options.markdown)
+    this.digest = extractDigestFromMarkdown(options.markdown)
     this.author = ''
+    this.coverPath = ''
     this.contentSourceUrl = ''
     this.needOpenComment = this.plugin.settings.defaultOpenComment
     this.onlyFansCanComment = this.plugin.settings.defaultFansOnlyComment
@@ -104,6 +125,21 @@ export class PublishModal extends Modal {
           .setValue(this.digest)
           .onChange((value) => {
             this.digest = value
+          })
+      })
+
+    // Cover image
+    new Setting(contentEl)
+      .setName('封面图路径')
+      .setDesc(
+        '可选，vault 内图片路径。微信公众号要求草稿必须带封面：留空时自动用正文第一张图片，全文无图则按标题生成默认封面。'
+      )
+      .addText((text) => {
+        text
+          .setPlaceholder('assets/cover.png')
+          .setValue(this.coverPath)
+          .onChange((value) => {
+            this.coverPath = value
           })
       })
 
@@ -189,6 +225,41 @@ export class PublishModal extends Modal {
     }
   }
 
+  /**
+   * 确定封面并以永久素材形式上传，返回 thumb_media_id。
+   * 优先级：用户指定的 vault 图片 → 正文第一张已上传图片 → 按标题生成的默认封面。
+   */
+  private async resolveCoverMediaId(
+    api: WeChatApi,
+    results: ImageProcessResult[],
+    activeFilePath: string | null
+  ): Promise<string> {
+    const explicit = this.coverPath.trim()
+    if (explicit) {
+      const normalized = normalizeImagePath(explicit, activeFilePath) ?? explicit
+      const data = await readImageFromVault(this.app, normalized)
+      if (!data) {
+        throw new Error(`未找到封面图：${explicit}`)
+      }
+      const compressed = await compressImage(data)
+      return api.uploadCoverImage(
+        compressed.data,
+        normalized.split('/').pop() || 'cover',
+        compressed.contentType
+      )
+    }
+
+    if (results.length > 0) {
+      // 正文图片已通过 uploadimg 转存，但该接口不返回 media_id，
+      // 需要把首图字节再以永久素材形式上传一次作为封面
+      const first = results[0]
+      return api.uploadCoverImage(first.data, first.filename, first.contentType)
+    }
+
+    const cover = await generateDefaultCover(this.title.trim())
+    return api.uploadCoverImage(cover.data, 'cover.jpg', cover.contentType)
+  }
+
   async publish(): Promise<void> {
     if (this.isPublishing) return
 
@@ -214,19 +285,24 @@ export class PublishModal extends Modal {
       const activeFile = this.app.workspace.getActiveFile()
       const activeFilePath = activeFile?.path ?? null
 
-      // Process local images: extract, compress, upload to WeChat
+      // 弹窗打开期间笔记可能继续被编辑，发布时重新获取最新渲染结果
+      this.updateProgress('正在渲染最新内容…')
+      const content = this.loadContent ? await this.loadContent() : null
+      const htmlToPublish = content?.html ?? this.html
+
+      // Process local & remote images: extract, compress, upload to WeChat
       const onProgress: ProgressCallback = (current, total, filename) => {
-        this.updateProgress(`正在上传图片 ${current}/${total}：${filename}`)
+        this.updateProgress(`正在处理图片 ${current}/${total}：${filename}`)
       }
 
-      this.updateProgress('正在扫描本地图片…')
+      this.updateProgress('正在扫描图片…')
 
       const {
         html: processedHtml,
         results,
         errors
       } = await processImages(
-        this.html,
+        htmlToPublish,
         this.app,
         api,
         activeFilePath,
@@ -234,14 +310,18 @@ export class PublishModal extends Modal {
         onProgress
       )
 
-      // Report image processing results
+      // 任一图片失败即取消发布：残留本地路径/外链的草稿在微信端会裂图或被拒
+      if (errors.length > 0) {
+        console.warn('图片处理失败，发布已取消:', errors)
+        throw new Error(`${errors.length} 张图片处理失败，已取消发布（${errors[0]}）`)
+      }
       if (results.length > 0) {
         new Notice(`已上传 ${results.length} 张图片`)
       }
-      if (errors.length > 0) {
-        console.warn('图片处理警告:', errors)
-        new Notice(`${errors.length} 张图片处理失败，已跳过`, 5000)
-      }
+
+      // 微信 news 草稿必须有封面（thumb_media_id）
+      this.updateProgress('正在上传封面…')
+      const thumbMediaId = await this.resolveCoverMediaId(api, results, activeFilePath)
 
       // Create draft with processed HTML
       this.updateProgress('正在创建草稿…')
@@ -252,6 +332,7 @@ export class PublishModal extends Modal {
         author: this.author.trim() || undefined,
         digest: this.digest.trim() || undefined,
         content_source_url: this.contentSourceUrl.trim() || undefined,
+        thumb_media_id: thumbMediaId,
         show_cover_pic: 0,
         need_open_comment: this.needOpenComment ? 1 : 0,
         only_fans_can_comment: this.onlyFansCanComment ? 1 : 0

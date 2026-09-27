@@ -23,7 +23,7 @@ interface BmMdSettings {
 }
 
 const DEFAULT_SETTINGS: BmMdSettings = {
-  markdownStyle: 'ayu-light',
+  markdownStyle: 'mist',
   codeTheme: 'github',
   customCss: '',
   // WeChat defaults

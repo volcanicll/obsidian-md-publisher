@@ -12,6 +12,55 @@ import { sanitizeFilename } from '../image-processor'
 
 const WECHAT_API_BASE = 'https://api.weixin.qq.com/cgi-bin'
 
+interface MultipartField {
+  name: string
+  value: string
+}
+
+interface MultipartFilePart {
+  filename: string
+  contentType: string
+  bytes: Uint8Array
+}
+
+/** 构造 multipart/form-data 请求体：普通字段在前，文件字段（name="media"）在后 */
+function buildMultipartBody(
+  boundary: string,
+  fields: MultipartField[],
+  file: MultipartFilePart
+): ArrayBuffer {
+  const encoder = new TextEncoder()
+  const parts: Uint8Array[] = []
+  for (const field of fields) {
+    parts.push(
+      encoder.encode(
+        `--${boundary}\r\nContent-Disposition: form-data; name="${field.name}"\r\n\r\n${field.value}\r\n`
+      )
+    )
+  }
+  parts.push(
+    encoder.encode(
+      `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${file.filename}"\r\nContent-Type: ${file.contentType}\r\n\r\n`
+    )
+  )
+  parts.push(file.bytes)
+  parts.push(encoder.encode(`\r\n--${boundary}--\r\n`))
+
+  const total = parts.reduce((sum, part) => sum + part.length, 0)
+  const body = new Uint8Array(total)
+  let offset = 0
+  for (const part of parts) {
+    body.set(part, offset)
+    offset += part.length
+  }
+  return body.buffer
+}
+
+/** 每次上传生成独立 boundary，避免与请求体内容冲突 */
+function createBoundary(): string {
+  return '----WebKitFormBoundary' + Math.random().toString(36).substring(2)
+}
+
 export interface WeChatApiConfig {
   appId: string
   appSecret: string
@@ -166,32 +215,21 @@ export class WeChatApi {
     const safeFilename = sanitizeFilename(filename)
 
     const url = `${WECHAT_API_BASE}/media/uploadimg?access_token=${encodeURIComponent(token)}`
+    const boundary = createBoundary()
+    const body = buildMultipartBody(boundary, [], {
+      filename: safeFilename,
+      contentType,
+      bytes: new Uint8Array(imageBlob),
+    })
 
-    // Create form data with the image
-    const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2)
-
-    const header = `--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${safeFilename}"\r\nContent-Type: ${contentType}\r\n\r\n`
-    const footer = `\r\n--${boundary}--\r\n`
-    
-    const headerBytes = new TextEncoder().encode(header)
-    const footerBytes = new TextEncoder().encode(footer)
-    const imageBytes = new Uint8Array(imageBlob)
-    
-    const body = new Uint8Array(headerBytes.length + imageBytes.length + footerBytes.length)
-    body.set(headerBytes, 0)
-    body.set(imageBytes, headerBytes.length)
-    body.set(footerBytes, headerBytes.length + imageBytes.length)
-
-    const params: RequestUrlParam = {
+    const response = await requestUrl({
       url,
       method: 'POST',
       headers: {
         'Content-Type': `multipart/form-data; boundary=${boundary}`
       },
-      body: body.buffer
-    }
-
-    const response = await requestUrl(params)
+      body
+    })
     const data = response.json as { url?: string; errcode?: number; errmsg?: string }
 
     if (data.errcode && data.errcode !== 0) {
@@ -203,6 +241,49 @@ export class WeChatApi {
     }
 
     return data.url
+  }
+
+  /**
+   * 上传封面图到永久素材，返回可用于 thumb_media_id 的 media_id。
+   * 微信 news 类型草稿必须提供封面（thumb_media_id），且必须是
+   * material/add_material 返回的永久 media_id——正文图片接口
+   * media/uploadimg 不返回 media_id，不能当封面用。
+   */
+  async uploadCoverImage(
+    imageBlob: ArrayBuffer,
+    filename: string,
+    contentType: string = 'image/jpeg'
+  ): Promise<string> {
+    const token = await this.getAccessToken()
+
+    const safeFilename = sanitizeFilename(filename)
+    const url = `${WECHAT_API_BASE}/material/add_material?access_token=${encodeURIComponent(token)}`
+    const boundary = createBoundary()
+    const body = buildMultipartBody(
+      boundary,
+      [{ name: 'type', value: 'image' }],
+      { filename: safeFilename, contentType, bytes: new Uint8Array(imageBlob) }
+    )
+
+    const response = await requestUrl({
+      url,
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      body
+    })
+    const data = response.json as { media_id?: string; url?: string; errcode?: number; errmsg?: string }
+
+    if (data.errcode && data.errcode !== 0) {
+      throw new Error(getWeChatErrorMessage(data.errcode))
+    }
+
+    if (!data.media_id) {
+      throw new Error('上传封面失败：返回数据无效')
+    }
+
+    return data.media_id
   }
 
   /**
@@ -318,8 +399,9 @@ export function extractDigestFromMarkdown(markdown: string): string {
   for (const line of lines) {
     const trimmed = line.trim()
     if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('```') && !trimmed.startsWith('- ') && !trimmed.startsWith('* ')) {
-      // Truncate to 120 chars max
-      return trimmed.length > 120 ? trimmed.substring(0, 117) + '...' : trimmed
+      // 按码点截断到 120 字符，避免把 emoji 代理对截成乱码
+      const chars = Array.from(trimmed)
+      return chars.length > 120 ? chars.slice(0, 117).join('') + '...' : trimmed
     }
   }
   

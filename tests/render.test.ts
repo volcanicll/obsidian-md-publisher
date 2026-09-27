@@ -5,7 +5,7 @@ describe('render pipeline', () => {
   it('renders markdown to HTML with inlined styles', async () => {
     const html = await render({ markdown: '# Hello\n\nA **bold** paragraph.' })
     expect(html).toContain('<h1')
-    expect(html).toContain('<strong>')
+    expect(html).toContain('<strong')
     expect(html).toContain('id="bm-md"')
     expect(html).toContain('style=')
   })
@@ -37,7 +37,7 @@ describe('render pipeline', () => {
 
   it('applies the chosen markdown theme via inlined styles', async () => {
     const md = '# Heading\n'
-    const html = await render({ markdown: md, markdownStyle: 'ayu-light' })
+    const html = await render({ markdown: md, markdownStyle: 'mist' })
     // Theme 内联到 h1（juice 按选择器匹配元素后写入 style 属性）
     expect(html).toContain('<h1')
     expect(html).toContain('style=')

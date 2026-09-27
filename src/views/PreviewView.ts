@@ -16,7 +16,7 @@ export const VIEW_TYPE_PREVIEW = 'obsidian-md-publisher'
 
 export class PreviewView extends ItemView {
   plugin: BmMdPlugin
-  currentMarkdownStyle: string = 'ayu-light'
+  currentMarkdownStyle: string = 'mist'
   currentCodeTheme: string = 'github'
   previewContainer: HTMLElement | null = null
   styleSelector: HTMLElement | null = null
@@ -30,7 +30,7 @@ export class PreviewView extends ItemView {
   constructor(leaf: WorkspaceLeaf, plugin: BmMdPlugin) {
     super(leaf)
     this.plugin = plugin
-    this.currentMarkdownStyle = plugin.settings.markdownStyle || 'ayu-light'
+    this.currentMarkdownStyle = plugin.settings.markdownStyle || 'mist'
     this.currentCodeTheme = plugin.settings.codeTheme || 'github'
   }
 
@@ -307,7 +307,14 @@ export class PreviewView extends ItemView {
     const modal = new PublishModal(this.app, {
       markdown,
       html,
-      plugin: this.plugin
+      plugin: this.plugin,
+      // 发布时重新渲染：弹窗打开期间笔记可能继续被编辑。
+      // 编辑会清空渲染缓存，未变更时直接复用缓存，无额外开销。
+      loadContent: async () => {
+        if (!this.getCurrentMarkdown()) return null
+        const freshHtml = await this.getRenderedHtml()
+        return freshHtml ? { html: freshHtml } : null
+      }
     })
     modal.open()
   }

@@ -280,7 +280,8 @@
 }
 
 .bm-md-warning {
-  color: var(--text-warning);
+  /* 背景是实心橙色，文字须用高对比色；var(--text-warning) 会橙字配橙底不可读 */
+  color: var(--text-on-accent, #ffffff);
   background: var(--background-modifier-warning);
   padding: 12px;
   border-radius: 6px;

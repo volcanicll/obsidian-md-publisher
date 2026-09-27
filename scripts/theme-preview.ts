@@ -55,95 +55,65 @@ interface ThemeNote {
 }
 
 const notes: Record<string, ThemeNote> = {
-  'ink-wash': {
-    id: 'ink-wash',
-    positioning: '书卷文人 · 新中式',
+  mist: {
+    id: 'mist',
+    positioning: '晨雾轻氧 · 通用首选',
     signature: [
-      '宋体正文 + 2.05 行高，宣纸底色 #fcfbf7',
-      'h2 以朱砂「」括起，h3 用朱砂侧栏，全篇唯一强调色',
-      '引用为米色签条，代码块是墨色底',
+      '雾蓝灰正文配雾白底，默认主题，耐看不挑内容',
+      'h2 居中 + 雾蓝渐变短线，层级靠留白而不是色块',
+      '引用、代码块、图片统一 12-14px 大圆角，透气柔和',
     ],
-    fit: '读书、文化、散文、国风类账号',
+    fit: '生活方式、科普、职场、成长类账号，日常通用',
   },
-  'tech-note': {
-    id: 'tech-note',
-    positioning: '科技信息 · 深度长文',
+  peach: {
+    id: 'peach',
+    positioning: '蜜桃暖调 · 陪伴感',
     signature: [
-      'h2 蓝色侧栏 + 浅蓝底色块，扫读时锚点极清晰',
-      '行内代码蓝紫底蓝字，代码块深板岩底',
-      '表格斑马纹，信息密度友好',
-    ],
-    fit: '技术、产品、AI、行业分析类账号',
-  },
-  celadon: {
-    id: 'celadon',
-    positioning: '青瓷清新 · 卡片化',
-    signature: [
-      'h2 居中 + 青瓷下划短线，h3 带圆点标记',
-      '引用、代码块、图片全部 12px 大圆角卡片',
-      '青绿色系贯穿，整体透气柔和',
-    ],
-    fit: '生活方式、科普、职场、成长类账号',
-  },
-  editorial: {
-    id: 'editorial',
-    positioning: '编辑部杂志 · 黑白高对比',
-    signature: [
-      'h1 上下双线（粗+细）报头式处理',
-      'h2 黑色下划线 + 朱红方块序标，红色仅用于链接与序标',
-      '引用为上下细线的 pull-quote，去底色、无圆角',
-    ],
-    fit: '人物专访、品牌叙事、深度非虚构类账号',
-  },
-  ember: {
-    id: 'ember',
-    positioning: '暖橘情绪 · 陪伴感',
-    signature: [
-      '奶油底 #fffaf4 + 暖褐正文，降低冷感',
-      'h2 橘色圆点引导，h3 直接用橘色',
-      '引用为奶油卡片配杏色侧栏，圆角收边',
+      '杏白底 + 暖褐正文，降低冷屏幕的疏离感',
+      'h2 做成珊瑚色胶囊章，是全篇唯一的重色块',
+      '引用为奶油气泡卡，圆角收边，情绪柔软',
     ],
     fit: '情感、亲子、美食、晚安陪伴类账号',
   },
-  'mono-prose': {
-    id: 'mono-prose',
-    positioning: '极简文字 · 排版退后',
+  journal: {
+    id: 'journal',
+    positioning: '学报规训 · 深度长文',
     signature: [
-      '零装饰：无底色、无圆角、无阴影，层级只靠字重与留白',
-      '链接纯黑下划线，引用只是 2px 黑色侧线',
-      '表格只保留水平细线',
+      '黑体标题 + 宋体正文两端对齐，首行 2em 缩进',
+      '三线表是版式签名：上下粗线、无竖线、无底色',
+      '藏青只出现在 § 序标、引用侧栏与链接上',
     ],
-    fit: '随笔、产品札记、克制型个人账号',
+    fit: '知识长文、学术科普、深度分析类账号',
   },
-  'ayu-light': {
-    id: 'ayu-light',
-    positioning: '暖橘轻快 · 默认主题',
-    signature: ['渲染默认值，橘色标题配下划线', '整体轻快、无侵入'],
-    fit: '通用日常更新',
+  notes: {
+    id: 'notes',
+    positioning: '课堂笔记 · 手帐感',
+    signature: [
+      '纸黄底色 + 虚线分隔，全程手帐质感',
+      'strong 一律荧光笔划线，扫读时重点先跳出来',
+      'h3 带 ✎ 记号，引用是虚线便签卡',
+    ],
+    fit: '学习方法、读书笔记、效率工具类账号',
   },
-  apple: {
-    id: 'apple',
-    positioning: '苹果官网 · 克制干净',
-    signature: ['SF 字体栈 + 紧字距，灰阶引用', '公众号主流审美的安全牌'],
-    fit: '产品介绍、通用科技内容',
+  cover: {
+    id: 'cover',
+    positioning: '封面故事 · 刊物感',
+    signature: [
+      'h1 上下双线（粗+细）报头式处理，衬线大标题',
+      'h2 红方块序标 + 黑色底线，红只给链接与序标',
+      '引用为上下细线 pull-quote，去底色、无圆角',
+    ],
+    fit: '人物专访、品牌叙事、深度非虚构类账号',
   },
-  bauhaus: {
-    id: 'bauhaus',
-    positioning: '包豪斯 · 色块创意',
-    signature: ['红蓝撞色标题，色块 h2', '深蓝代码块与整体色系呼应'],
-    fit: '设计、创意、活动通知',
-  },
-  lawning: {
-    id: 'lawning',
-    positioning: '草坪 · 衬线绿意',
-    signature: ['Georgia 衬线正文 + 无衬线标题', '奶油底色与鼠尾草绿点缀'],
-    fit: '自然、园艺、慢生活',
-  },
-  novel: {
-    id: 'novel',
-    positioning: '小说 · 文学连载',
-    signature: ['正文 2em 首行缩进两端对齐', '居中衬线标题，引用为大引号浮标'],
-    fit: '小说、散文、长篇连载',
+  booklet: {
+    id: 'booklet',
+    positioning: '别册书卷 · 纸质文艺',
+    signature: [
+      '米白纸底 + 焦糖点缀，衬线正文 2.05 行高',
+      'h1 居中带焦糖短线，h2 菱形序标 + 点线下划',
+      '引用为细线框签条，整体像一本手边小册子',
+    ],
+    fit: '读书、文化、散文、慢生活类账号',
   },
 }
 
@@ -195,13 +165,13 @@ async function main() {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>公众号排版主题设计稿 · Designer Series</title>
+<title>公众号排版主题设计稿 · 纸上编辑部</title>
 <style>${pageCss}</style>
 </head>
 <body>
 <header class="page-header">
-  <h1>公众号排版主题 · Designer Series</h1>
-  <p>11 套精选排版方案（5 套经典保留 + 6 套设计师系列），已删除不可用与重复的 13 套旧主题，覆盖六个不同维度而非六个强调色。所有卡片均由插件真实渲染管线生成（juice 全内联），所见即发布效果。约束：微信内移动端阅读、仅内联样式、系统字体、无 hover 与外部资源。</p>
+  <h1>公众号排版主题 · 纸上编辑部 Paper Press</h1>
+  <p>6 套排版主题，统一设计语言「纸上编辑部」：柔和轻氧、学院学术、杂志风尚三个家族，各两套。家族之间换的是版式语言（网格、字体、记号），同族两套只换材质与密度。所有卡片均由插件真实渲染管线生成（juice 全内联），所见即发布效果。约束：微信内移动端阅读、仅内联样式、系统字体、无 hover 与外部资源。</p>
 </header>
 <main class="grid">${sections.join('\n')}</main>
 </body>

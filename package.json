@@ -1,14 +1,14 @@
 {
   "name": "obsidian-md-publisher",
   "version": "1.2.2",
-  "description": "One-click publish Markdown notes to WeChat Official Account.",
+  "description": "Publish Markdown notes to WeChat Official Account drafts with one click. Includes 6 designer themes, automatic image upload, KaTeX math, and code highlighting.",
   "main": "main.js",
   "scripts": {
     "dev": "bun run esbuild.config.mjs",
     "build": "bun run esbuild.config.mjs production",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint \"src/**/*.ts\"",
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run test",
     "preview:themes": "esbuild scripts/theme-preview.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/theme-preview-gen.cjs --loader:.css=text && node node_modules/.cache/theme-preview-gen.cjs",
@@ -19,7 +19,10 @@
     "obsidian-plugin",
     "markdown",
     "wechat",
-    "wechat-official-account"
+    "wechat-official-account",
+    "obsidian-wechat",
+    "wechat-publisher",
+    "markdown-to-wechat"
   ],
   "author": "volcanic",
   "license": "MIT",
