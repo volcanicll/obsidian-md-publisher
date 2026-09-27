@@ -3,7 +3,7 @@ import { BmMdSettingsTab } from './settings/SettingsTab'
 import { PreviewView, VIEW_TYPE_PREVIEW } from './views/PreviewView'
 import { DraftsModal } from './views/DraftsModal'
 import { WeChatApi } from './lib/wechat/wechat-api'
-import { loadCustomThemes, CUSTOM_THEME_FOLDER_DEFAULT } from './lib/custom-themes'
+import { loadCustomThemes } from './lib/custom-themes'
 import { getAllMarkdownStyles, type MarkdownStyle } from './themes/markdown-style'
 
 interface BmMdSettings {
@@ -34,7 +34,7 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   customCss: '',
   // 预览与校验
   scrollSync: true,
-  customThemeFolder: CUSTOM_THEME_FOLDER_DEFAULT,
+  customThemeFolder: '',
   sensitiveWords: '',
   // WeChat defaults
   wechatAppId: '',

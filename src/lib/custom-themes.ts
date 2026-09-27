@@ -12,8 +12,10 @@ import { TFile, TFolder } from 'obsidian'
 import type { MarkdownStyle } from '../themes/markdown-style'
 import { COMMON_STYLE } from '../themes/markdown-style'
 
-export const CUSTOM_THEME_FOLDER_DEFAULT =
-  '.obsidian/plugins/md-publisher/themes'
+/** 配置目录内的主题文件夹路径（.obsidian 可由用户配置，运行时取 configDir） */
+export function defaultCustomThemeFolder(configDir: string): string {
+  return `${configDir}/plugins/md-publisher/themes`
+}
 
 /** 从 CSS 文本中解析首行 name 注释里的主题名，取不到返回 null */
 export function parseThemeName(css: string): string | null {
@@ -29,10 +31,22 @@ export function customThemeId(path: string): string {
  * 读取文件夹内全部 .css 主题。文件夹不存在时返回空数组。
  */
 export async function loadCustomThemes(
-  app: { vault: { getAbstractFileByPath(path: string): unknown; read(file: TFile): Promise<string> } },
+  app: {
+    vault: {
+      configDir: string
+      getAbstractFileByPath(path: string): unknown
+      read(file: TFile): Promise<string>
+    }
+  },
   folder: string
 ): Promise<MarkdownStyle[]> {
-  const trimmed = folder.trim().replace(/\/+$/, '')
+  // 未配置或仍是历史默认值时，跟随当前配置目录
+  const raw = folder.trim().replace(/\/+$/, '')
+  const legacyDefault = '.obsidian/plugins/md-publisher/themes'
+  const trimmed =
+    !raw || raw === legacyDefault
+      ? defaultCustomThemeFolder(app.vault.configDir)
+      : raw
   if (!trimmed) return []
 
   const dir = app.vault.getAbstractFileByPath(trimmed)

@@ -2,6 +2,7 @@ import { App, PluginSettingTab, Setting, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
 import { codeThemes } from '../themes/code-theme'
 import { isWeChatConfigured } from '../lib/wechat/config'
+import { defaultCustomThemeFolder } from '../lib/custom-themes'
 
 const MANUAL_TOKEN_TTL_MS = 2 * 60 * 60 * 1000 // 微信 access_token 有效期约 2 小时
 
@@ -39,15 +40,17 @@ export class BmMdSettingsTab extends PluginSettingTab {
       })
 
     // Custom theme folder
+    const themeFolder = defaultCustomThemeFolder(this.app.vault.configDir)
     new Setting(containerEl)
       .setName('自定义主题文件夹')
       .setDesc(
-        'vault 内的文件夹路径，其中每个 .css 文件都是一套主题（自动叠加通用基础样式）。' +
-        '文件首行用 name 注释（例如「name: 我的企业风」）可指定主题名，否则用文件名。'
+        `vault 内的文件夹路径，其中每个 .css 文件都是一套主题（自动叠加通用基础样式）。` +
+        `留空使用默认目录 ${themeFolder}。` +
+        `文件首行用 name 注释（例如「name: 我的企业风」）可指定主题名，否则用文件名。`
       )
       .addText(text => {
         text
-          .setPlaceholder('.obsidian/plugins/md-publisher/themes')
+          .setPlaceholder(themeFolder)
           .setValue(this.plugin.settings.customThemeFolder)
           .onChange(async (value) => {
             this.plugin.settings.customThemeFolder = value.trim()

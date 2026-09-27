@@ -91,29 +91,35 @@ function convertForeignObjectsToText(svg: string): string {
   let svgEl: SVGSVGElement
   try {
     const doc = new DOMParser().parseFromString(svg, 'text/html')
-    const root = doc.body.querySelector('svg')
+    const root = doc.body.querySelector<SVGSVGElement>('svg')
     if (!root) return svg
-    svgEl = root as unknown as SVGSVGElement
+    svgEl = root
   } catch {
     return svg
   }
 
-  const host = document.createElement('div')
-  host.style.cssText = 'position:absolute;left:-99999px;top:-99999px;opacity:0;pointer-events:none;'
+  const host = createEl('div')
+  host.setCssStyles({
+    position: 'absolute',
+    left: '-99999px',
+    top: '-99999px',
+    opacity: '0',
+    pointerEvents: 'none',
+  })
   host.appendChild(svgEl)
   document.body.appendChild(host)
 
   try {
     const svgRect = svgEl.getBoundingClientRect()
-    const leaves = Array.from(svgEl.querySelectorAll('foreignObject p, foreignObject span, foreignObject div')).filter(
-      (el) => el.children.length === 0 && el.textContent && el.textContent.trim()
-    )
+    const leaves = Array.from(
+      svgEl.querySelectorAll<HTMLElement>('foreignObject p, foreignObject span, foreignObject div')
+    ).filter((el) => el.children.length === 0 && el.textContent && el.textContent.trim())
 
     for (const leaf of leaves) {
-      const rect = (leaf as HTMLElement).getBoundingClientRect()
+      const rect = leaf.getBoundingClientRect()
       if (rect.width === 0 && rect.height === 0) continue
-      const cs = window.getComputedStyle(leaf as HTMLElement)
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+      const cs = window.getComputedStyle(leaf)
+      const text = createSvg('text')
       text.setAttribute('x', String((rect.left - svgRect.left + rect.width / 2).toFixed(1)))
       text.setAttribute('y', String((rect.top - svgRect.top + rect.height / 2).toFixed(1)))
       text.setAttribute('text-anchor', 'middle')
@@ -168,7 +174,7 @@ async function rasterizeSvg(svg: string): Promise<string | null> {
         image.onerror = () => reject(new Error('SVG 解码失败'))
         image.src = url
       })
-      const canvas = document.createElement('canvas')
+      const canvas = createEl('canvas')
       canvas.width = Math.max(1, Math.round(width * RASTER_SCALE))
       canvas.height = Math.max(1, Math.round(height * RASTER_SCALE))
       const ctx = canvas.getContext('2d')

@@ -31,12 +31,12 @@ export function extractLinks(html: string): string[] {
 async function checkOne(url: string, timeoutMs: number): Promise<LinkCheckResult> {
   // 先 HEAD，多数站点支持；4xx/5xx 或方法不支持时退回 GET 重试一次
   for (const method of ['HEAD', 'GET'] as const) {
-    let timer: ReturnType<typeof setTimeout> | undefined
+    let timer: number | undefined
     try {
       const response = await Promise.race([
         requestUrl({ url, method, headers: { 'User-Agent': 'Mozilla/5.0 (LinkCheck)' } }),
         new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error('请求超时')), timeoutMs)
+          timer = window.setTimeout(() => reject(new Error('请求超时')), timeoutMs)
         }),
       ])
       const status = (response as { status: number }).status
@@ -53,7 +53,7 @@ async function checkOne(url: string, timeoutMs: number): Promise<LinkCheckResult
         return { url, ok: false, error: message }
       }
     } finally {
-      if (timer) clearTimeout(timer)
+      if (timer) window.clearTimeout(timer)
     }
   }
   return { url, ok: false, error: '未知错误' }

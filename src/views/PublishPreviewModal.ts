@@ -6,7 +6,6 @@ import {
   checkLinks,
   scanSensitiveWords,
   stripHtmlTags,
-  type LinkCheckResult,
   type SensitiveHit
 } from '../lib/wechat/validation'
 import {
@@ -228,7 +227,7 @@ export class PublishPreviewModal extends Modal {
     list.empty()
 
     let failed = 0
-    for (const result of results as LinkCheckResult[]) {
+    for (const result of results) {
       if (!result.ok) failed++
       const row = list.createDiv({ cls: 'bm-md-check-row' })
       const icon = row.createSpan({ cls: 'bm-md-check-icon' })

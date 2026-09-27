@@ -19,6 +19,10 @@ import { parseThemeName, customThemeId } from '../src/lib/custom-themes'
 import { getAllMarkdownStyles, getMarkdownStyleCss } from '../src/themes/markdown-style'
 import { setRequestUrlMock } from './obsidian-stub'
 
+// validation.ts 等模块按 Obsidian 渲染进程约定使用 window.setTimeout；
+// node 测试环境补上全局 window 指向，使行为一致
+;(globalThis as Record<string, unknown>).window = globalThis
+
 describe('callout conversion', () => {
   it('converts a callout blockquote into an inline-styled card', async () => {
     const md = '> [!note] 注意事项\n> 这是提示内容\n\n普通段落'

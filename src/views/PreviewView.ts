@@ -360,7 +360,7 @@ export class PreviewView extends ItemView {
         })
       }
 
-      const html = await this.rendering!
+      const html = await this.rendering
       if (generation !== this.renderGeneration) continue
       this.renderedHtmlCache = html
       return html

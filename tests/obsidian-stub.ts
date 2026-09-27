@@ -53,6 +53,15 @@ export class PluginSettingTab {}
 
 export function setIcon(_parent: HTMLElement | string, _iconId: string): void {}
 
+/** DOM 辅助：仅在 DOM 环境被调用，测试中不应触达 */
+export function createEl<K extends keyof HTMLElementTagNameMap>(_tag: K): HTMLElementTagNameMap[K] {
+  throw new Error('obsidian.createEl 在测试环境中不可用')
+}
+
+export function createSvg(_tag: string): SVGElement {
+  throw new Error('obsidian.createSvg 在测试环境中不可用')
+}
+
 export class ItemView {
   leaf: unknown
   constructor(leaf?: unknown) {

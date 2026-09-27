@@ -4,6 +4,14 @@
 
 > 本文件只记录面向用户的功能变动；代码重构、构建、测试、文档等工程改动不在此列出。
 
+## [1.4.1] - 2026-09-27
+
+### Changed
+
+- 工程合规：样式设置改用 `setCssStyles`，配置目录运行时取 `Vault#configDir`，定时器加 `window` 前缀，`document.createElement` 改用 Obsidian 的 `createEl` / `createSvg` 助手，对齐 Obsidian 社区目录自动审核要求
+
+无用户可见的功能变化。
+
 ## [1.4.0] - 2026-09-27
 
 ### Added
