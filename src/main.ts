@@ -93,7 +93,8 @@ export default class BmMdPlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData())
+    const saved = (await this.loadData()) as Partial<BmMdSettings> | null
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved ?? {})
   }
 
   async saveSettings() {

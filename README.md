@@ -17,6 +17,21 @@ Markdown Publisher 把「写」和「发」之间的排版工作全部自动化�
   <a href="https://github.com/volcanicll/obsidian-md-publisher/issues">💬 反馈问题</a>
 </p>
 
+## English
+
+**Markdown Publisher** is an Obsidian plugin that turns your notes into WeChat Official Account-ready articles and saves them straight to your draft box.
+
+- **Six designer themes** ("Paper Press" set), plus 14 official highlight.js code themes
+- **Fully inlined CSS**, so pasted or published HTML keeps its styling in the WeChat editor
+- **Automatic image handling**: local images are compressed and uploaded to the WeChat CDN, external images are re-hosted, GIF animations are preserved, and SVG/WebP are converted
+- **Automatic covers**: uses your chosen cover, the article's first image, or a generated title card
+- **Fails safely**: if any image fails to upload, publishing is cancelled instead of leaving a broken draft
+- **KaTeX math**, GFM tables, task lists, footnotes, and Obsidian `![[image.png]]` embeds
+
+Install it from the Obsidian community plugins browser (search for "Markdown Publisher") or download the latest release. To publish, configure your WeChat Official Account with an AppID/AppSecret pair (requires an IP allowlist) or paste a temporary access token if your IP changes often.
+
+---
+
 <img width="100%" src="docs/assets/theme-showcase.png" alt="六套排版主题对比">
 
 ## 🎨 六套排版主题，一套设计语言

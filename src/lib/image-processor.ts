@@ -306,7 +306,7 @@ function drawToCanvas(
   height: number,
   fillWhite: boolean
 ): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
+  const canvas = createEl('canvas')
   canvas.width = Math.max(1, Math.round(width))
   canvas.height = Math.max(1, Math.round(height))
   const ctx = canvas.getContext('2d')
@@ -607,7 +607,7 @@ function wrapCoverTitle(
  * 用标题卡片兜底，保证发布链路始终可用。
  */
 export async function generateDefaultCover(title: string): Promise<CompressedImage> {
-  const canvas = document.createElement('canvas')
+  const canvas = createEl('canvas')
   canvas.width = COVER_WIDTH
   canvas.height = COVER_HEIGHT
   const ctx = canvas.getContext('2d')
