@@ -1,6 +1,6 @@
 {
   "name": "obsidian-md-publisher",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "Publish Markdown notes to WeChat Official Account drafts with one click. Includes 6 designer themes, automatic image upload, KaTeX math, and code highlighting.",
   "main": "main.js",
   "scripts": {
