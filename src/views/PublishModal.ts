@@ -249,6 +249,13 @@ export class PublishModal extends Modal {
 
     // 设置面板按钮状态时把预览按钮一并禁用
     this.previewBtn = previewBtn
+
+    // Cmd/Ctrl+Enter 直接保存到草稿，省去鼠标操作
+    this.scope.register(['Mod'], 'Enter', (evt) => {
+      evt.preventDefault()
+      if (!this.isPublishing) void this.publish()
+      return false
+    })
   }
 
   private updateProgress(message: string): void {

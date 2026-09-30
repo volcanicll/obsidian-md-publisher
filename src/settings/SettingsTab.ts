@@ -36,6 +36,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.markdownStyle = value
             await this.plugin.saveSettings()
+            this.plugin.refreshPreviewViews()
           })
       })
 
@@ -62,6 +63,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .setButtonText('重新扫描')
           .onClick(async () => {
             await this.plugin.refreshCustomThemes()
+            this.plugin.refreshPreviewViews()
             new Notice(`已加载 ${this.plugin.customThemes.length} 套自定义主题`)
             this.display()
           })
@@ -80,6 +82,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.codeTheme = value
             await this.plugin.saveSettings()
+            this.plugin.refreshPreviewViews()
           })
       })
 
@@ -97,6 +100,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.customCss = value
             await this.plugin.saveSettings()
+            this.plugin.refreshPreviewViews()
           })
       })
 
