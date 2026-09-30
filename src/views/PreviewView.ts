@@ -250,6 +250,20 @@ export class PreviewView extends ItemView {
     if (valueEl) valueEl.textContent = theme?.name || this.currentCodeTheme
   }
 
+  /**
+   * 设置页改动后同步预览：主题与代码主题此前只在面板打开时读取一次，
+   * 在设置面板里改主题或自定义 CSS 时预览不会更新。这里重新对齐设置并重渲染。
+   */
+  refreshFromSettings(): void {
+    this.currentMarkdownStyle = this.plugin.settings.markdownStyle || 'mist'
+    this.currentCodeTheme = this.plugin.settings.codeTheme || 'github'
+    this.updateStyleSelector()
+    this.updateCodeThemeSelector()
+    this.clearRenderedCache()
+    // 自定义 CSS 逐字输入会触发多次刷新，交给既有的防抖合并为一次渲染
+    this.debounceUpdatePreview()
+  }
+
   showStyleMenu(e: MouseEvent): void {
     const menu = new Menu()
     this.plugin.getMarkdownStyleList().forEach(style => {

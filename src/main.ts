@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian'
+import { Plugin, WorkspaceLeaf, Notice } from 'obsidian'
 import { BmMdSettingsTab } from './settings/SettingsTab'
 import { PreviewView, VIEW_TYPE_PREVIEW } from './views/PreviewView'
 import { DraftsModal } from './views/DraftsModal'
@@ -95,6 +95,23 @@ export default class BmMdPlugin extends Plugin {
       }
     })
 
+    // 复制 / 发布此前只能点工具栏按钮，补上命令面板入口以便绑定快捷键
+    this.addCommand({
+      id: 'copy-preview-html',
+      name: '复制公众号排版 HTML',
+      callback: () => {
+        void this.withPreviewView((view) => void view.copyToClipboard())
+      }
+    })
+
+    this.addCommand({
+      id: 'publish-to-wechat',
+      name: '发布到公众号草稿',
+      callback: () => {
+        void this.withPreviewView((view) => void view.openPublishModal())
+      }
+    })
+
     // Add settings tab
     this.addSettingTab(new BmMdSettingsTab(this.app, this))
 
@@ -127,6 +144,25 @@ export default class BmMdPlugin extends Plugin {
   /** 全量主题列表：内置 + vault 导入 + 「自定义」入口 */
   getMarkdownStyleList(): MarkdownStyle[] {
     return getAllMarkdownStyles(this.customThemes)
+  }
+
+  /** 设置变更后刷新所有打开的预览面板，避免预览停留在旧主题 / 旧自定义 CSS */
+  refreshPreviewViews(): void {
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_PREVIEW)) {
+      const view = leaf.view
+      if (view instanceof PreviewView) view.refreshFromSettings()
+    }
+  }
+
+  /** 在预览面板上执行操作；面板未打开时先打开，让命令面板能触达复制与发布 */
+  private async withPreviewView(action: (view: PreviewView) => void): Promise<void> {
+    await this.activateView()
+    const view = this.app.workspace.getLeavesOfType(VIEW_TYPE_PREVIEW)[0]?.view
+    if (view instanceof PreviewView) {
+      action(view)
+    } else {
+      new Notice('无法打开排版预览面板')
+    }
   }
 
   /**

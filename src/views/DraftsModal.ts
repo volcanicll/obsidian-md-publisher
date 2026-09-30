@@ -37,6 +37,13 @@ class ConfirmDeleteModal extends Modal {
     new Setting(contentEl).addButton((button) => {
       button.setButtonText('取消').onClick(() => this.close())
     })
+
+    // 回车确认删除，键盘流不必伸手点按钮
+    this.scope.register([], 'Enter', () => {
+      this.close()
+      this.onConfirm()
+      return false
+    })
   }
 
   onClose(): void {
