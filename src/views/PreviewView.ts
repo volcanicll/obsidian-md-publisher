@@ -5,6 +5,7 @@ import { resolveNoteEmbeds, sliceByHeadings, type NoteResolver } from '../lib/ma
 import {
   resolveLocalImageSrcs
 } from '../lib/image-processor'
+import { exportNoteImage } from '../lib/export-image'
 import { codeThemes } from '../themes/code-theme'
 import { PublishModal } from './PublishModal'
 import { DraftsModal } from './DraftsModal'
@@ -76,6 +77,14 @@ export class PreviewView extends ItemView {
     copyBtn.createSpan({ text: '复制' })
     copyBtn.addEventListener('click', () => {
       void this.copyToClipboard()
+    })
+
+    // 导出图片
+    const exportBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn' })
+    setIcon(exportBtn, 'image')
+    exportBtn.createSpan({ text: '导出图片' })
+    exportBtn.addEventListener('click', () => {
+      void this.exportImage()
     })
 
     // 发布
@@ -419,6 +428,47 @@ export class PreviewView extends ItemView {
     this.previewContainer.replaceChildren(...Array.from(doc.body.childNodes))
     const maxScroll = this.previewContainer.scrollHeight - this.previewContainer.clientHeight
     this.previewContainer.scrollTop = Math.max(0, Math.min(prevScrollTop, maxScroll))
+  }
+
+  /**
+   * 导出为图片：取原始渲染 HTML（未做 app:// 改写），由导出管线把本地/外链
+   * 图片统一内联成 data URL 后截图，避免 html2canvas 无法加载 app:// 协议。
+   */
+  async exportImage(): Promise<void> {
+    const html = await this.getRenderedHtml()
+    if (!html) {
+      new Notice('暂无内容可导出，请先打开一篇 Markdown 笔记')
+      return
+    }
+
+    const noteFile = this.app.workspace.getActiveFile() ?? this.lastActiveFile
+    const settings = this.plugin.settings
+    new Notice('正在生成图片…')
+    try {
+      const result = await exportNoteImage({
+        app: this.app,
+        html,
+        activeFilePath: noteFile?.path ?? null,
+        noteName: noteFile?.basename ?? 'export',
+        width: settings.exportImageWidth,
+        scale: settings.exportImageScale,
+        folder: settings.exportImageFolder,
+      })
+      for (const warning of result.warnings) {
+        console.warn('导出图片内联警告:', warning)
+      }
+      if (result.downgraded) {
+        new Notice(`内容较长，已自动降低缩放至 ${result.scale}x 以避免超出画布上限`)
+      }
+      if (result.warnings.length > 0) {
+        new Notice(`有 ${result.warnings.length} 张图片未能内联，对应位置可能空白`)
+      }
+      new Notice(`图片已保存到 ${result.path}`)
+    } catch (err) {
+      console.error('导出图片失败:', err)
+      const message = err instanceof Error ? err.message : String(err)
+      new Notice('导出图片失败：' + message)
+    }
   }
 
   async openPublishModal(): Promise<void> {

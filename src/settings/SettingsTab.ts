@@ -117,6 +117,57 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
+    // 导出图片
+    new Setting(containerEl)
+      .setName('导出图片')
+      .setHeading()
+
+    new Setting(containerEl)
+      .setName('导出图片宽度')
+      .setDesc('导出长图的版面宽度；375 对应手机屏幕宽度，750 / 1080 更清晰')
+      .addDropdown(dropdown => {
+        dropdown.addOption('375', '375 px')
+        dropdown.addOption('750', '750 px')
+        dropdown.addOption('1080', '1080 px')
+        dropdown
+          .setValue(String(this.plugin.settings.exportImageWidth))
+          .onChange(async (value) => {
+            this.plugin.settings.exportImageWidth = Number(value)
+            await this.plugin.saveSettings()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('导出图片缩放')
+      .setDesc('像素密度倍数，越高越清晰、文件也越大；内容过长时会自动降级以避免超出画布上限')
+      .addDropdown(dropdown => {
+        dropdown.addOption('1', '1x')
+        dropdown.addOption('2', '2x')
+        dropdown.addOption('3', '3x')
+        dropdown
+          .setValue(String(this.plugin.settings.exportImageScale))
+          .onChange(async (value) => {
+            this.plugin.settings.exportImageScale = Number(value)
+            await this.plugin.saveSettings()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('导出图片文件夹')
+      .setDesc(
+        '导出 PNG 的保存位置；留空保存到当前笔记所在文件夹，' +
+        '填写则为 vault 内相对路径（不存在时自动创建）'
+      )
+      .addText(text => {
+        text
+          .setPlaceholder('留空与笔记同目录')
+          .setValue(this.plugin.settings.exportImageFolder)
+          .onChange(async (value) => {
+            this.plugin.settings.exportImageFolder = value.trim()
+            await this.plugin.saveSettings()
+          })
+      })
+
     // 发布默认值
     new Setting(containerEl)
       .setName('发布默认值')

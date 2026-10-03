@@ -14,6 +14,10 @@ interface BmMdSettings {
   scrollSync: boolean
   customThemeFolder: string
   sensitiveWords: string
+  // 导出图片
+  exportImageWidth: number
+  exportImageScale: number
+  exportImageFolder: string
   // WeChat Official Account settings
   wechatAppId: string
   wechatAppSecret: string
@@ -36,6 +40,10 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   scrollSync: true,
   customThemeFolder: '',
   sensitiveWords: '',
+  // 导出图片默认值：375px 移动端宽度 + 2x 缩放，与笔记同目录
+  exportImageWidth: 375,
+  exportImageScale: 2,
+  exportImageFolder: '',
   // WeChat defaults
   wechatAppId: '',
   wechatAppSecret: '',
@@ -92,6 +100,15 @@ export default class BmMdPlugin extends Plugin {
       name: '管理公众号草稿',
       callback: () => {
         new DraftsModal(this.app, this).open()
+      }
+    })
+
+    // Add command to export the preview as an image
+    this.addCommand({
+      id: 'export-image',
+      name: '导出为图片',
+      callback: () => {
+        void this.exportPreviewImage()
       }
     })
 
@@ -152,6 +169,15 @@ export default class BmMdPlugin extends Plugin {
         }
       }
     )
+  }
+
+  /** 打开（或复用）排版预览视图，并导出当前笔记为图片 */
+  async exportPreviewImage(): Promise<void> {
+    await this.activateView()
+    const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_PREVIEW)[0]
+    if (leaf && leaf.view instanceof PreviewView) {
+      await leaf.view.exportImage()
+    }
   }
 
   async activateView() {
