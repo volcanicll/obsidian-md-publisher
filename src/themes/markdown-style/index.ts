@@ -70,9 +70,12 @@ export const COMMON_STYLE = `
 `
 
 // ---- 纸上编辑部 Paper Press ------------------------------------------------
-// 三家族 × 两套的统一排版体系，针对公众号移动端阅读场景设计：
+// 统一排版体系，针对公众号移动端阅读场景设计：
 // 仅内联样式可用（juice 处理）、系统字体栈、无 hover / 无外部资源。
-// 家族之间换的是版式语言（网格、字体、记号），同族两套只换材质与密度。
+// 经典四家族（柔和轻氧 / 学院学术 / 杂志风尚 / 素纸墨蓝）各两套，
+// 家族之间换的是版式语言（网格、字体、记号），同族两套只换材质与密度；
+// v1.5 起追加三个单套方向：终端极客（技术）、商务数据（财经）、节庆活力（运营），
+// 用同一套约束（冷灰阶承重、主色只做锚点）覆盖此前没有的内容气质。
 
 const SANS_CN =
   '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
@@ -284,6 +287,92 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md table td { border: none; border-bottom: 1px solid #e3dfd2; }
 #bm-md table tr:last-child td { border-bottom: 2px solid #1a1815; }
 #bm-md table th, #bm-md table td { padding: 7px 12px; text-align: left; }
+    `,
+  },
+
+  // -- 终端极客 Terminal ----------------------------------------------------
+  // 「屏幕感」方向：白底冷灰阶承担正文，墨板块（h1 / 行内码 / 代码块）做重锚点，
+  // 信号绿只出现在提示符、链接与列表标记上。适合技术教程与工具内容。
+  {
+    id: 'terminal',
+    name: '终端 Terminal',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.9; letter-spacing: 0.2px; color: #334155; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #0f172a; font-weight: 600; }
+#bm-md h1 { font-size: 1.3em; background: #0f172a; color: #e2e8f0; padding: 13px 18px; border-radius: 8px; letter-spacing: 0.5px; margin-top: 1.3em; }
+#bm-md h1::before { content: "$ "; color: #34d399; font-family: ${MONO}; font-weight: 700; }
+#bm-md h2 { font-size: 1.15em; border-bottom: 1px solid #e2e8f0; padding-bottom: 7px; margin-top: 2.1em; }
+#bm-md h2::before { content: "// "; color: #059669; font-family: ${MONO}; }
+#bm-md h3 { font-size: 1.02em; }
+#bm-md h3::before { content: "> "; color: #94a3b8; font-family: ${MONO}; }
+#bm-md a { color: #059669; text-decoration: none; border-bottom: 1px solid #a7f3d0; }
+#bm-md strong { color: #0f172a; font-weight: 700; }
+#bm-md blockquote { border-left: 3px solid #10b981; background: #f8fafc; padding: 14px 18px; color: #475569; font-style: normal; border-radius: 0 8px 8px 0; }
+#bm-md blockquote p { margin: 0; }
+#bm-md code { font-family: ${MONO}; font-size: 0.85em; background: #0f172a; color: #6ee7b7; padding: 2px 6px; border-radius: 4px; }
+#bm-md pre { background: #0f172a; padding: 16px; border-radius: 8px; }
+#bm-md pre code { background: transparent; color: #cbd5e1; padding: 0; }
+#bm-md img { border-radius: 8px; }
+#bm-md hr { border: none; border-top: 1px dashed #cbd5e1; margin: 2.3em 0; }
+#bm-md table th, #bm-md table td { border: none; border-bottom: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+#bm-md table th { background: #f1f5f9; color: #0f172a; border-bottom: 2px solid #0f172a; }
+#bm-md ul li::marker, #bm-md ol li::marker { color: #059669; }
+    `,
+  },
+
+  // -- 商务数据 Ledger ------------------------------------------------------
+  // 「报表体」方向：白底蓝灰阶 + 藏青单强调色，层级靠竖条、双细线与发丝线建立，
+  // 表格是灰底表头的报表三线表。适合行业分析、财经解读与商业评论。
+  {
+    id: 'ledger',
+    name: '账本 Ledger',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.95; letter-spacing: 0.3px; color: #374151; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #111827; font-weight: 600; }
+#bm-md h1 { font-size: 1.5em; text-align: center; letter-spacing: 1px; padding-bottom: 14px; border-bottom: 3px double #1e40af; margin-top: 1.3em; }
+#bm-md h2 { font-size: 1.15em; border-left: 4px solid #1e40af; padding-left: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 7px; margin-top: 2.1em; }
+#bm-md h3 { font-size: 1.02em; color: #1e3a8a; }
+#bm-md a { color: #1e40af; text-decoration: none; border-bottom: 1px solid #bfdbfe; }
+#bm-md strong { color: #111827; font-weight: 700; }
+#bm-md blockquote { border: 1px solid #dbe3ee; border-top: 3px solid #1e40af; background: #f6f8fb; padding: 14px 18px; color: #4b5563; font-style: normal; border-radius: 2px; }
+#bm-md blockquote p { margin: 0; }
+#bm-md code { font-family: ${MONO}; font-size: 0.85em; background: #eef2f7; color: #1e40af; padding: 2px 6px; border-radius: 3px; }
+#bm-md pre { background: #1e293b; padding: 16px; border-radius: 4px; }
+#bm-md pre code { background: transparent; color: #d7dfee; padding: 0; }
+#bm-md img { border-radius: 4px; }
+#bm-md hr { border: none; border-top: 1px solid #e5e7eb; margin: 2.4em 0; }
+#bm-md table th, #bm-md table td { border: none; border-bottom: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+#bm-md table th { background: #f3f4f6; color: #111827; border-top: 2px solid #111827; border-bottom: 1px solid #111827; }
+#bm-md table tr:last-child td { border-bottom: 2px solid #111827; }
+#bm-md ul li::marker, #bm-md ol li::marker { color: #1e40af; }
+    `,
+  },
+
+  // -- 节庆活力 Festive -----------------------------------------------------
+  // 「热场」方向：暖白底 + 焦糖橙单强调色，h2 是全篇唯一的大色块徽章，
+  // 引用做成票根式虚线卡。适合盘点、清单、活动与节日运营内容。
+  {
+    id: 'festive',
+    name: '橙意 Festive',
+    css: COMMON_STYLE + `
+#bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.95; letter-spacing: 0.3px; color: #453b33; background: #fffcf5; }
+#bm-md h1, #bm-md h2, #bm-md h3 { color: #3b2f26; font-weight: 700; }
+#bm-md h1 { font-size: 1.45em; text-align: center; }
+#bm-md h2 { font-size: 1.02em; display: table; background: #ea580c; color: #ffffff; border-radius: 8px; padding: 7px 18px; margin-top: 2.1em; }
+#bm-md h3 { font-size: 1.02em; color: #c2410c; }
+#bm-md h3::before { content: "# "; color: #fb923c; font-weight: 700; }
+#bm-md a { color: #ea580c; text-decoration: none; border-bottom: 1px solid #fdba74; }
+#bm-md strong { color: #c2410c; font-weight: 700; }
+#bm-md blockquote { border: 2px dashed #fdba74; background: #fff4e8; padding: 15px 19px; color: #6b5646; font-style: normal; border-radius: 10px; }
+#bm-md blockquote p { margin: 0; }
+#bm-md code { font-family: ${MONO}; font-size: 0.86em; background: #fae8d8; color: #c2410c; padding: 2px 7px; border-radius: 6px; }
+#bm-md pre { background: #3b2f26; padding: 16px; border-radius: 12px; }
+#bm-md pre code { background: transparent; color: #f8e8d8; padding: 0; }
+#bm-md img { border-radius: 12px; }
+#bm-md hr { border: none; border-top: 2px dotted #fdba74; width: 55%; margin: 2.3em auto; }
+#bm-md table th { background: #fff1e2; color: #3b2f26; }
+#bm-md table th, #bm-md table td { border: 1px solid #f6e3d2; padding: 8px 12px; }
+#bm-md ul li::marker, #bm-md ol li::marker { color: #f97316; }
     `,
   },
 ]

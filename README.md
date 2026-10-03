@@ -35,11 +35,11 @@ Install it from the Obsidian community plugins browser (search for "Markdown Pub
 
 ---
 
-<img width="100%" src="docs/assets/theme-showcase.png" alt="八套排版主题对比">
+<img width="100%" src="docs/assets/theme-showcase.png" alt="十一套排版主题对比">
 
-## 🎨 八套排版主题，一套设计语言
+## 🎨 十一套排版主题，一套设计语言
 
-不做「换汤不换药」的配色套餐，而是四组不同的版式语言，每组两套：
+不做「换汤不换药」的配色套餐，而是不同的版式语言：四个经典家族各两套，另有三个单套新方向：
 
 | 家族 | 主题 | 适合 |
 |------|------|------|
@@ -47,6 +47,9 @@ Install it from the Obsidian community plugins browser (search for "Markdown Pub
 | 学院学术 | **学报 Journal** · 笔记 Notes | 长文、深度阅读、学习笔记 |
 | 杂志风尚 | **封面 Cover** · 别册 Booklet | 人物、品牌、文化、散文 |
 | 素纸墨蓝 | **信笺 Letter** · 拓本 Rubbing | 书信散文、慢读；资料整理、严肃长文 |
+| 终端极客 | **终端 Terminal** | 开发教程、工具评测、AI 与编程 |
+| 商务数据 | **账本 Ledger** | 行业分析、财经解读、商业评论 |
+| 节庆活力 | **橙意 Festive** | 盘点清单、活动召集、节日运营 |
 
 所有主题都针对公众号移动端阅读设计：只用内联样式、系统字体栈、无 hover、无外部资源，预览即发布效果。另有 14 款代码高亮主题（GitHub、Monokai、Dracula、Nord 等），写技术文章同样得体。
 
