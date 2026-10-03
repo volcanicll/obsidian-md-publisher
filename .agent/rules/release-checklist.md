@@ -28,6 +28,19 @@ bun run release --dry-run minor       # 只预览，不写文件、不推送
 6. 创建 GitHub Release（触发 `release.yml`）
 7. 等待 `release.yml` 构建完成并校验产物
 
+## 官网版本号（无需发版时手动改）
+
+`site/index.html` 的版本号与下载链接均为**运行时动态读取**，发版时**不需要**改网站：
+
+- 版本号（kicker 与最低 Obsidian 版本要求）由页面 JS 从
+  `raw.githubusercontent.com/.../main/manifest.json` 读取 `version` / `minAppVersion` 填充。
+- 下载按钮指向 `releases/latest`，GitHub 自动解析到最新 Release。
+- 读取失败时保留 HTML 中的「最新版」占位，不影响页面其他功能。
+
+因此 `site/index.html` 中**不得出现版本号字面量**——CI 会断言这一点
+（正则 `v[0-9]+\.[0-9]+\.[0-9]+`，带 `v` 前缀以避免命中 SVG path 数据）。
+发布脚本也不再读写 `site/index.html`。
+
 ## 发布后验证（脚本自动完成）
 
 - [ ] `release.yml` 运行成功

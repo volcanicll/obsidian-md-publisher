@@ -226,12 +226,12 @@ footer a:hover{color:var(--green-deep)}
 
 <header class="wrap hero">
   <div>
-    <span class="kicker">Obsidian 桌面插件 · v1.6.1 · MIT 开源</span>
+    <span class="kicker">Obsidian 桌面插件 · <span id="site-version">最新版</span> · MIT 开源</span>
     <h1>笔记写完，<br>公众号排版<em>一键搞定</em></h1>
     <p class="hero-sub">Markdown Publisher 把 Obsidian 笔记自动排版成公众号格式：CSS 全部内联、本地图片自动上传、KaTeX 公式与代码高亮开箱即用，直接发布到草稿箱。</p>
     <div class="hero-cta">
       <a class="btn btn-primary" href="#guide">开始使用</a>
-      <a class="btn btn-ghost" href="https://github.com/volcanicll/obsidian-md-publisher/releases" target="_blank" rel="noopener">下载安装包</a>
+      <a class="btn btn-ghost" href="https://github.com/volcanicll/obsidian-md-publisher/releases/latest" target="_blank" rel="noopener">下载安装包</a>
     </div>
     <div class="hero-meta">
       <span><b>11</b> 套排版主题</span>
@@ -391,7 +391,7 @@ footer a:hover{color:var(--green-deep)}
         <h3><span class="n">环境</span>桌面端专属</h3>
         <ul>
           <li>插件仅支持 <b>Obsidian 桌面版</b>（macOS / Windows / Linux）</li>
-          <li>要求 Obsidian <b>v1.7.2</b> 及以上</li>
+          <li>要求 Obsidian <b id="site-min-app">最新版</b> 及以上</li>
           <li>图片上传前会按 quality 0.8 默认压缩，超大图请提前瘦身</li>
         </ul>
       </div>
@@ -413,7 +413,7 @@ footer a:hover{color:var(--green-deep)}
     <h2>下一篇文章，从排版工作中解放出来</h2>
     <p>免费、开源、本地运行。装上它，专注写作就好。</p>
     <div class="hero-cta" style="justify-content:center">
-      <a class="btn btn-primary" href="https://github.com/volcanicll/obsidian-md-publisher/releases" target="_blank" rel="noopener">立即下载</a>
+      <a class="btn btn-primary" href="https://github.com/volcanicll/obsidian-md-publisher/releases/latest" target="_blank" rel="noopener">立即下载</a>
       <a class="btn btn-ghost" href="https://github.com/volcanicll/obsidian-md-publisher" target="_blank" rel="noopener">查看源码</a>
     </div>
   </div>
@@ -692,6 +692,26 @@ $copy.addEventListener("click",async()=>{
   $copy.textContent="✓ 已复制，去公众号粘贴";$copy.classList.add("ok");
   setTimeout(()=>{$copy.textContent="复制排版结果";$copy.classList.remove("ok")},2000);
 });
+</script>
+<script>
+/* 官网版本号动态读取：数据源为仓库 manifest.json（raw.githubusercontent 带 CORS 头，
+   无 API 速率限制）。失败时保留 HTML 中的「最新版」占位，不影响页面其他脚本。 */
+(function(){
+  var MANIFEST="https://raw.githubusercontent.com/volcanicll/obsidian-md-publisher/main/manifest.json";
+  var ctl=new AbortController();
+  var timer=setTimeout(function(){ctl.abort()},4000);
+  fetch(MANIFEST,{signal:ctl.signal,cache:"no-store"})
+    .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
+    .then(function(m){
+      clearTimeout(timer);
+      var v=m&&m.version,min=m&&m.minAppVersion;
+      var el=document.getElementById("site-version");
+      if(el&&v)el.textContent="v"+v;
+      var me=document.getElementById("site-min-app");
+      if(me&&min)me.textContent="v"+min;
+    })
+    .catch(function(){clearTimeout(timer)});
+})();
 </script>
 </body>
 </html>

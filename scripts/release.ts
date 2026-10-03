@@ -135,13 +135,8 @@ console.log(`    [Unreleased] → [${next}] - ${today}（${unreleased.split('\n'
 
 step(3, 9, '同步版本号')
 
-// 站点页脚/hero 里硬编码的版本号也必须跟着走，否则官网永远停留在旧版本
-const SITE = 'site/index.html'
-const SITE_VERSION_RE = /(<span class="kicker">Obsidian 桌面插件 · v)\d+\.\d+\.\d+( · MIT 开源<\/span>)/
-let siteHtml = fs.readFileSync(SITE, 'utf-8')
-if (!SITE_VERSION_RE.test(siteHtml)) {
-  fail(`${SITE} 中找不到可识别的版本号标记（kicker 里的 vX.Y.Z），无法同步`)
-}
+// 官网（site/index.html）的版本号已改为运行时动态读取 manifest.json，
+// 发版时不再需要改动 site，此处不做任何 site 同步。
 
 if (!dryRun) {
   pkg.version = next
@@ -150,13 +145,9 @@ if (!dryRun) {
   writeJson('manifest.json', manifest)
   versions[next] = manifest.minAppVersion
   writeJson('versions.json', versions)
-
-  siteHtml = siteHtml.replace(SITE_VERSION_RE, `$1${next}$2`)
-  fs.writeFileSync(SITE, siteHtml)
 }
 console.log(`    package.json / manifest.json → ${next}`)
 console.log(`    versions.json += "${next}": "${manifest.minAppVersion}"`)
-console.log(`    ${SITE} kicker → v${next}`)
 
 if (dryRun) {
   console.log(`\n${c.yellow('dry-run 结束，未写入任何文件。')}\n`)
@@ -180,7 +171,7 @@ console.log(`    dist/manifest.json = ${next}`)
 // ───────────────────────── 提交 ─────────────────────────
 
 step(5, 9, '提交')
-run('git add package.json manifest.json versions.json CHANGELOG.md site/index.html')
+run('git add package.json manifest.json versions.json CHANGELOG.md')
 run(`git commit -m "chore: release ${next}"`)
 console.log(`    ${run('git log --oneline -1', { capture: true }).trim()}`)
 

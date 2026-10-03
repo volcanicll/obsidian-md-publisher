@@ -40,16 +40,14 @@ jobs:
             echo "::warning::versions.json 中 $PKG_VERSION -> $VERSIONS_HAS，与当前 minAppVersion $MIN_APP 不同"
           fi
 
-          SITE_VERSION=$(grep -o 'Obsidian 桌面插件 · v[0-9]*\.[0-9]*\.[0-9]*' site/index.html | grep -o '[0-9]*\.[0-9]*\.[0-9]*' | head -1)
-          echo "site/index.html=$SITE_VERSION"
-          if [ -z "$SITE_VERSION" ]; then
-            echo "::error::site/index.html 中找不到版本号标记"
+          # 官网版本号已改为运行时动态读取 manifest.json，HTML 里不得再出现版本号字面量。
+          # 正则必须带 v 前缀：不带 v 会命中 GitHub 图标 SVG 的 path 数据（如 7.59.4、2.01.37），
+          # 造成 CI 无故变红。
+          if grep -nE 'v[0-9]+\.[0-9]+\.[0-9]+' site/index.html; then
+            echo "::error::site/index.html 中出现版本号字面量（官网已动态读取 manifest.json，不应硬编码）"
             exit 1
           fi
-          if [ "$SITE_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::site/index.html 显示 v$SITE_VERSION，与 package.json $PKG_VERSION 不一致（官网会停留在旧版本）"
-            exit 1
-          fi
+          echo "site/index.html 无版本号字面量 ✓"
 
       - name: Lint
         run: bun run lint
