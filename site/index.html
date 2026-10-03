@@ -10,6 +10,9 @@
 <meta property="og:description" content="十一套设计师排版主题、CSS 自动内联、图片自动上传，一键把 Markdown 发布到公众号草稿箱。">
 <meta property="og:url" content="https://volcanicll.github.io/obsidian-md-publisher/">
 <meta name="twitter:card" content="summary">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -269,8 +272,9 @@ footer a:hover{color:var(--green-deep)}
       <div class="feat reveal"><div class="ic">🎨</div><h3>CSS 自动内联</h3><p>基于 unified 渲染管线加 <code>juice</code> 内联，输出 HTML 直接适配公众号编辑器，粘贴即用。</p></div>
       <div class="feat reveal"><div class="ic">🖼️</div><h3>图片自动上传</h3><p>本地与网络图片自动压缩并上传至微信素材 CDN，GIF 保留动画，SVG 自动转 PNG。</p></div>
       <div class="feat reveal"><div class="ic">✍️</div><h3>公式与表格</h3><p>KaTeX 数学公式渲染、GFM 表格、任务列表、脚注一应俱全，技术写作无短板。</p></div>
-      <div class="feat wide reveal"><div class="ic">🌓</div><h3>十一套设计师主题 × 14 种代码高亮</h3><p>统一设计语言「纸上编辑部」，柔和轻氧、学院学术、杂志风尚、素纸墨蓝四家族各两套，另有终端极客、商务数据、节庆活力三个新方向，搭配 GitHub、Dracula、Nord 等代码主题，还支持自定义 CSS 覆盖。</p></div>
-      <div class="feat wide reveal"><div class="ic">📤</div><h3>直发草稿箱 + 草稿管理</h3><p>填写标题、作者、摘要后直接调用微信草稿箱 API 存稿；也可随时查看、删除草稿箱中的历史草稿。</p></div>
+      <div class="feat reveal"><div class="ic">📷</div><h3>导出为图片</h3><p>一键把排版截成 PNG 长图（375 / 750 / 1080 宽，1x–3x 缩放）存进 vault，发小红书、微博或存档都方便。</p></div>
+      <div class="feat reveal"><div class="ic">🌓</div><h3>十一套设计师主题 × 14 种代码高亮</h3><p>统一设计语言「纸上编辑部」，柔和轻氧、学院学术、杂志风尚、素纸墨蓝四家族各两套，另有终端极客、商务数据、节庆活力三个新方向，搭配 GitHub、Dracula、Nord 等代码主题，还支持自定义 CSS 覆盖。</p></div>
+      <div class="feat reveal"><div class="ic">📤</div><h3>直发草稿箱 + 草稿管理</h3><p>填写标题、作者、摘要后直接调用微信草稿箱 API 存稿；也可随时查看、删除草稿箱中的历史草稿。</p></div>
     </div>
   </div>
 </section>
@@ -280,7 +284,7 @@ footer a:hover{color:var(--green-deep)}
     <div class="sec-head reveal">
       <span class="sec-tag">Live Demo</span>
       <h2>在线体验：粘贴即排版</h2>
-      <p>在左侧粘贴 Markdown，右侧实时预览公众号排版效果。样式与插件一样直接内联到每个标签，选好主题即可一键复制，粘贴进公众号编辑器。</p>
+      <p>在左侧粘贴 Markdown，右侧实时预览公众号排版效果。样式与插件一样直接内联到每个标签，选好主题即可一键复制，粘贴进公众号编辑器。左右两侧<b>双向滚动同步</b>，长文定位不迷路。</p>
     </div>
     <div class="reveal">
       <div class="demo-bar">
@@ -328,8 +332,8 @@ footer a:hover{color:var(--green-deep)}
       <div class="step">
         <div class="step-num">3</div>
         <div>
-          <h3>预览、复制或发布</h3>
-          <p>点击左侧边栏 <b>📄 图标</b>（或命令面板执行「打开排版预览」）打开实时预览，选好主题后：<b>复制</b>到公众号编辑器粘贴，或点<b>发布</b>直接存入草稿箱，也可打开<b>草稿面板</b>管理历史草稿。</p>
+          <h3>预览、复制、发布或导出图片</h3>
+          <p>点击左侧边栏 <b>📄 图标</b>（或命令面板执行「打开排版预览」）打开实时预览，选好主题后：<b>复制</b>到公众号编辑器粘贴，<b>发布</b>直接存入草稿箱，<b>导出图片</b>存成 PNG 长图，也可打开<b>草稿面板</b>管理历史草稿。</p>
         </div>
       </div>
     </div>
@@ -392,10 +396,11 @@ footer a:hover{color:var(--green-deep)}
         </ul>
       </div>
       <div class="detail reveal">
-        <h3><span class="n">发布</span>两种产物任选</h3>
+        <h3><span class="n">产物</span>三种产物任选</h3>
         <ul>
           <li><b>复制 HTML</b>：粘进公众号编辑器手动微调后再发</li>
           <li><b>直接发布</b>：进草稿箱，可在手机或网页端终审后群发</li>
+          <li><b>导出图片</b>：存成 PNG 长图，发小红书 / 微博 / 朋友圈或存档</li>
           <li>发布前务必在预览面板确认排版效果</li>
         </ul>
       </div>
@@ -630,9 +635,36 @@ function mdToHtml(src,t){
 function renderDemo(){
   const t=DEMO_THEMES[curTheme];
   $out.style.background=t.wrapBg||"#fff";
+  const prevTop=$out.scrollTop;
   $out.innerHTML=`<div style="${t.wrap}">${mdToHtml($in.value,t)}</div>`;
+  const maxTop=$out.scrollHeight-$out.clientHeight;
+  $out.scrollTop=Math.max(0,Math.min(prevTop,maxTop));
   $count.textContent=`${$in.value.length} 字符 · ${DEMO_THEMES[curTheme].label}`;
 }
+
+/* ---------- 双向滚动同步 ---------- */
+/* 与插件同款做法：按比例映射两侧滚动位置，滚动锁防止互相触发形成死循环 */
+let demoSyncLock="none",demoSyncTimer=null;
+function acquireDemoLock(kind){
+  demoSyncLock=kind;
+  clearTimeout(demoSyncTimer);
+  demoSyncTimer=setTimeout(()=>{demoSyncLock="none"},120);
+}
+function syncByRatio(from,to,kind){
+  const fromMax=from.scrollHeight-from.clientHeight;
+  const toMax=to.scrollHeight-to.clientHeight;
+  if(fromMax<=0||toMax<=0)return;
+  acquireDemoLock(kind);
+  to.scrollTop=Math.round((from.scrollTop/fromMax)*toMax);
+}
+$in.addEventListener("scroll",()=>{
+  if(demoSyncLock==="preview")return;
+  syncByRatio($in,$out,"editor");
+});
+$out.addEventListener("scroll",()=>{
+  if(demoSyncLock==="editor")return;
+  syncByRatio($out,$in,"preview");
+});
 Object.entries(DEMO_THEMES).forEach(([key,t])=>{
   const b=document.createElement("button");
   b.type="button";b.className="pill";b.textContent=t.label;
