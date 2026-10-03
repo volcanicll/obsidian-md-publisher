@@ -14,8 +14,7 @@ interface BmMdSettings {
   scrollSync: boolean
   customThemeFolder: string
   sensitiveWords: string
-  // 导出图片
-  exportImageWidth: number
+  // 导出图片（宽度跟随预览面板实际宽度，不再是设置项）
   exportImageScale: number
   exportImageFolder: string
   // WeChat Official Account settings
@@ -40,8 +39,7 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   scrollSync: true,
   customThemeFolder: '',
   sensitiveWords: '',
-  // 导出图片默认值：375px 移动端宽度 + 2x 缩放，与笔记同目录
-  exportImageWidth: 375,
+  // 导出图片默认值：2x 缩放，与笔记同目录；宽度跟随预览面板实际宽度
   exportImageScale: 2,
   exportImageFolder: '',
   // WeChat defaults

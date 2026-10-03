@@ -11,6 +11,12 @@ import { detectImageType, findVaultImageFile, normalizeImagePath } from './image
 /** 长图 canvas 的保守高度上限：Chromium 单维像素上限之下取整 */
 export const MAX_CANVAS_HEIGHT = 32767
 
+/** 导出版面宽度上限：宽窗口下的预览可能远超此值，与缩放叠加会放大到画布难以承受 */
+export const MAX_EXPORT_WIDTH = 1080
+
+/** 预览宽度量取失败时的回退版面宽度（沿用原「导出图片宽度」设置的默认值） */
+export const FALLBACK_EXPORT_WIDTH = 375
+
 // ---- 纯函数 ---------------------------------------------------------------
 
 /**
@@ -97,6 +103,32 @@ export function resolveExportScale(
   return { scale: 1, fits: false, downgraded: true }
 }
 
+export interface ExportWidthResult {
+  /** 实际用于导出的版面宽度 px */
+  width: number
+  /** preview = 预览实测；fallback = 测量失败后的回退常量 */
+  source: 'preview' | 'fallback'
+}
+
+/**
+ * 测量结果的宽度解析：无效值（null / 非有限数 / 非正数，含量取后取整为 0 的
+ * 极小值）回退常量宽度，超过上限时夹到 maxWidth，正常值四舍五入取整。
+ */
+export function resolveExportWidth(
+  measured: number | null,
+  maxWidth: number = MAX_EXPORT_WIDTH,
+  fallback: number = FALLBACK_EXPORT_WIDTH
+): ExportWidthResult {
+  if (measured === null || !Number.isFinite(measured)) {
+    return { width: fallback, source: 'fallback' }
+  }
+  const rounded = Math.round(measured)
+  if (rounded <= 0) {
+    return { width: fallback, source: 'fallback' }
+  }
+  return { width: Math.min(rounded, maxWidth), source: 'preview' }
+}
+
 /** ArrayBuffer + mime → `data:<mime>;base64,…`；分块编码避免大文件爆栈 */
 export function arrayBufferToDataUrl(data: ArrayBuffer, mime: string): string {
   const bytes = new Uint8Array(data)
@@ -118,8 +150,10 @@ export interface ExportImageRequest {
   activeFilePath: string | null
   /** 导出文件名主体，一般取笔记名 */
   noteName: string
-  /** 版面宽度 px（375 / 750 / 1080） */
+  /** 已测量好的实际版面宽度 px（预览版面宽度，已夹上限；量取失败时为回退常量） */
   width: number
+  /** 宽度来源，随结果原样回传供调用方提示；本函数不关心其取值 */
+  widthSource: 'preview' | 'fallback'
   /** 期望缩放倍数（1 / 2 / 3） */
   scale: number
   /** 保存文件夹设置；留空与笔记同目录 */
@@ -129,6 +163,10 @@ export interface ExportImageRequest {
 export interface ExportImageResult {
   /** 保存后的 vault 相对路径 */
   path: string
+  /** 实际使用的版面宽度 px */
+  width: number
+  /** 宽度来源：preview = 预览实测；fallback = 测量失败后的回退常量 */
+  widthSource: 'preview' | 'fallback'
   scale: number
   downgraded: boolean
   /** 未能内联的图片警告（不影响其余内容导出） */
@@ -234,7 +272,7 @@ async function ensureVaultFolder(app: App, folder: string): Promise<void> {
  * 把渲染 HTML 截为 PNG 并写入 vault。
  *
  * 流程：离屏容器挂载 → 图片全部内联为 data URL → 等待解码 →
- * 按设置宽度与期望倍数计算可用缩放（超限自动降级）→ html2canvas 截图 →
+ * 按传入版面宽度与期望倍数计算可用缩放（超限自动降级）→ html2canvas 截图 →
  * 文件名去重后写入 vault。
  *
  * 任何导致「必然拿到空白/损坏图」的情形（内容连 1x 也超限、编码失败）
@@ -296,6 +334,8 @@ export async function exportNoteImage(req: ExportImageRequest): Promise<ExportIm
 
     return {
       path: fullPath,
+      width: req.width,
+      widthSource: req.widthSource,
       scale: scaleResult.scale,
       downgraded: scaleResult.downgraded,
       warnings,

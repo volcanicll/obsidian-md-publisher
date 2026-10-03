@@ -4,8 +4,11 @@ import {
   resolveExportFolderPath,
   resolveExportPath,
   resolveExportScale,
+  resolveExportWidth,
   arrayBufferToDataUrl,
   MAX_CANVAS_HEIGHT,
+  MAX_EXPORT_WIDTH,
+  FALLBACK_EXPORT_WIDTH,
 } from '../src/lib/export-image'
 
 describe('pickUniqueFileName', () => {
@@ -147,6 +150,57 @@ describe('resolveExportScale', () => {
   it('uses the default canvas limit when omitted', () => {
     // 20000 * 2 > 32767（默认上限），降到 1x
     expect(resolveExportScale(20000, 2)).toEqual({ scale: 1, fits: true, downgraded: true })
+  })
+})
+
+describe('resolveExportWidth', () => {
+  it('falls back for null measurements', () => {
+    expect(resolveExportWidth(null)).toEqual({
+      width: FALLBACK_EXPORT_WIDTH,
+      source: 'fallback',
+    })
+  })
+
+  it('falls back for NaN and non-finite measurements', () => {
+    expect(resolveExportWidth(Number.NaN)).toEqual({
+      width: FALLBACK_EXPORT_WIDTH,
+      source: 'fallback',
+    })
+    expect(resolveExportWidth(Number.POSITIVE_INFINITY)).toEqual({
+      width: FALLBACK_EXPORT_WIDTH,
+      source: 'fallback',
+    })
+  })
+
+  it('falls back for zero and negative measurements', () => {
+    expect(resolveExportWidth(0)).toEqual({ width: FALLBACK_EXPORT_WIDTH, source: 'fallback' })
+    expect(resolveExportWidth(-1)).toEqual({ width: FALLBACK_EXPORT_WIDTH, source: 'fallback' })
+  })
+
+  it('falls back when a tiny positive value rounds to zero', () => {
+    expect(resolveExportWidth(0.2)).toEqual({ width: FALLBACK_EXPORT_WIDTH, source: 'fallback' })
+  })
+
+  it('rounds fractional widths', () => {
+    expect(resolveExportWidth(412.6)).toEqual({ width: 413, source: 'preview' })
+    expect(resolveExportWidth(412.4)).toEqual({ width: 412, source: 'preview' })
+  })
+
+  it('keeps a width exactly at the max', () => {
+    expect(resolveExportWidth(MAX_EXPORT_WIDTH)).toEqual({
+      width: MAX_EXPORT_WIDTH,
+      source: 'preview',
+    })
+  })
+
+  it('clamps widths above the max', () => {
+    expect(resolveExportWidth(2000)).toEqual({ width: MAX_EXPORT_WIDTH, source: 'preview' })
+  })
+
+  it('honors custom max and fallback arguments', () => {
+    expect(resolveExportWidth(500, 800, 320)).toEqual({ width: 500, source: 'preview' })
+    expect(resolveExportWidth(900, 800, 320)).toEqual({ width: 800, source: 'preview' })
+    expect(resolveExportWidth(null, 800, 320)).toEqual({ width: 320, source: 'fallback' })
   })
 })
 

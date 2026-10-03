@@ -117,25 +117,10 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
-    // 导出图片
+    // 导出图片（宽度跟随预览面板实际宽度，无独立设置项）
     new Setting(containerEl)
       .setName('导出图片')
       .setHeading()
-
-    new Setting(containerEl)
-      .setName('导出图片宽度')
-      .setDesc('导出长图的版面宽度；375 对应手机屏幕宽度，750 / 1080 更清晰')
-      .addDropdown(dropdown => {
-        dropdown.addOption('375', '375 px')
-        dropdown.addOption('750', '750 px')
-        dropdown.addOption('1080', '1080 px')
-        dropdown
-          .setValue(String(this.plugin.settings.exportImageWidth))
-          .onChange(async (value) => {
-            this.plugin.settings.exportImageWidth = Number(value)
-            await this.plugin.saveSettings()
-          })
-      })
 
     new Setting(containerEl)
       .setName('导出图片缩放')

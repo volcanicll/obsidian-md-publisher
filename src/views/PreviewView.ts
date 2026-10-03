@@ -5,7 +5,7 @@ import { resolveNoteEmbeds, sliceByHeadings, type NoteResolver } from '../lib/ma
 import {
   resolveLocalImageSrcs
 } from '../lib/image-processor'
-import { exportNoteImage } from '../lib/export-image'
+import { exportNoteImage, resolveExportWidth } from '../lib/export-image'
 import { codeThemes } from '../themes/code-theme'
 import { PublishModal } from './PublishModal'
 import { DraftsModal } from './DraftsModal'
@@ -431,8 +431,27 @@ export class PreviewView extends ItemView {
   }
 
   /**
+   * 量取预览版面的实际宽度：#bm-md 与预览容器内容盒同宽（max-width:100% 居中），
+   * 其边盒宽度即容器的实际内容宽度——不能直接用容器 clientWidth（会多出左右
+   * padding 共 32px）。#bm-md 自带的水平 padding 由渲染内联样式提供，离屏导出
+   * 容器里会原样复现，因此这里量边盒、不扣自身 padding。
+   *
+   * 视图尚未布局、被折叠（宽度为 0）或找不到 #bm-md 时返回 null，
+   * 由 resolveExportWidth 回退常量宽度。
+   */
+  private measurePreviewWidth(): number | null {
+    const container = this.previewContainer
+    if (!container?.isConnected) return null
+    const el = container.querySelector<HTMLElement>('#bm-md')
+    if (!el) return null
+    const width = el.getBoundingClientRect().width
+    return Number.isFinite(width) && width > 0 ? width : null
+  }
+
+  /**
    * 导出为图片：取原始渲染 HTML（未做 app:// 改写），由导出管线把本地/外链
    * 图片统一内联成 data URL 后截图，避免 html2canvas 无法加载 app:// 协议。
+   * 版面宽度取预览实测值（上限 1080px），预览有多宽导出就有多宽。
    */
   async exportImage(): Promise<void> {
     const html = await this.getRenderedHtml()
@@ -443,6 +462,7 @@ export class PreviewView extends ItemView {
 
     const noteFile = this.app.workspace.getActiveFile() ?? this.lastActiveFile
     const settings = this.plugin.settings
+    const resolvedWidth = resolveExportWidth(this.measurePreviewWidth())
     new Notice('正在生成图片…')
     try {
       const result = await exportNoteImage({
@@ -450,12 +470,17 @@ export class PreviewView extends ItemView {
         html,
         activeFilePath: noteFile?.path ?? null,
         noteName: noteFile?.basename ?? 'export',
-        width: settings.exportImageWidth,
+        width: resolvedWidth.width,
+        widthSource: resolvedWidth.source,
         scale: settings.exportImageScale,
         folder: settings.exportImageFolder,
       })
       for (const warning of result.warnings) {
         console.warn('导出图片内联警告:', warning)
+      }
+      if (result.widthSource === 'fallback') {
+        console.warn('导出图片：未能读取预览宽度，已按回退宽度导出')
+        new Notice(`未能读取预览宽度，已按 ${result.width}px 导出`)
       }
       if (result.downgraded) {
         new Notice(`内容较长，已自动降低缩放至 ${result.scale}x 以避免超出画布上限`)
