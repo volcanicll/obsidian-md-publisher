@@ -69,9 +69,15 @@ MAJOR.MINOR.PATCH
 
 ## 版本发布命令
 
+发布由单一命令完成，它会同步版本号、跑门禁、提交、打 tag、推送并创建 Release：
+
 ```bash
-# 自动更新版本并同步所有文件
-bun run version patch  # 补丁版本
-bun run version minor  # 次版本
-bun run version major  # 主版本
+bun run release patch  # 补丁版本
+bun run release minor  # 次版本
+bun run release major  # 主版本
+bun run release --dry-run minor  # 只预览
 ```
+
+详见 `.agent/rules/release-checklist.md`。tag 格式为裸版本号 `x.y.z`，
+**不带 `v` 前缀**——`release.yml` 与 Obsidian 社区审核均要求 tag 与
+`manifest.json` 的 `version` 完全一致。

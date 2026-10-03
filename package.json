@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run test",
     "preview:themes": "esbuild scripts/theme-preview.ts --bundle --platform=node --format=cjs --outfile=node_modules/.cache/theme-preview-gen.cjs --loader:.css=text && node node_modules/.cache/theme-preview-gen.cjs",
-    "version": "bun run .agent/skills/obsidian-version-manager/scripts/version_bump.ts"
+    "release": "bun run scripts/release.ts"
   },
   "keywords": [
     "obsidian",

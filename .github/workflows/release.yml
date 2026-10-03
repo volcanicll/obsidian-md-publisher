@@ -38,9 +38,14 @@ jobs:
           TAG_VERSION="${{ github.event.release.tag_name }}"
           PKG_VERSION=$(node -p "require('./package.json').version")
           MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
-          echo "tag=$TAG_VERSION package.json=$PKG_VERSION manifest.json=$MANIFEST_VERSION"
+          VERSIONS_HAS=$(node -p "require('./versions.json')['$MANIFEST_VERSION'] || ''")
+          echo "tag=$TAG_VERSION package.json=$PKG_VERSION manifest.json=$MANIFEST_VERSION versions.json=$VERSIONS_HAS"
           if [ "$TAG_VERSION" != "$PKG_VERSION" ] || [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
             echo "::error::版本不一致：tag $TAG_VERSION / package.json $PKG_VERSION / manifest.json $MANIFEST_VERSION"
+            exit 1
+          fi
+          if [ -z "$VERSIONS_HAS" ]; then
+            echo "::error::versions.json 缺少 $MANIFEST_VERSION 的映射，Obsidian 无法判断最低支持版本"
             exit 1
           fi
 

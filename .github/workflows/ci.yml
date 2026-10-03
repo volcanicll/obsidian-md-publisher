@@ -21,6 +21,25 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Verify version consistency
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          MANIFEST_VERSION=$(node -p "require('./manifest.json').version")
+          MIN_APP=$(node -p "require('./manifest.json').minAppVersion")
+          VERSIONS_HAS=$(node -p "require('./versions.json')['$PKG_VERSION'] || ''")
+          echo "package.json=$PKG_VERSION manifest.json=$MANIFEST_VERSION"
+          if [ "$PKG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error::package.json ($PKG_VERSION) 与 manifest.json ($MANIFEST_VERSION) 版本不一致"
+            exit 1
+          fi
+          if [ -z "$VERSIONS_HAS" ]; then
+            echo "::error::versions.json 缺少 $PKG_VERSION 的映射（应在发布时写入）"
+            exit 1
+          fi
+          if [ "$VERSIONS_HAS" != "$MIN_APP" ]; then
+            echo "::warning::versions.json 中 $PKG_VERSION -> $VERSIONS_HAS，与当前 minAppVersion $MIN_APP 不同"
+          fi
+
       - name: Lint
         run: bun run lint
 
