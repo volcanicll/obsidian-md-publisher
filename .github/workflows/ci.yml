@@ -40,6 +40,17 @@ jobs:
             echo "::warning::versions.json 中 $PKG_VERSION -> $VERSIONS_HAS，与当前 minAppVersion $MIN_APP 不同"
           fi
 
+          SITE_VERSION=$(grep -o 'Obsidian 桌面插件 · v[0-9]*\.[0-9]*\.[0-9]*' site/index.html | grep -o '[0-9]*\.[0-9]*\.[0-9]*' | head -1)
+          echo "site/index.html=$SITE_VERSION"
+          if [ -z "$SITE_VERSION" ]; then
+            echo "::error::site/index.html 中找不到版本号标记"
+            exit 1
+          fi
+          if [ "$SITE_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::site/index.html 显示 v$SITE_VERSION，与 package.json $PKG_VERSION 不一致（官网会停留在旧版本）"
+            exit 1
+          fi
+
       - name: Lint
         run: bun run lint
 
