@@ -223,12 +223,11 @@ const runId = run(
 run(`gh run watch ${runId} --exit-status`)
 
 step(9, 9, '校验 Release 产物')
-const assets = JSON.parse(
-  run(
-    `gh release view ${next} --json assets --jq '[.assets[].name] | sort | join(",")'`,
-    { capture: true }
-  ).trim()
-)
+// 注意：gh --jq 输出的是裸字符串（逗号分隔），不是 JSON，不能 JSON.parse
+const assets = run(
+  `gh release view ${next} --json assets --jq '[.assets[].name] | sort | join(",")'`,
+  { capture: true }
+).trim()
 const expected = 'main.js,manifest.json,styles.css'
 if (assets !== expected) fail(`Release 产物不符：得到 ${assets}，期望 ${expected}`)
 console.log(`    产物: ${assets}`)
