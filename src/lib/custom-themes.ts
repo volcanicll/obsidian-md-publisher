@@ -42,11 +42,7 @@ export async function loadCustomThemes(
 ): Promise<MarkdownStyle[]> {
   // 未配置或仍是历史默认值时，跟随当前配置目录
   const raw = folder.trim().replace(/\/+$/, '')
-  const legacyDefault = '.obsidian/plugins/md-publisher/themes'
-  const trimmed =
-    !raw || raw === legacyDefault
-      ? defaultCustomThemeFolder(app.vault.configDir)
-      : raw
+  const trimmed = raw || defaultCustomThemeFolder(app.vault.configDir)
   if (!trimmed) return []
 
   const dir = app.vault.getAbstractFileByPath(trimmed)
