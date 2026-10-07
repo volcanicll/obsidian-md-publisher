@@ -45,7 +45,7 @@
     "obsidian": "^1.7.2",
     "type-fest": "^5.10.0",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.9"
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
@@ -71,7 +71,6 @@
     "@humanfs/node": "^0.17.0",
     "brace-expansion": "^5.0.12",
     "fast-uri": "^4.2.1",
-    "js-yaml": "^5.4.3",
-    "vite": "^8.3.3"
+    "js-yaml": "^5.4.3"
   }
 }
