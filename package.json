@@ -67,6 +67,11 @@
     "unified": "^11.0.5"
   },
   "overrides": {
-    "undici": "^6.24.0"
+    "undici": "^6.24.0",
+    "@humanfs/node": "^0.17.0",
+    "brace-expansion": "^5.0.12",
+    "fast-uri": "^4.2.1",
+    "js-yaml": "^5.4.3",
+    "vite": "^8.3.3"
   }
 }
