@@ -1,7 +1,7 @@
 {
   "id": "md-publisher",
   "name": "Markdown Publisher",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "minAppVersion": "1.7.2",
   "description": "Publish Markdown notes to WeChat Official Account drafts with one click. Includes 11 designer themes, Mermaid diagrams, callout cards, note embeds, automatic image upload, KaTeX math, publish preview, code highlighting, and one-click PNG export.",
   "author": "volcanic",
