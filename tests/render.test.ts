@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, convertWikiEmbeds } from '../src/lib/markdown/render'
+import { getAllMarkdownStyles } from '../src/themes/markdown-style'
 
 describe('render pipeline', () => {
   it('renders markdown to HTML with inlined styles', async () => {
@@ -25,7 +26,7 @@ describe('render pipeline', () => {
   })
 
   it('renders KaTeX math', async () => {
-    const html = await render({ markdown: '公式 $E=mc^2$' })
+    const html = await render({ markdown: '公式 $$E=mc^2$$' })
     expect(html).toContain('katex')
   })
 
@@ -101,5 +102,80 @@ describe('convertWikiEmbeds', () => {
     const html = await render({ markdown: '![[photo.png]]\n' })
     expect(html).toContain('<img')
     expect(html).toContain('photo.png')
+  })
+})
+
+describe('dollar signs in prose (currency safety)', () => {
+  it('keeps two money amounts in one line as plain text', async () => {
+    const html = await render({ markdown: '从 $10 到 $20 不等' })
+    expect(html).not.toContain('katex')
+    expect(html).toContain('$10')
+    expect(html).toContain('$20')
+  })
+
+  it('keeps currency ranges with units intact', async () => {
+    const html = await render({ markdown: '粗估 $150-250/月（集群 ~$30 + LB ~$20）' })
+    expect(html).not.toContain('katex')
+    expect(html).toContain('$150-250/月')
+    expect(html).toContain('~$30')
+  })
+
+  it('keeps shell variables intact', async () => {
+    const html = await render({ markdown: 'export A=$1 B=$2' })
+    expect(html).not.toContain('katex')
+    expect(html).toContain('$1')
+    expect(html).toContain('$2')
+  })
+
+  it('still renders block math delimited by double dollars', async () => {
+    const html = await render({ markdown: '$$\n\\int_0^1 x dx\n$$' })
+    expect(html).toContain('katex')
+  })
+
+  it('still renders inline math delimited by double dollars', async () => {
+    const html = await render({ markdown: '行内 $$E=mc^2$$ 成立' })
+    expect(html).toContain('katex')
+  })
+
+  it('leaves a single lone amount as plain text', async () => {
+    const html = await render({ markdown: '价格 $100 元' })
+    expect(html).not.toContain('katex')
+    expect(html).toContain('$100')
+  })
+
+  it('restores single-dollar inline math when explicitly enabled', async () => {
+    const html = await render({ markdown: '公式 $E=mc^2$ 成立', inlineDollarMath: true })
+    expect(html).toContain('katex')
+  })
+})
+
+describe('list markers survive publishing', () => {
+  it('emits a styled bullet for every built-in theme', async () => {
+    // 公众号会丢弃 ::marker，列表符号改用 ::before 生成真实 span 才能保留主题色
+    const styles = getAllMarkdownStyles([]).filter((s) => s.id !== 'custom')
+    for (const style of styles) {
+      const html = await render({ markdown: '- 第一项\n- 第二项', markdownStyle: style.id })
+      expect(html, `${style.id} 缺少可发布的列表符号`).toMatch(
+        /<span style="[^"]*color:[^"]*">• <\/span>/
+      )
+    }
+  })
+
+  it('keeps native ordered-list numbering so start is respected', async () => {
+    const html = await render({ markdown: '3. 第三\n4. 第四' })
+    expect(html).toContain('<ol start="3"')
+    // 有序列表不能用 CSS 计数器编号：会忽略 start 属性，从 1 重新计数
+    expect(html).not.toMatch(/<ol[\s\S]*?<span[^>]*>\d+\. <\/span>/)
+  })
+
+  it('does not add a bullet to task list items', async () => {
+    const html = await render({ markdown: '- [x] 完成\n- [ ] 待办' })
+    expect(html).toContain('type="checkbox"')
+    expect(html).not.toMatch(/task-list-item[^>]*>\s*<span[^>]*>• /)
+  })
+
+  it('indents nested lists with a bullet each', async () => {
+    const html = await render({ markdown: '- A\n  - A1' })
+    expect(html.match(/• <\/span>/g)).toHaveLength(2)
   })
 })

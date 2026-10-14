@@ -9,6 +9,7 @@ import {
   safeDecodeURIComponent,
   isWeChatSupportedImageType,
   findVaultImageFile,
+  inlineImagesAsDataUrls,
   processImages
 } from '../src/lib/image-processor'
 import { TFile, setRequestUrlMock } from './obsidian-stub'
@@ -346,5 +347,112 @@ describe('processImages', () => {
 
   afterEach(() => {
     setRequestUrlMock(null)
+  })
+})
+
+describe('inlineImagesAsDataUrls', () => {
+  const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).buffer
+
+  function makeAppWithImages(files: string[]) {
+    const base = makeApp(files) as { vault: Record<string, unknown> }
+    base.vault.readBinary = () => Promise.resolve(PNG_BYTES)
+    return base as never
+  }
+
+  it('inlines local images as data URLs', async () => {
+    const app = makeAppWithImages(['notes/assets/shot.png'])
+    const out = await inlineImagesAsDataUrls(
+      '<p>x</p><img src="assets/shot.png">',
+      app,
+      'notes/a.md'
+    )
+    expect(out.html).toContain('src="data:image/png;base64,')
+    expect(out.html).not.toContain('assets/shot.png')
+    expect(out.inlined).toBe(1)
+    expect(out.warnings).toEqual([])
+  })
+
+  it('resolves relative paths against the note folder', async () => {
+    const app = makeAppWithImages(['notes/assets/pic.png'])
+    const out = await inlineImagesAsDataUrls('<img src="assets/pic.png">', app, 'notes/a.md')
+    expect(out.html).toContain('data:image/png;base64,')
+    expect(out.inlined).toBe(1)
+  })
+
+  it('inlines remote images by downloading them', async () => {
+    setRequestUrlMock(async () => ({ json: '', arrayBuffer: PNG_BYTES }))
+    const app = makeAppWithImages([])
+    const out = await inlineImagesAsDataUrls(
+      '<img src="https://cdn.com/a.png">',
+      app,
+      null
+    )
+    expect(out.html).toContain('data:image/png;base64,')
+    expect(out.inlined).toBe(1)
+  })
+
+  it('reuses one data URL for a repeated image', async () => {
+    const app = makeAppWithImages(['a.png'])
+    const out = await inlineImagesAsDataUrls(
+      '<img src="a.png"><img src="a.png">',
+      app,
+      null
+    )
+    expect(out.html.match(/data:image\/png;base64,/g)).toHaveLength(2)
+    expect(out.inlined).toBe(1)
+  })
+
+  it('keeps the original src and warns when the image is missing', async () => {
+    const app = makeAppWithImages([])
+    const out = await inlineImagesAsDataUrls('<img src="missing.png">', app, null)
+    expect(out.html).toContain('missing.png')
+    expect(out.inlined).toBe(0)
+    expect(out.warnings).toHaveLength(1)
+    expect(out.warnings[0]).toContain('missing.png')
+  })
+
+  it('leaves existing data URLs untouched', async () => {
+    const app = makeAppWithImages([])
+    const dataUrl = 'data:image/png;base64,iVBORw0KGgo='
+    const out = await inlineImagesAsDataUrls(`<img src="${dataUrl}">`, app, null)
+    expect(out.html).toContain(dataUrl)
+    expect(out.inlined).toBe(0)
+    expect(out.warnings).toEqual([])
+  })
+
+  it('reports a failed remote download without blocking the rest', async () => {
+    setRequestUrlMock(async () => {
+      throw new Error('network down')
+    })
+    const app = makeAppWithImages(['local.png'])
+    const out = await inlineImagesAsDataUrls(
+      '<img src="https://bad.com/a.png"><img src="local.png">',
+      app,
+      null
+    )
+    expect(out.warnings).toHaveLength(1)
+    expect(out.warnings[0]).toContain('https://bad.com/a.png')
+    expect(out.html).toContain('data:image/png;base64,')
+    expect(out.inlined).toBe(1)
+  })
+})
+
+describe('plain-text channel safety', () => {
+  it('does not leak inlined base64 into stripped text', async () => {
+    const { stripHtmlTags } = await import('../src/lib/wechat/validation')
+    const app = (() => {
+      const base = makeApp(['a.png']) as { vault: Record<string, unknown> }
+      base.vault.readBinary = () =>
+        Promise.resolve(new Uint8Array([0x89, 0x50, 0x4e, 0x47]).buffer)
+      return base as never
+    })()
+
+    const out = await inlineImagesAsDataUrls('<p>正文</p><img src="a.png">', app, null)
+    const text = stripHtmlTags(out.html)
+
+    expect(text).toContain('正文')
+    expect(text).not.toContain('base64')
+    expect(text).not.toContain('data:image')
+    expect(text).not.toContain('<img')
   })
 })

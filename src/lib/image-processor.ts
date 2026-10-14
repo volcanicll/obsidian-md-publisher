@@ -176,6 +176,85 @@ function remoteFilename(src: string): string {
   }
 }
 
+/** ArrayBuffer + mime → `data:<mime>;base64,…`；分块编码避免大文件爆栈 */
+export function arrayBufferToDataUrl(data: ArrayBuffer, mime: string): string {
+  const bytes = new Uint8Array(data)
+  const chunkSize = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+  }
+  return `data:${mime};base64,${btoa(binary)}`
+}
+
+export interface InlineImagesResult {
+  html: string
+  /** 实际内联的图片数（不含原本就是 data URL 的） */
+  inlined: number
+  /** 内联失败的原因，调用方仅作提示，不阻塞复制 */
+  warnings: string[]
+}
+
+/**
+ * 把 HTML 中的本地图片与外链图片内联为 data URL，供「复制」路径使用。
+ *
+ * vault 相对路径（assets/a.png）与 app:// 地址粘贴到公众号编辑器后无法解析，
+ * 结果是裂图；内联后图片随 HTML 一起进入剪贴板，不依赖本机文件路径。
+ * 未做压缩转码：剪贴板不受微信体积限制，且原样内联可保留 GIF 动画。
+ * 单张失败不阻塞整体复制：保留原 src 并计入 warnings。
+ */
+export async function inlineImagesAsDataUrls(
+  html: string,
+  app: App,
+  activeFilePath: string | null
+): Promise<InlineImagesResult> {
+  const warnings: string[] = []
+  const cache = new Map<string, string>()
+  let result = html
+  let inlined = 0
+
+  for (const src of extractLocalImagePaths(html)) {
+    const normalized = normalizeImagePath(src, activeFilePath)
+    if (!normalized) {
+      warnings.push(`无法解析图片路径：${src}`)
+      continue
+    }
+    const cached = cache.get(normalized)
+    if (cached) {
+      result = replaceImageSrc(result, src, cached)
+      continue
+    }
+    const data = await readImageFromVault(app, normalized)
+    if (!data) {
+      warnings.push(`vault 中未找到图片：${normalized}`)
+      continue
+    }
+    const dataUrl = arrayBufferToDataUrl(data, detectImageType(data))
+    cache.set(normalized, dataUrl)
+    result = replaceImageSrc(result, src, dataUrl)
+    inlined++
+  }
+
+  for (const src of extractRemoteImagePaths(html)) {
+    const cached = cache.get(src)
+    if (cached) {
+      result = replaceImageSrc(result, src, cached)
+      continue
+    }
+    const data = await fetchRemoteImage(src)
+    if (!data) {
+      warnings.push(`外链图片下载失败：${src}`)
+      continue
+    }
+    const dataUrl = arrayBufferToDataUrl(data, detectImageType(data))
+    cache.set(src, dataUrl)
+    result = replaceImageSrc(result, src, dataUrl)
+    inlined++
+  }
+
+  return { html: result, inlined, warnings }
+}
+
 /** 下载外链图片；失败返回 null（调用方计入 errors） */
 async function fetchRemoteImage(url: string): Promise<ArrayBuffer | null> {
   try {

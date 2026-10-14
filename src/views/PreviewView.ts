@@ -3,8 +3,10 @@ import type BmMdPlugin from '../main'
 import { render } from '../lib/markdown/render'
 import { resolveNoteEmbeds, sliceByHeadings, type NoteResolver } from '../lib/markdown/embeds'
 import {
+  inlineImagesAsDataUrls,
   resolveLocalImageSrcs
 } from '../lib/image-processor'
+import { stripHtmlTags } from '../lib/wechat/validation'
 import { exportNoteImage, resolveExportWidth } from '../lib/export-image'
 import { codeThemes } from '../themes/code-theme'
 import { PublishModal } from './PublishModal'
@@ -297,6 +299,13 @@ export class PreviewView extends ItemView {
     menu.showAtMouseEvent(e)
   }
 
+  /**
+   * 复制到剪贴板：HTML 走 text/html 通道，纯文本走 text/plain 通道。
+   *
+   * 图片先内联为 data URL——vault 相对路径与 app:// 地址粘到公众号编辑器
+   * 后无法解析，会变成裂图。内联后图片随 HTML 一起进入剪贴板。
+   * text/plain 用剥离标签的纯文本，避免粘贴到纯文本编辑器时出现 HTML 源码。
+   */
   async copyToClipboard(): Promise<void> {
     const html = await this.getRenderedHtml()
     if (!html) {
@@ -304,15 +313,28 @@ export class PreviewView extends ItemView {
       return
     }
 
+    const activeFilePath = this.app.workspace.getActiveFile()?.path ?? null
+
     try {
-      const htmlBlob = new Blob([html], { type: 'text/html' })
-      const textBlob = new Blob([html], { type: 'text/plain' })
+      const { html: inlined, inlined: count, warnings } =
+        await inlineImagesAsDataUrls(html, this.app, activeFilePath)
+
       const item = new ClipboardItem({
-        'text/html': htmlBlob,
-        'text/plain': textBlob,
+        'text/html': new Blob([inlined], { type: 'text/html' }),
+        'text/plain': new Blob([stripHtmlTags(inlined)], { type: 'text/plain' }),
       })
       await navigator.clipboard.write([item])
-      new Notice('已复制公众号 HTML 格式')
+
+      if (warnings.length > 0) {
+        new Notice(
+          `已复制，但有 ${warnings.length} 张图片未能内联，粘贴后可能缺图` +
+            `（${warnings[0]}）`
+        )
+      } else if (count > 0) {
+        new Notice(`已复制公众号 HTML 格式（含 ${count} 张图片）`)
+      } else {
+        new Notice('已复制公众号 HTML 格式')
+      }
     } catch (err) {
       console.error('复制失败:', err)
       new Notice('复制失败：' + String(err))
@@ -359,6 +381,7 @@ export class PreviewView extends ItemView {
             codeTheme: this.currentCodeTheme,
             customCss: this.plugin.settings.customCss,
             customThemes: this.plugin.customThemes,
+            inlineDollarMath: this.plugin.settings.inlineDollarMath,
           })
         })().catch((err) => {
           console.error('渲染失败:', err)

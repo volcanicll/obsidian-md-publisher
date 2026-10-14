@@ -67,6 +67,38 @@ export const COMMON_STYLE = `
   margin-right: 0.5em;
   transform: scale(1.1);
 }
+
+/* Unordered List Markers
+ * 公众号会丢弃 ::marker，列表符号的主题色无法内联保留，因此改用
+ * ::before 生成符号（juice 的 inlinePseudoElements 会把它转成真实 span）。
+ * 仅作用于 ul：有序列表若改用 CSS 计数器，juice 会把 counter() 直接求值成
+ * 固定数字写进 span，忽略 <ol start="3"> 这类起始序号，故 ol 保持原生 marker。
+ * 负 text-indent 制造悬挂缩进，使折行文字与首行文字左对齐。 */
+#bm-md ul {
+  list-style: none;
+  padding-left: 0;
+}
+#bm-md ul > li {
+  padding-left: 1.35em;
+  text-indent: -1.35em;
+}
+#bm-md ul > li::before {
+  content: "• ";
+  color: currentColor;
+  font-weight: 700;
+}
+/* 任务列表已有复选框，不再叠加符号 */
+#bm-md li.task-list-item {
+  padding-left: 0;
+  text-indent: 0;
+}
+#bm-md li.task-list-item::before {
+  content: none;
+}
+/* 嵌套列表收紧上边距，避免层级之间出现大段空白 */
+#bm-md ul ul {
+  margin: 0.35em 0 0.35em 0.15em;
+}
 `
 
 // ---- 纸上编辑部 Paper Press ------------------------------------------------
@@ -106,7 +138,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md hr { border: none; border-top: 1px solid #dfe6ec; width: 50%; margin: 2.3em auto; }
 #bm-md table th { background: #f0f5f9; color: #2c3e4e; }
 #bm-md table th, #bm-md table td { border: 1px solid #e3eaf0; padding: 8px 12px; }
-#bm-md ul li::marker, #bm-md ol li::marker { color: #5b87a8; }
+#bm-md ul > li::before { color: #5b87a8; }
+#bm-md ol li::marker { color: #5b87a8; }
     `,
   },
   {
@@ -231,7 +264,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md hr { border: none; border-top: 1px solid #ddd2ba; width: 40%; margin: 2.4em auto; }
 #bm-md table th { background: #f5efe3; color: #2e241b; }
 #bm-md table th, #bm-md table td { border: 1px solid #e6dcc8; padding: 8px 12px; }
-#bm-md ul li::marker, #bm-md ol li::marker { color: #9c5b23; }
+#bm-md ul > li::before { color: #9c5b23; }
+#bm-md ol li::marker { color: #9c5b23; }
     `,
   },
 
@@ -261,7 +295,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md table td { border: none; border-bottom: 1px solid #e3dfd2; }
 #bm-md table tr:last-child td { border-bottom: 1px solid #3f3a30; }
 #bm-md table th, #bm-md table td { padding: 8px 12px; text-align: left; }
-#bm-md ul li::marker, #bm-md ol li::marker { color: #1b365d; }
+#bm-md ul > li::before { color: #1b365d; }
+#bm-md ol li::marker { color: #1b365d; }
     `,
   },
   {
@@ -316,7 +351,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md hr { border: none; border-top: 1px dashed #cbd5e1; margin: 2.3em 0; }
 #bm-md table th, #bm-md table td { border: none; border-bottom: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
 #bm-md table th { background: #f1f5f9; color: #0f172a; border-bottom: 2px solid #0f172a; }
-#bm-md ul li::marker, #bm-md ol li::marker { color: #059669; }
+#bm-md ul > li::before { color: #059669; }
+#bm-md ol li::marker { color: #059669; }
     `,
   },
 
@@ -344,7 +380,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md table th, #bm-md table td { border: none; border-bottom: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
 #bm-md table th { background: #f3f4f6; color: #111827; border-top: 2px solid #111827; border-bottom: 1px solid #111827; }
 #bm-md table tr:last-child td { border-bottom: 2px solid #111827; }
-#bm-md ul li::marker, #bm-md ol li::marker { color: #1e40af; }
+#bm-md ul > li::before { color: #1e40af; }
+#bm-md ol li::marker { color: #1e40af; }
     `,
   },
 
@@ -372,7 +409,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
 #bm-md hr { border: none; border-top: 2px dotted #fdba74; width: 55%; margin: 2.3em auto; }
 #bm-md table th { background: #fff1e2; color: #3b2f26; }
 #bm-md table th, #bm-md table td { border: 1px solid #f6e3d2; padding: 8px 12px; }
-#bm-md ul li::marker, #bm-md ol li::marker { color: #f97316; }
+#bm-md ul > li::before { color: #f97316; }
+#bm-md ol li::marker { color: #f97316; }
     `,
   },
 ]

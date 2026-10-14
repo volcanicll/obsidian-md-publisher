@@ -1,5 +1,13 @@
 import { App, requestUrl } from 'obsidian'
-import { detectImageType, findVaultImageFile, normalizeImagePath } from './image-processor'
+import {
+  arrayBufferToDataUrl,
+  detectImageType,
+  findVaultImageFile,
+  normalizeImagePath,
+} from './image-processor'
+
+// 供既有测试与调用方继续从本模块导入；实现在 image-processor 中，与复制路径共用
+export { arrayBufferToDataUrl }
 
 /**
  * 导出为图片：把 render() 产出的全内联样式 HTML 截成 PNG 长图。
@@ -127,17 +135,6 @@ export function resolveExportWidth(
     return { width: fallback, source: 'fallback' }
   }
   return { width: Math.min(rounded, maxWidth), source: 'preview' }
-}
-
-/** ArrayBuffer + mime → `data:<mime>;base64,…`；分块编码避免大文件爆栈 */
-export function arrayBufferToDataUrl(data: ArrayBuffer, mime: string): string {
-  const bytes = new Uint8Array(data)
-  const chunkSize = 0x8000
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
-  }
-  return `data:${mime};base64,${btoa(binary)}`
 }
 
 // ---- 截图流程（依赖 DOM，无法在 node 测试环境单测） -------------------------

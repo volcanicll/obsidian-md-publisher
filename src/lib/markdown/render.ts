@@ -25,6 +25,13 @@ export interface RenderOptions {
   openLinksInNewWindow?: boolean
   /** vault 导入的自定义主题，用于解析 file: 前缀的主题 id */
   customThemes?: MarkdownStyle[]
+  /**
+   * 是否把单个 `$...$` 解析为行内公式。
+   * 默认关闭：`$10 到 $20`、`$HOME`、`A=$1` 这类金额与 Shell 变量远比行内公式常见，
+   * 而单个美元符号的公式语法会把它们当公式重排，改写正文。
+   * 块级 `$$...$$` 不受此开关影响，始终可用。
+   */
+  inlineDollarMath?: boolean
 }
 
 /**
@@ -94,13 +101,18 @@ const sanitizeSchema = {
   },
 }
 
-function createProcessor(options: { openLinksInNewWindow?: boolean }) {
-  const { openLinksInNewWindow = true } = options
+function createProcessor(options: {
+  openLinksInNewWindow?: boolean
+  inlineDollarMath?: boolean
+}) {
+  const { openLinksInNewWindow = true, inlineDollarMath = false } = options
 
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
-    .use(remarkMath)
+    // singleDollarTextMath: false 让 `$10 到 $20`、`A=$1 B=$2` 保持普通文本；
+    // 块级 $$...$$ 与行内 $$...$$ 仍按公式解析
+    .use(remarkMath, { singleDollarTextMath: inlineDollarMath })
     .use(remarkFrontmatter, ['yaml', 'toml'])
     .use(remarkRehype, {
       allowDangerousHtml: true,
@@ -141,9 +153,10 @@ export async function render(options: RenderOptions): Promise<string> {
     customCss = '',
     openLinksInNewWindow = true,
     customThemes = [],
+    inlineDollarMath = false,
   } = options
 
-  const processor = createProcessor({ openLinksInNewWindow })
+  const processor = createProcessor({ openLinksInNewWindow, inlineDollarMath })
   let html = (await processor.process(convertWikiEmbeds(markdown))).toString()
 
   // Mermaid 图表转位图（依赖 DOM；失败时保留代码块）

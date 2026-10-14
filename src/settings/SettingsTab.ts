@@ -100,6 +100,24 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
+    // 行内公式解析：默认关闭，避免金额 / Shell 变量被当作公式改写正文
+    new Setting(containerEl)
+      .setName('解析行内公式 $...$')
+      .setDesc(
+        '关闭时（默认）单个美元符号之间的内容按普通文本输出，' +
+        '「$10 到 $20」「$HOME」这类写法不会被改动；' +
+        '块级公式 $$...$$ 始终可用。' +
+        '仅当笔记确实使用单个 $ 写行内公式时才需要开启。'
+      )
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.inlineDollarMath)
+          .onChange(async (value) => {
+            this.plugin.settings.inlineDollarMath = value
+            await this.plugin.saveSettings()
+          })
+      })
+
     // 预览行为
     new Setting(containerEl)
       .setName('预览')

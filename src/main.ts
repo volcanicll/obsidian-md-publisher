@@ -14,6 +14,8 @@ interface BmMdSettings {
   scrollSync: boolean
   customThemeFolder: string
   sensitiveWords: string
+  /** 是否把单个 $...$ 解析为行内公式（默认关闭，避免金额与 Shell 变量被改写） */
+  inlineDollarMath: boolean
   // 导出图片（宽度跟随预览面板实际宽度，不再是设置项）
   exportImageScale: number
   exportImageFolder: string
@@ -39,6 +41,7 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   scrollSync: true,
   customThemeFolder: '',
   sensitiveWords: '',
+  inlineDollarMath: false,
   // 导出图片默认值：2x 缩放，与笔记同目录；宽度跟随预览面板实际宽度
   exportImageScale: 2,
   exportImageFolder: '',
