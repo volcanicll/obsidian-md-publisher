@@ -200,6 +200,18 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
+    new Setting(containerEl)
+      .setName('正文顶部显示封面')
+      .setDesc('发布弹窗中「正文顶部显示封面」的默认状态；对应微信的 show_cover_pic')
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.showCoverInBody)
+          .onChange(async (value) => {
+            this.plugin.settings.showCoverInBody = value
+            await this.plugin.saveSettings()
+          })
+      })
+
     // 敏感词自定义词表
     new Setting(containerEl)
       .setName('敏感词补充词表')

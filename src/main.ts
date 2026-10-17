@@ -38,6 +38,8 @@ interface BmMdSettings {
   // 发布默认值
   defaultOpenComment: boolean
   defaultFansOnlyComment: boolean
+  /** 文章页顶部是否展示封面，映射到 show_cover_pic */
+  showCoverInBody: boolean
   /** 笔记路径 → 已发布草稿，用于「覆盖更新已有草稿」 */
   draftLinks: DraftLinkMap
 }
@@ -65,6 +67,7 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   manualTokenExpireTime: 0,
   defaultOpenComment: false,
   defaultFansOnlyComment: false,
+  showCoverInBody: true,
   draftLinks: {},
 }
 
