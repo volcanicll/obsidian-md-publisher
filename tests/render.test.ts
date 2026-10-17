@@ -5,6 +5,7 @@ import {
   replaceMarkTags,
   stabilizeLists,
   transformTaskLists,
+  wrapWideTables,
 } from '../src/lib/markdown/post-process'
 import { getAllMarkdownStyles } from '../src/themes/markdown-style'
 
@@ -302,6 +303,44 @@ describe('post-process helpers', () => {
     expect(out).toContain('<span>父')
     expect(out).toContain('<span>子</span>')
   })
+
+  // 手机正文区约 300px，4 列时每列不足 80px，表头与正文会被压成一行两三个字。
+  // 宽表格给最小宽度、由外层容器横向滚动；窄表格不加最小宽度，正常铺满。
+  it('wrapWideTables wraps every table in a scroll container', () => {
+    const narrow = '<table><thead><tr><th>A</th><th>B</th></tr></thead></table>'
+    const out = wrapWideTables(narrow)
+    expect(out).toMatch(/^<section data-bm-table-scroll="1">/)
+    expect(out).toContain('<table>')
+    expect(out).not.toContain('min-width')
+  })
+
+  it('wrapWideTables gives wide tables a minimum width', () => {
+    const wide =
+      '<table><thead><tr><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>3</td><td>4</td></tr></tbody></table>'
+    const out = wrapWideTables(wide)
+    // 最小宽度写成内联样式：公众号保存草稿时会丢掉 data-* 属性
+    expect(out).toContain('style="min-width: 460px;"')
+    expect(out).toMatch(/^<section data-bm-table-scroll="1">/)
+  })
+
+  it('wrapWideTables counts columns from the header row only', () => {
+    const table =
+      '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr></tbody></table>'
+    expect(wrapWideTables(table)).not.toContain('min-width')
+  })
+
+  it('wrapWideTables leaves non-table markup untouched', () => {
+    const html = '<p>正文</p><pre><code>&lt;table&gt;</code></pre>'
+    expect(wrapWideTables(html)).toBe(html)
+  })
+
+  it('wrapWideTables merges into an existing style attribute', () => {
+    const table =
+      '<table style="color: red;"><thead><tr><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead></table>'
+    const out = wrapWideTables(table)
+    expect(out).toContain('style="min-width: 460px; color: red;"')
+    expect(out.match(/style=/g)).toHaveLength(1)
+  })
 })
 
 describe('fidelity pipeline end to end', () => {
@@ -327,5 +366,28 @@ describe('fidelity pipeline end to end', () => {
     expect(html).toMatch(/✓<\/span><span> 完成<\/span>/)
     expect(html).toMatch(/□<\/span><span> 待办<\/span>/)
     expect(html).not.toContain('>• <')
+  })
+
+  it('keeps tables as tables instead of block boxes', async () => {
+    const html = await render({ markdown: '| A | B |\n|---|---|\n| 1 | 2 |\n' })
+    // display:block 会把单元格拆成独立块，微信里每列只剩两三个字就折行
+    expect(html).not.toMatch(/<table[^>]*style="[^"]*display:\s*block/)
+    expect(html).toMatch(/<table[^>]*style="[^"]*width: 100%/)
+  })
+
+  it('wraps wide tables in a horizontally scrollable container', async () => {
+    const md =
+      '| 形态 | 条件 | 固定成本 | LLM 成本 |\n|---|---|---|---|\n| 本地 | Node 18 | $0 | 按量 |\n'
+    const html = await render({ markdown: md, markdownStyle: 'terminal' })
+    expect(html).toMatch(/<section[^>]*overflow-x: auto[^>]*>\s*<table[^>]*min-width: 460px;/)
+  })
+
+  it('wraps inline code so it does not break mid-token', async () => {
+    const html = await render({ markdown: '- 入口 `model-policy.ts` 与 `server/src/llm.ts`' })
+    // inline 盒允许在连字符处断行，inline-block 让整个代码片段参与换行
+    expect(html).toMatch(/<code[^>]*style="[^"]*display: inline-block/)
+    // 代码块内部的 code 必须保持行内，否则破坏横向滚动与高亮
+    const block = await render({ markdown: '```ts\nconst a = 1\n```' })
+    expect(block).toMatch(/<pre[^>]*>\s*<code[^>]*style="[^"]*display: inline;/)
   })
 })

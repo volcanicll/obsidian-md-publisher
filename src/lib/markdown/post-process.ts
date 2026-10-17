@@ -127,3 +127,56 @@ function wrapListText(html: string): string {
 }
 
 const VOID_TAGS = /^<(?:br|img|hr|input|source)\b/i
+
+/** 达到这个列数的表格在手机宽度下会被压到不可读，需要保留最小宽度 */
+export const WIDE_TABLE_COLUMNS = 4
+/** 宽表格每列保留的最小宽度（含单元格内边距），约合 7 个汉字 */
+const WIDE_TABLE_COLUMN_WIDTH = 115
+
+const TABLE_RE = /<table\b[^>]*>[\s\S]*?<\/table>/gi
+const FIRST_ROW_RE = /<tr\b[^>]*>([\s\S]*?)<\/tr>/i
+const CELL_RE = /<t[hd]\b/gi
+
+/**
+ * 表格兜底：包一层横向滚动容器，列数多的再给最小宽度。
+ *
+ * 手机正文区只有约 300px 宽，4 列时每列不足 80px，表头与正文会被压成
+ * 一行两三个字。宽表格给一个最小宽度，由外层容器横向滚动查看；窄表格
+ * 不加最小宽度，正常铺满正文宽度。容器对窄表格不产生滚动，纯粹是兜底——
+ * 少数单元格（长 URL、长变量名）本身撑宽时不会顶破正文。
+ *
+ * 最小宽度写成内联样式而不是依赖属性选择器——公众号保存草稿时会丢掉
+ * `data-*` 属性，但会保留 style。
+ */
+export function wrapWideTables(html: string): string {
+  return html.replace(TABLE_RE, (table) => {
+    const columns = countTableColumns(table)
+    const styled =
+      columns >= WIDE_TABLE_COLUMNS
+        ? withMinWidth(table, columns * WIDE_TABLE_COLUMN_WIDTH)
+        : table
+    return `<section data-bm-table-scroll="1">${styled}</section>`
+  })
+}
+
+/** 写入 min-width；表格已带 style 时并入，避免出现重复属性 */
+function withMinWidth(table: string, minWidth: number): string {
+  const declaration = `min-width: ${minWidth}px;`
+  const opening = table.match(/^<table\b[^>]*>/i)?.[0]
+  if (!opening) return table
+
+  if (/\bstyle\s*=\s*"/i.test(opening)) {
+    const patched = opening.replace(
+      /\bstyle\s*=\s*"/i,
+      (match) => `${match}${declaration} `
+    )
+    return patched + table.slice(opening.length)
+  }
+  return `<table style="${declaration}">` + table.slice(opening.length)
+}
+
+function countTableColumns(table: string): number {
+  const row = table.match(FIRST_ROW_RE)
+  if (!row) return 0
+  return (row[1].match(CELL_RE) ?? []).length
+}

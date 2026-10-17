@@ -16,7 +16,6 @@ export const COMMON_STYLE = `
   padding: 16px 20px;
   overflow-wrap: break-word;
   word-wrap: break-word;
-  word-break: break-word;
   text-align: left;
 }
 
@@ -52,14 +51,46 @@ export const COMMON_STYLE = `
   max-width: 100%;
 }
 
-/* Responsive Tables */
+/* 行内代码整段换行
+ * inline 元素允许在任意字符间断行，公众号里 model-policy.ts 会被拆成
+ * model- 与 policy.ts 两行，看上去像行没排满就折行。改成 inline-block
+ * 后每个代码片段作为一个整体参与换行；宽度仍受 max-width 约束，
+ * 超长片段在自身内部折行，不会撑破正文。
+ * text-indent 会被 inline-block 继承：列表项用负 text-indent 做悬挂缩进，
+ * 不清零的话片段里的文字会整体左移，压在上一段正文上。 */
+#bm-md code {
+  display: inline-block;
+  max-width: 100%;
+  text-indent: 0;
+}
+/* 代码块里的 code 是 pre 的内容容器，保持行内，避免影响滚动与高亮 */
+#bm-md pre code {
+  display: inline;
+  max-width: none;
+}
+
+/* Tables
+ * 表格必须保持 table 布局。给 table 设 display:block 会让浏览器把单元格
+ * 拆成独立块级盒，公众号里表现为「每列只剩两三个字就折行」。
+ * 列数多的宽表格由渲染管线包进横向滚动容器并给出最小宽度（内联在 table 上），
+ * 宁可左右滑动，也不把每列压到不可读。 */
 #bm-md table {
-  display: block;
-  overflow-x: auto;
   width: 100%;
   border-collapse: collapse;
   margin: 1.5em 0;
+}
+#bm-md table th, #bm-md table td {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+#bm-md section[data-bm-table-scroll] {
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  margin: 1.5em 0;
+}
+#bm-md section[data-bm-table-scroll] > table {
+  margin: 0;
 }
 
 /* 复选框（任务列表与自定义 HTML）都会在渲染管线里换成 ✓ / □ 文本，

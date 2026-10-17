@@ -17,7 +17,7 @@ import { getCodeThemeCss } from '../../themes/code-theme'
 import { transformCallouts } from './callouts'
 import { renderMermaidBlocks } from './mermaid'
 import { isImagePath } from './embeds'
-import { cleanFootnotes, replaceMarkTags, stabilizeLists, transformTaskLists } from './post-process'
+import { cleanFootnotes, replaceMarkTags, stabilizeLists, transformTaskLists, wrapWideTables } from './post-process'
 
 export interface RenderOptions {
   markdown: string
@@ -245,6 +245,8 @@ export async function render(options: RenderOptions): Promise<string> {
   html = transformTaskLists(html)
   // 移除无法跳转的脚注锚点与回跳链接
   html = cleanFootnotes(html)
+  // 列数多的表格包进横向滚动容器（需在 juice 前注入容器，样式随主题内联）
+  html = wrapWideTables(html)
 
   const wrapped = `<section id="bm-md">${html}</section>`
 
