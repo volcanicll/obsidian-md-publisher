@@ -355,55 +355,165 @@ export class WeChatApi {
  * 避免星号等符号原样出现在公众号标题里。
  */
 export function extractTitleFromMarkdown(markdown: string): string {
-  // Try to find first H1
-  const h1Match = markdown.match(/^#\s+(.+)$/m)
-  if (h1Match) {
-    return stripInlineMarkdown(h1Match[1])
+  // Try to find first H1（跳过围栏代码块里的 # 注释行）
+  const h1 = findFirstHeadingOutsideFence(markdown)
+  if (h1) {
+    return stripInlineMarkdown(h1)
   }
 
   // Try to find title in YAML frontmatter
-  const yamlMatch = markdown.match(/^---\n[\s\S]*?title:\s*["']?([^"'\n]+)["']?[\s\S]*?---/m)
-  if (yamlMatch) {
-    return stripInlineMarkdown(yamlMatch[1])
+  const yamlTitle = frontmatterValue(markdown, 'title')
+  if (yamlTitle) {
+    return stripInlineMarkdown(yamlTitle)
   }
 
   return '未命名文章'
 }
 
-/** 去除行内 Markdown 标记，仅保留可读文本 */
+/** 取 YAML frontmatter 原文（不含分隔线）；没有 frontmatter 返回 null */
+function frontmatterBlock(markdown: string): string | null {
+  const m = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
+  return m ? m[1] : null
+}
+
+/**
+ * 从 frontmatter 中读取某个键的值。
+ * 只在 frontmatter 块内查找：此前用跨全文的贪婪正则，正文里出现
+ * `title:` 字样时会把正文内容误当成标题。
+ */
+function frontmatterValue(markdown: string, key: string): string | null {
+  const block = frontmatterBlock(markdown)
+  if (!block) return null
+  const re = new RegExp(`^${key}\\s*:\\s*(.+)$`, 'm')
+  const m = block.match(re)
+  if (!m) return null
+  return m[1].trim().replace(/^["']|["']$/g, '')
+}
+
+/** 找到第一个一级标题（围栏代码块内的行不算） */
+function findFirstHeadingOutsideFence(markdown: string): string | null {
+  let inFence = false
+  let fenceMarker = ''
+  let fenceLength = 0
+  for (const line of markdown.split('\n')) {
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/)
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0]
+      if (!inFence) {
+        inFence = true
+        fenceMarker = marker
+        fenceLength = fenceMatch[1].length
+      } else if (marker === fenceMarker && fenceMatch[1].length >= fenceLength) {
+        inFence = false
+      }
+      continue
+    }
+    if (inFence) continue
+    const m = line.match(/^#\s+(.+)$/)
+    if (m) return m[1]
+  }
+  return null
+}
+
+/**
+ * 去除行内 Markdown 标记，仅保留可读文本。
+ * 摘要与标题共用：两者都会直接出现在公众号界面，不能带语法符号。
+ */
 function stripInlineMarkdown(text: string): string {
   return text
+    .replace(/!\[\[([^\]|]+?)(?:\|([^\]]*))?\]\]/g, (_m, target: string, alt?: string) => alt ?? target)
+    .replace(/\[\[([^\]|]+?)(?:\|([^\]]*))?\]\]/g, (_m, target: string, alias?: string) => {
+      const label = alias ?? target
+      // [[笔记#标题]] 在 Obsidian 中显示为「笔记 > 标题」
+      const [note, ...headings] = label.split('#')
+      return [note, ...headings].filter(Boolean).join(' > ')
+    })
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/==([^=]+)==/g, '$1')
+    .replace(/~~([^~]+)~~/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/__([^_]+)__/g, '$1')
     .replace(/\*([^*]+)\*/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/<[^>]+>/g, '')
+    .replace(/\\([\\`*_{}[\]()#+\-.!>~=])/g, '$1')
     .trim()
 }
 
 /**
- * Extract digest/summary from markdown content
- * Uses the first paragraph or returns empty string
+ * Extract digest/summary from markdown content.
+ *
+ * 取第一个「有可读文字」的段落：图片、表格、分隔线、纯 HTML 块直接跳过，
+ * 引用与列表只去掉标记、保留文字，最后剥离行内语法。
+ * 此前直接返回原始行，`![](cover.png)`、`1. 第一项`、`> 引用` 会原样
+ * 进入公众号摘要（分享卡片可见），且加粗等语法符号不会被清理。
  */
 export function extractDigestFromMarkdown(markdown: string): string {
-  // Remove frontmatter
-  let content = markdown.replace(/^---\n[\s\S]*?---\n?/m, '')
-  
-  // Remove title (first H1)
-  content = content.replace(/^#\s+.+$/m, '')
-  
-  // Find first paragraph (non-empty, non-heading line)
+  const content = frontmatterBlock(markdown) === null
+    ? markdown
+    : markdown.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, '')
+
   const lines = content.split('\n')
+  let inFence = false
+  let paragraph: string[] = []
+
+  const flush = (): string | null => {
+    if (paragraph.length === 0) return null
+    const text = stripInlineMarkdown(joinParagraph(paragraph))
+    paragraph = []
+    if (!text) return null
+    // 按码点截断到 120 字符，避免把 emoji 代理对截成乱码
+    const chars = Array.from(text)
+    return chars.length > 120 ? chars.slice(0, 117).join('') + '...' : text
+  }
+
   for (const line of lines) {
     const trimmed = line.trim()
-    if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('```') && !trimmed.startsWith('- ') && !trimmed.startsWith('* ')) {
-      // 按码点截断到 120 字符，避免把 emoji 代理对截成乱码
-      const chars = Array.from(trimmed)
-      return chars.length > 120 ? chars.slice(0, 117).join('') + '...' : trimmed
+
+    if (/^(```|~~~)/.test(trimmed)) {
+      const done = flush()
+      if (done) return done
+      inFence = !inFence
+      continue
     }
+    if (inFence) continue
+
+    if (!trimmed) {
+      const done = flush()
+      if (done) return done
+      continue
+    }
+
+    // 标题与分隔线会结束当前段落：先结算已积累的文字，
+    // 避免上一段与标题后的正文被拼成一句
+    if (trimmed.startsWith('#') || /^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      const done = flush()
+      if (done) return done
+      continue
+    }
+
+    // 表格行、纯图片、纯 HTML 块都不是摘要来源
+    if (trimmed.startsWith('|')) continue
+    if (/^!\[\[[^\]]*\]\]$/.test(trimmed)) continue
+    if (/^!\[[^\]]*\]\([^)]*\)$/.test(trimmed)) continue
+    if (/^<[^>]+>$/.test(trimmed)) continue
+
+    // 引用与列表只去标记，文字仍然可用
+    const text = trimmed
+      .replace(/^>\s?/, '')
+      .replace(/^([-*+]|\d+[.)])\s+/, '')
+      .replace(/^\[[ xX]\]\s+/, '')
+    if (text) paragraph.push(text)
   }
-  
-  return ''
+
+  return flush() ?? ''
+}
+
+/**
+ * 段落内各行拼接。Markdown 软换行在 HTML 中渲染为空格，
+ * 列表项之间也需要分隔，因此统一用空格连接。
+ */
+function joinParagraph(lines: string[]): string {
+  return lines.join(' ')
 }
