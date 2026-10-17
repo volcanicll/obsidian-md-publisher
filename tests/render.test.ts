@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { render, convertWikiEmbeds } from '../src/lib/markdown/render'
+import { render, convertWikiEmbeds, convertHighlights } from '../src/lib/markdown/render'
+import {
+  cleanFootnotes,
+  replaceMarkTags,
+  stabilizeLists,
+  transformTaskLists,
+} from '../src/lib/markdown/post-process'
 import { getAllMarkdownStyles } from '../src/themes/markdown-style'
 
 describe('render pipeline', () => {
@@ -22,7 +28,10 @@ describe('render pipeline', () => {
     const md = '| A | B |\n|---|---|\n| 1 | 2 |\n\n- [x] done\n- [ ] todo\n'
     const html = await render({ markdown: md })
     expect(html).toContain('<table')
-    expect(html).toContain('type="checkbox"')
+    // 公众号会过滤 <input>，任务项换成 ✓ / □ 文本符号
+    expect(html).toContain('✓')
+    expect(html).toContain('□')
+    expect(html).not.toContain('type="checkbox"')
   })
 
   it('renders KaTeX math', async () => {
@@ -94,8 +103,31 @@ describe('convertWikiEmbeds', () => {
     expect(out).toContain('![[b.png]]')
   })
 
-  it('keeps non-embed wikilinks as-is', () => {
-    expect(convertWikiEmbeds('[[some note]]')).toBe('[[some note]]')
+  it('converts inline wikilinks to their display text', () => {
+    // 公众号不支持 vault 内跳转，保留 [[…]] 只会让源码出现在正文里
+    expect(convertWikiEmbeds('[[some note]]')).toBe('some note')
+  })
+
+  it('uses the alias of a piped wikilink', () => {
+    expect(convertWikiEmbeds('[[笔记|别名]]')).toBe('别名')
+  })
+
+  it('renders a heading link as note > heading', () => {
+    expect(convertWikiEmbeds('[[笔记#小节]]')).toBe('笔记 > 小节')
+  })
+
+  it('leaves wikilinks inside code untouched', () => {
+    const md = '`[[inline]]`\n\n```\n[[fenced]]\n```\n\n[[real]]'
+    const out = convertWikiEmbeds(md)
+    expect(out).toContain('`[[inline]]`')
+    expect(out).toContain('[[fenced]]')
+    expect(out).toContain('real')
+    expect(out).not.toContain('[[real]]')
+  })
+
+  it('degrades an unresolved note embed to plain text', () => {
+    // 正常流程由 resolveNoteEmbeds 换成引用块；漏网时至少不留语法源码
+    expect(convertWikiEmbeds('![[某篇笔记]]')).toBe('某篇笔记')
   })
 
   it('renders wiki embeds into img tags', async () => {
@@ -170,12 +202,130 @@ describe('list markers survive publishing', () => {
 
   it('does not add a bullet to task list items', async () => {
     const html = await render({ markdown: '- [x] 完成\n- [ ] 待办' })
-    expect(html).toContain('type="checkbox"')
+    expect(html).toContain('✓')
+    expect(html).toContain('□')
     expect(html).not.toMatch(/task-list-item[^>]*>\s*<span[^>]*>• /)
   })
 
   it('indents nested lists with a bullet each', async () => {
     const html = await render({ markdown: '- A\n  - A1' })
     expect(html.match(/• <\/span>/g)).toHaveLength(2)
+  })
+})
+
+describe('convertHighlights', () => {
+  it('converts ==text== to a mark tag', () => {
+    expect(convertHighlights('这是 ==重点== 内容')).toBe('这是 <mark>重点</mark> 内容')
+  })
+
+  it('handles multiple highlights on one line', () => {
+    expect(convertHighlights('==A== 和 ==B==')).toBe('<mark>A</mark> 和 <mark>B</mark>')
+  })
+
+  it('leaves comparison operators in code untouched', () => {
+    const md = '```bash\n[[ $a == $b ]]\n```\n\n行内 `a == b`\n\n正文 ==高亮=='
+    const out = convertHighlights(md)
+    expect(out).toContain('[[ $a == $b ]]')
+    expect(out).toContain('`a == b`')
+    expect(out).toContain('<mark>高亮</mark>')
+  })
+
+  it('leaves spaced comparisons in prose untouched', () => {
+    // `if a == b` 这类写法在 Obsidian 里也不会高亮
+    expect(convertHighlights('判断 a == b 是否成立')).toBe('判断 a == b 是否成立')
+  })
+
+  it('supports a single-character highlight', () => {
+    expect(convertHighlights('==高==')).toBe('<mark>高</mark>')
+  })
+
+  it('does not match across line breaks', () => {
+    expect(convertHighlights('==开头\n结尾==')).toBe('==开头\n结尾==')
+  })
+})
+
+describe('post-process helpers', () => {
+  it('transformTaskLists replaces checked and unchecked checkboxes with symbols', () => {
+    const html = '<li><input type="checkbox" checked disabled> 完成</li><li><input type="checkbox" disabled> 待办</li>'
+    const out = transformTaskLists(html)
+    expect(out).not.toContain('<input')
+    expect(out).toContain('✓')
+    expect(out).toContain('□')
+  })
+
+  it('cleanFootnotes unwraps refs and removes backrefs', () => {
+    const html =
+      '<p>正文<a href="#user-content-fn-1" data-footnote-ref>1</a></p>' +
+      '<section><ol><li id="user-content-fn-1"><p>注<a href="#user-content-fnref-1" data-footnote-backref>↩</a></p></li></ol></section>'
+    const out = cleanFootnotes(html)
+    expect(out).toContain('正文1')
+    expect(out).not.toContain('↩')
+    expect(out).not.toContain('<a')
+    expect(out).toContain('注')
+  })
+
+  it('cleanFootnotes returns input unchanged when there are no footnotes', () => {
+    const html = '<p>普通段落</p>'
+    expect(cleanFootnotes(html)).toBe(html)
+  })
+
+  it('replaceMarkTags swaps mark for span and keeps attributes', () => {
+    expect(replaceMarkTags('<p><mark style="color: red;">x</mark></p>')).toBe(
+      '<p><span style="color: red;">x</span></p>'
+    )
+    expect(replaceMarkTags('<mark>x</mark>')).toBe('<span>x</span>')
+  })
+
+  // 公众号保存草稿时会把列表里的空白文本节点当成条目，插进空 <li>，
+  // 真实条目被挤到偶数位。渲染器默认输出带换行的列表，这里必须压平。
+  it('stabilizeLists removes whitespace between list tags', () => {
+    const html = '<ol>\n<li>一</li>\n<li>二</li>\n</ol>'
+    expect(stabilizeLists(html)).toBe('<ol><li><span>一</span></li><li><span>二</span></li></ol>')
+  })
+
+  // 列表项里没被行内标签包住的文字会被编辑器塞进块级 <section>，
+  // 导致加粗小标题与说明断成两行；预先包一个 <span> 可以避免。
+  it('stabilizeLists wraps bare text in spans without touching inline tags', () => {
+    const out = stabilizeLists('<li><strong>标题</strong>：说明</li>')
+    expect(out).toBe('<li><strong>标题</strong><span>：说明</span></li>')
+  })
+
+  it('stabilizeLists keeps spaces inside and between inline elements', () => {
+    const out = stabilizeLists('<li>前段 <code>code</code> 后段</li>')
+    expect(out).toBe('<li><span>前段 </span><code>code</code><span> 后段</span></li>')
+  })
+
+  it('stabilizeLists handles nested lists', () => {
+    const out = stabilizeLists('<ul>\n<li>父\n<ul>\n<li>子</li>\n</ul>\n</li>\n</ul>')
+    expect(out).not.toMatch(/\s<li/)
+    expect(out).not.toMatch(/<\/li>\s/)
+    expect(out).toContain('<span>父')
+    expect(out).toContain('<span>子</span>')
+  })
+})
+
+describe('fidelity pipeline end to end', () => {
+  it('renders highlights as styled spans that WeChat keeps', async () => {
+    const html = await render({ markdown: '这是 ==重点== 内容' })
+    expect(html).not.toContain('<mark')
+    expect(html).toContain('background-color: #fff3bf')
+    expect(html).toContain('重点')
+  })
+
+  it('renders footnotes without anchors or backref arrows', async () => {
+    const md = '正文[^1]\n\n[^1]: 脚注内容\n'
+    const html = await render({ markdown: md })
+    expect(html).toContain('脚注内容')
+    expect(html).not.toContain('data-footnote-ref')
+    expect(html).not.toContain('↩')
+  })
+
+  it('renders task items with a text symbol and no bullet', async () => {
+    const html = await render({ markdown: '- [x] 完成\n- [ ] 待办' })
+    expect(html).not.toContain('<input')
+    // 文本符号后的空格连同说明一起被包进 span，避免微信把裸文本拆成块
+    expect(html).toMatch(/✓<\/span><span> 完成<\/span>/)
+    expect(html).toMatch(/□<\/span><span> 待办<\/span>/)
+    expect(html).not.toContain('>• <')
   })
 })

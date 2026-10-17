@@ -16,6 +16,8 @@ import { getMarkdownStyleCss, type MarkdownStyle } from '../../themes/markdown-s
 import { getCodeThemeCss } from '../../themes/code-theme'
 import { transformCallouts } from './callouts'
 import { renderMermaidBlocks } from './mermaid'
+import { isImagePath } from './embeds'
+import { cleanFootnotes, replaceMarkTags, stabilizeLists, transformTaskLists } from './post-process'
 
 export interface RenderOptions {
   markdown: string
@@ -35,10 +37,16 @@ export interface RenderOptions {
 }
 
 /**
- * 将 Obsidian wiki 嵌入语法（![[path.png]]、![[path.png|300]]）转换为
- * 标准 Markdown 图片语法，供后续图片处理管线识别。尺寸后缀被丢弃；
- * 图片尺寸交给主题 CSS 统一控制。
- * 代码块与行内代码中的 wiki 嵌入保持原样，不做转换。
+ * 将 Obsidian wiki 语法转换为标准 Markdown：
+ *
+ * - 图片嵌入 `![[path.png]]` / `![[path.png|300]]` → `![](path.png)`，
+ *   供后续图片处理管线识别；尺寸后缀被丢弃，尺寸交给主题 CSS 统一控制。
+ * - 笔记嵌入 `![[笔记名]]` → 纯文本（发布侧不支持笔记嵌入时兜底；
+ *   正常流程已由 resolveNoteEmbeds 先行替换，这里只处理漏网情况）。
+ * - 行内链接 `[[笔记]]` / `[[笔记|别名]]` / `[[笔记#标题]]` → 可读文本。
+ *   公众号不支持 vault 内部跳转，保留方括号只会让正文出现 `[[…]]` 源码。
+ *
+ * 代码块与行内代码中的 wiki 语法保持原样，不做转换。
  */
 export function convertWikiEmbeds(markdown: string): string {
   const lines = markdown.split('\n')
@@ -67,10 +75,77 @@ export function convertWikiEmbeds(markdown: string): string {
       .map((part) =>
         part.length > 1 && part.startsWith('`') && part.endsWith('`')
           ? part
-          : part.replace(/!\[\[([^\]|]+?)(?:\|[^\]]*)?\]\]/g, (_m, path: string) => {
-              // 链接目标中的空格必须编码，否则 CommonMark 不会将其解析为图片
-              return `![](${path.trim().replace(/ /g, '%20')})`
-            })
+          : part
+              .replace(
+                /!\[\[([^\]|]+?)(?:\|([^\]]*))?\]\]/g,
+                (_m, path: string, alias?: string) => {
+                  // 非图片的笔记嵌入漏到这里时降级为文字，别名优先；
+                  // 不能当成图片渲染（会产生指向笔记文件的裂图）
+                  if (!isImagePath(path)) return wikiLinkText(path, alias)
+                  // 链接目标中的空格必须编码，否则 CommonMark 不会将其解析为图片
+                  return `![](${path.trim().replace(/ /g, '%20')})`
+                }
+              )
+              .replace(
+                /\[\[([^\]|]+?)(?:\|([^\]]*))?\]\]/g,
+                (_m, target: string, alias?: string) => wikiLinkText(target, alias)
+              )
+      )
+      .join('')
+  })
+  return converted.join('\n')
+}
+
+/**
+ * wiki 链接的展示文本：优先别名；`笔记#标题` 显示为「笔记 > 标题」。
+ * `.md` 后缀与目标里的多余空白一并去掉。
+ */
+function wikiLinkText(target: string, alias?: string): string {
+  const raw = (alias ?? target).trim()
+  if (!raw) return ''
+  const [note, ...headings] = raw.split('#')
+  const parts = [note.replace(/\.md$/i, '').trim(), ...headings.map((h) => h.trim())].filter(
+    Boolean
+  )
+  return parts.join(' > ')
+}
+
+/**
+ * Obsidian 高亮语法 `==文本==` → `<mark>`。
+ * 公众号正文没有 `==` 语法，原样输出会让高亮标记直接出现在文章里。
+ * 代码块与行内代码内的 `==` 保持原样（如 shell 比较运算）；
+ * `a == b` 这类两侧带空格的比较写法也不收——Obsidian 自身不会高亮它。
+ */
+export function convertHighlights(markdown: string): string {
+  const lines = markdown.split('\n')
+  let inFence = false
+  let fenceMarker = ''
+  let fenceLength = 0
+
+  const converted = lines.map((line) => {
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/)
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0]
+      if (!inFence) {
+        inFence = true
+        fenceMarker = marker
+        fenceLength = fenceMatch[1].length
+      } else if (marker === fenceMarker && fenceMatch[1].length >= fenceLength) {
+        inFence = false
+      }
+      return line
+    }
+    if (inFence) return line
+
+    return line
+      .split(/(`[^`]*`)/)
+      .map((part) =>
+        part.length > 1 && part.startsWith('`') && part.endsWith('`')
+          ? part
+          : part.replace(
+              /(^|[^=])==([^=\s](?:[^=\n]*?[^=\s])?)==(?!=)/g,
+              (_m, lead: string, text: string) => `${lead}<mark>${text}</mark>`
+            )
       )
       .join('')
   })
@@ -89,6 +164,7 @@ const sanitizeSchema = {
     'path',
     'figcaption',
     'section',
+    'mark',
   ],
   attributes: {
     ...defaultSchema.attributes,
@@ -157,12 +233,18 @@ export async function render(options: RenderOptions): Promise<string> {
   } = options
 
   const processor = createProcessor({ openLinksInNewWindow, inlineDollarMath })
-  let html = (await processor.process(convertWikiEmbeds(markdown))).toString()
+  let html = (
+    await processor.process(convertHighlights(convertWikiEmbeds(markdown)))
+  ).toString()
 
   // Mermaid 图表转位图（依赖 DOM；失败时保留代码块）
   html = await renderMermaidBlocks(html)
   // Obsidian Callout 转公众号卡片（内联样式，需在 sanitize 后、juice 前注入）
   html = transformCallouts(html)
+  // 任务列表复选框改为文本符号（公众号会过滤 <input>）
+  html = transformTaskLists(html)
+  // 移除无法跳转的脚注锚点与回跳链接
+  html = cleanFootnotes(html)
 
   const wrapped = `<section id="bm-md">${html}</section>`
 
@@ -174,16 +256,19 @@ export async function render(options: RenderOptions): Promise<string> {
     .join('\n')
 
   if (!combinedCss) {
-    return wrapped
+    return stabilizeLists(replaceMarkTags(wrapped))
   }
 
   try {
-    return juice.inlineContent(wrapped, combinedCss, {
+    const inlined = juice.inlineContent(wrapped, combinedCss, {
       inlinePseudoElements: true,
       preserveImportant: true,
     })
+    // 高亮样式已随主题内联，最后把 <mark> 换成公众号保留的 <span>，
+    // 并整理列表，避免公众号保存草稿时插入空条目、把条目文字拆行
+    return stabilizeLists(replaceMarkTags(inlined))
   } catch (error) {
     console.error('Juice inline error:', error)
-    return wrapped
+    return stabilizeLists(replaceMarkTags(wrapped))
   }
 }

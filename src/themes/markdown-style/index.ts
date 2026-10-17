@@ -62,10 +62,16 @@ export const COMMON_STYLE = `
   -webkit-overflow-scrolling: touch;
 }
 
-/* Base Form Elements (Checkboxes etc) */
-#bm-md input[type="checkbox"] {
-  margin-right: 0.5em;
-  transform: scale(1.1);
+/* 复选框（任务列表与自定义 HTML）都会在渲染管线里换成 ✓ / □ 文本，
+ * 公众号保留不了 <input>，因此这里不再为原生 checkbox 写样式。 */
+
+/* Obsidian 高亮 ==文本== 由渲染管线转成 <mark>，发布前再改写为
+ * 带内联样式的 <span>；这条负责高亮的视觉样式，随主题一起内联。 */
+#bm-md mark {
+  background-color: #fff3bf;
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
 }
 
 /* Unordered List Markers
@@ -78,22 +84,22 @@ export const COMMON_STYLE = `
   list-style: none;
   padding-left: 0;
 }
-#bm-md ul > li {
+/* 任务列表符号由渲染管线替换为 ✓ / □ 文本，这里不再叠加列表圆点。
+ * 用 :not(.task-list-item) 排除任务项，而不是给任务项写 content: none——
+ * juice 会把 content: none 也内联成一个空 span 留在正文里。 */
+#bm-md ul > li:not(.task-list-item) {
   padding-left: 1.35em;
   text-indent: -1.35em;
 }
-#bm-md ul > li::before {
+#bm-md ul > li:not(.task-list-item)::before {
   content: "• ";
   color: currentColor;
   font-weight: 700;
 }
-/* 任务列表已有复选框，不再叠加符号 */
 #bm-md li.task-list-item {
+  list-style: none;
   padding-left: 0;
   text-indent: 0;
-}
-#bm-md li.task-list-item::before {
-  content: none;
 }
 /* 嵌套列表收紧上边距，避免层级之间出现大段空白 */
 #bm-md ul ul {

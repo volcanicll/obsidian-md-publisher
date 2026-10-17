@@ -1,0 +1,129 @@
+/**
+ * 渲染后的 HTML 后处理：把公众号不支持的标签与属性换成语义等价的写法。
+ *
+ * 处理时机在 sanitize 之后、juice 内联之前（与 callouts 一致），
+ * 产物全部使用内联样式，不依赖 class。
+ */
+
+/** 任务列表复选框字符：勾选状态用对勾，未勾选用空心方框 */
+const CHECKED_MARK = '✓'
+const UNCHECKED_MARK = '□'
+
+const CHECKBOX_RE = /<input[^>]*type="checkbox"[^>]*>/gi
+
+/**
+ * 任务列表复选框 → 文本符号。
+ *
+ * GFM 任务列表渲染为 `<input type="checkbox" disabled>`，公众号编辑器会
+ * 过滤 `<input>`，结果是 `- [x]` 与 `- [ ]` 在文章里看不出区别。
+ * 换成 ✓ / □ 并区分明暗（勾选加深、未勾选留灰），勾选状态才可靠地
+ * 传递到公众号。颜色用中性灰阶，不随主题变化，避免与任何一套配色冲突。
+ */
+export function transformTaskLists(html: string): string {
+  return html.replace(CHECKBOX_RE, (tag) => {
+    const checked = /\bchecked\b/i.test(tag)
+    const color = checked ? '#3f4a54' : '#a8b2bb'
+    return (
+      `<span style="display:inline-block;width:1.1em;margin-right:0.4em;` +
+      `color:${color};font-weight:700;text-align:center;">${checked ? CHECKED_MARK : UNCHECKED_MARK}</span>`
+    )
+  })
+}
+
+/** 正文里的脚注角标引用：`<a ... data-footnote-ref ...>1</a>` */
+const FOOTNOTE_REF_RE = /<a\b[^>]*data-footnote-ref[^>]*>([\s\S]*?)<\/a>/gi
+
+/** 脚注区末尾的回跳链接：`<a ... data-footnote-backref ...>↩</a>` */
+const FOOTNOTE_BACKREF_RE =
+  /[\t ]*<a\b[^>]*data-footnote-backref[^>]*>[\s\S]*?<\/a>/gi
+
+/**
+ * 清洗脚注结构。
+ *
+ * remark-rehype 会给脚注生成 `href="#user-content-fn-1"` 的页内锚点与
+ * `↩` 回跳链接。公众号不支持页内跳转，链接点不动，`↩` 还会作为乱码
+ * 字符出现在脚注末尾。这里去掉回跳链接、把角标引用展开成纯文字，
+ * 脚注内容本身仍然完整可读。
+ */
+export function cleanFootnotes(html: string): string {
+  if (!/data-footnote-ref|data-footnote-backref/.test(html)) {
+    return html
+  }
+
+  return html
+    // 角标引用：保留数字，去掉无法跳转的锚点
+    .replace(FOOTNOTE_REF_RE, (_m, text: string) => text)
+    // 回跳链接连同前面的空格整个移除，正文末尾不留多余空白
+    .replace(FOOTNOTE_BACKREF_RE, '')
+}
+
+/**
+ * `<mark>` → `<span>`。
+ *
+ * 公众号编辑器会过滤 `<mark>`（连同里层文字一起丢失），高亮内容就
+ * 直接不见了。juice 已把主题的高亮样式内联进 style 属性，换成
+ * `<span>` 后外观不变、内容安全保留。
+ * 只处理标签本身，属性原样带过去。
+ */
+export function replaceMarkTags(html: string): string {
+  return html
+    .replace(/<mark(\s[^>]*)?>/gi, (_m, attrs?: string) => `<span${attrs ?? ''}>`)
+    .replace(/<\/mark>/gi, '</span>')
+}
+
+/**
+ * 让列表经得起公众号后台的保存逻辑。
+ *
+ * 两个独立的改写，都在真实草稿回读里验证过：
+ *
+ * 1. 去掉列表标签之间的空白。渲染器输出 `<ol>\n<li>…</li>\n</ol>`，浏览器
+ *    里没问题，但公众号保存草稿时会把空白文本节点也当成一个条目，给每个
+ *    真实条目前后插进 `<li><section><span leaf=""><br></span></section></li>`，
+ *    正文于是冒出一串空编号，真实条目被挤到偶数位（2、4、6…）。
+ * 2. 把 `<li>` 里的裸文本包进 `<span>`。编辑器会把列表项里没被行内标签
+ *    包住的文字塞进块级 `<section>`，块级元素另起一行，条目的加粗小标题
+ *    就和后面的说明断成两行。
+ *
+ * 只处理 `ul` / `ol` / `li` 边界，正文中英文之间的空格不受影响。
+ */
+export function stabilizeLists(html: string): string {
+  const compacted = html
+    .replace(/\s+(<li\b)/gi, '$1')
+    .replace(/\s+(<\/li>)/gi, '$1')
+    .replace(/\s+(<\/?(?:ul|ol)\b)/gi, '$1')
+
+  return wrapListText(compacted)
+}
+
+/**
+ * 把直接挂在 `<li>` 下的裸文本包进 `<span>`，已处于行内标签内的文字不再处理。
+ *
+ * 编辑器只对「直接挂在 li / section 下的文字」做块级包装，行内标签里的
+ * 文字本来就不受影响；重复嵌套反而可能改变 strong / code 的排版。
+ * 用标签栈判断当前位置，嵌套列表里的文字仍归各自的内层 li。
+ */
+function wrapListText(html: string): string {
+  const stack: string[] = []
+  return html.replace(/(<[^>]+>)|([^<]+)/g, (match, tag?: string, text?: string) => {
+    if (tag !== undefined) {
+      if (tag.startsWith('</')) {
+        const name = tag.slice(2).replace(/[\s>].*$/, '').toLowerCase()
+        const index = stack.lastIndexOf(name)
+        // 找到就回退到该层之前，未闭合的残留标签一并清掉
+        if (index >= 0) stack.length = index
+        return tag
+      }
+      if (!/\/>$/.test(tag) && !VOID_TAGS.test(tag)) {
+        stack.push(tag.slice(1).replace(/[\s/>].*$/, '').toLowerCase())
+      }
+      return tag
+    }
+    // 纯空白保持原样，避免把条目首尾的换行变成可见空格
+    if (text && text.trim() && stack[stack.length - 1] === 'li') {
+      return `<span>${text}</span>`
+    }
+    return match
+  })
+}
+
+const VOID_TAGS = /^<(?:br|img|hr|input|source)\b/i
