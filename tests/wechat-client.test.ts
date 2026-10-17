@@ -190,6 +190,62 @@ describe('WeChatApi.deleteDraft', () => {
   })
 })
 
+// ── updateDraft ────────────────────────────────────────────────────────
+
+describe('WeChatApi.updateDraft', () => {
+  it('posts media_id, index and the article object (not an array)', async () => {
+    mockJson((param) => {
+      expect(param.url).toContain('/draft/update?access_token=T0')
+      expect(param.method).toBe('POST')
+      expect(JSON.parse(param.body as string)).toEqual({
+        media_id: 'MEDIA1',
+        index: 0,
+        articles: { title: '新标题', content: '<p>新正文</p>', thumb_media_id: 'COVER' },
+      })
+      return { errcode: 0 }
+    })
+
+    const api = apiWithCachedToken()
+    await expect(
+      api.updateDraft('MEDIA1', {
+        title: '新标题',
+        content: '<p>新正文</p>',
+        thumb_media_id: 'COVER',
+      })
+    ).resolves.toBeUndefined()
+    expect(calls).toHaveLength(1)
+  })
+
+  it('passes an explicit index for multi-article drafts', async () => {
+    mockJson((param) => {
+      expect(JSON.parse(param.body as string).index).toBe(2)
+      return { errcode: 0 }
+    })
+
+    const api = apiWithCachedToken()
+    await api.updateDraft('MEDIA1', { title: 't', content: 'c' }, 2)
+  })
+
+  it('throws a tagged error so callers can branch on the errcode', async () => {
+    mockJson(() => ({ errcode: 87010 }))
+    const api = apiWithCachedToken()
+
+    await expect(api.updateDraft('GONE', { title: 't', content: 'c' })).rejects.toMatchObject({
+      name: 'WeChatApiError',
+      code: 87010,
+      message: '该草稿不存在',
+    })
+  })
+
+  it('treats errcode 0 as success', async () => {
+    mockJson(() => ({ errcode: 0, errmsg: 'ok' }))
+    const api = apiWithCachedToken()
+    await expect(
+      api.updateDraft('MEDIA1', { title: 't', content: 'c' })
+    ).resolves.toBeUndefined()
+  })
+})
+
 // ── uploadImage ────────────────────────────────────────────────────────
 
 describe('WeChatApi.uploadImage', () => {

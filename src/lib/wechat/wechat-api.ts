@@ -4,10 +4,12 @@ import type {
   WeChatDraftAddResponse,
   WeChatArticle,
   WeChatDraftAddRequest,
+  WeChatDraftUpdateRequest,
+  WeChatDraftUpdateResponse,
   WeChatDraftListResponse,
   WeChatDraftDeleteResponse
 } from './types'
-import { getWeChatErrorMessage } from './types'
+import { WeChatApiError } from './types'
 import { sanitizeFilename } from '../image-processor'
 
 const WECHAT_API_BASE = 'https://api.weixin.qq.com/cgi-bin'
@@ -140,7 +142,7 @@ export class WeChatApi {
     const data = response.json as WeChatAccessTokenResponse
 
     if (data.errcode && data.errcode !== 0) {
-      throw new Error(getWeChatErrorMessage(data.errcode))
+      throw new WeChatApiError(data.errcode)
     }
 
     if (!data.access_token) {
@@ -186,7 +188,7 @@ export class WeChatApi {
     const data = response.json as WeChatDraftAddResponse
 
     if (data.errcode && data.errcode !== 0) {
-      throw new Error(getWeChatErrorMessage(data.errcode))
+      throw new WeChatApiError(data.errcode)
     }
 
     if (!data.media_id) {
@@ -233,7 +235,7 @@ export class WeChatApi {
     const data = response.json as { url?: string; errcode?: number; errmsg?: string }
 
     if (data.errcode && data.errcode !== 0) {
-      throw new Error(getWeChatErrorMessage(data.errcode))
+      throw new WeChatApiError(data.errcode)
     }
 
     if (!data.url) {
@@ -276,7 +278,7 @@ export class WeChatApi {
     const data = response.json as { media_id?: string; url?: string; errcode?: number; errmsg?: string }
 
     if (data.errcode && data.errcode !== 0) {
-      throw new Error(getWeChatErrorMessage(data.errcode))
+      throw new WeChatApiError(data.errcode)
     }
 
     if (!data.media_id) {
@@ -309,10 +311,49 @@ export class WeChatApi {
     const data = response.json as WeChatDraftListResponse
 
     if (data.errcode && data.errcode !== 0) {
-      throw new Error(getWeChatErrorMessage(data.errcode))
+      throw new WeChatApiError(data.errcode)
     }
 
     return data
+  }
+
+  /**
+   * 覆盖草稿箱中的已有草稿。
+   *
+   * 接口是整体替换而非合并：未传入的字段会被清空，因此调用方必须
+   * 提供完整文章对象。只能更新由本接口创建的草稿，且单图文草稿的
+   * index 固定为 0。
+   *
+   * @param mediaId 目标草稿的 media_id
+   * @param article 完整文章内容（含封面 thumb_media_id）
+   * @param index 图文序号，单图文草稿为 0
+   */
+  async updateDraft(mediaId: string, article: WeChatArticle, index = 0): Promise<void> {
+    const token = await this.getAccessToken()
+
+    const url = `${WECHAT_API_BASE}/draft/update?access_token=${encodeURIComponent(token)}`
+
+    const requestBody: WeChatDraftUpdateRequest = {
+      media_id: mediaId,
+      index,
+      articles: article
+    }
+
+    const params: RequestUrlParam = {
+      url,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    }
+
+    const response = await requestUrl(params)
+    const data = response.json as WeChatDraftUpdateResponse
+
+    if (data.errcode && data.errcode !== 0) {
+      throw new WeChatApiError(data.errcode)
+    }
   }
 
   /**
@@ -336,7 +377,7 @@ export class WeChatApi {
     const data = response.json as WeChatDraftDeleteResponse
 
     if (data.errcode && data.errcode !== 0) {
-      throw new Error(getWeChatErrorMessage(data.errcode))
+      throw new WeChatApiError(data.errcode)
     }
   }
 

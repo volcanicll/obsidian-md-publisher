@@ -51,12 +51,32 @@ export interface WeChatDraftAddRequest {
   articles: WeChatArticle[]
 }
 
+// Draft update request body（注意 articles 是单个对象，与 draft/add 的数组不同）
+export interface WeChatDraftUpdateRequest {
+  media_id: string
+  /** 要替换的图文序号，单图文草稿固定为 0 */
+  index: number
+  articles: WeChatArticle
+}
+
+// draft/update response
+export interface WeChatDraftUpdateResponse {
+  errcode?: number
+  errmsg?: string
+}
+
 // Draft list item returned by draft/batchget
 export interface WeChatDraftListItem {
   media_id: string
   update_time: number
   content: {
-    news_item: Array<{ title: string; digest?: string; author?: string }>
+    news_item: Array<{
+      title: string
+      digest?: string
+      author?: string
+      /** 封面永久素材 media_id，覆盖更新时可直接复用 */
+      thumb_media_id?: string
+    }>
   }
 }
 
@@ -109,4 +129,23 @@ export const WECHAT_ERROR_CODES: Record<number, string> = {
 
 export function getWeChatErrorMessage(errcode: number): string {
   return WECHAT_ERROR_CODES[errcode] || `未知错误 (${errcode})`
+}
+
+/**
+ * 微信接口错误。保留 errcode 以便调用方按错误类型分支处理
+ * （例如草稿已被删除时改为新建、封面素材失效时重新上传）。
+ */
+export class WeChatApiError extends Error {
+  readonly code: number
+
+  constructor(code: number) {
+    super(getWeChatErrorMessage(code))
+    this.name = 'WeChatApiError'
+    this.code = code
+  }
+}
+
+/** 判断错误是否为指定的微信 errcode 之一 */
+export function isWeChatError(error: unknown, ...codes: number[]): boolean {
+  return error instanceof WeChatApiError && codes.includes(error.code)
 }

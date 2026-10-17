@@ -136,6 +136,9 @@ export class DraftsModal extends Modal {
       const info = row.createDiv({ cls: 'bm-md-draft-info' })
       info.createDiv({ cls: 'bm-md-draft-title', text: title })
       const metaParts = [`更新于 ${time}`]
+      // 标出这篇草稿由哪篇笔记发布而来，便于理解覆盖更新会改动哪篇文章
+      const linkedNote = this.plugin.findNotePathByDraftId(item.media_id)
+      if (linkedNote) metaParts.push(`关联笔记：${linkedNote}`)
       if (newsItems.length > 1) {
         // 多图文草稿：首篇做标题，其余标题在元信息行中列出
         metaParts.push(
@@ -205,6 +208,8 @@ export class DraftsModal extends Modal {
   private async deleteDraft(mediaId: string, title: string): Promise<void> {
     try {
       await this.api.deleteDraft(mediaId)
+      // 草稿没了，本地关联也要清掉，否则下次发布会去更新一篇不存在的草稿
+      await this.plugin.clearDraftLinksByMediaId(mediaId)
       new Notice(`已删除草稿「${title}」`)
       // 当前页删除后为空时回退一页
       let page = this.currentPage

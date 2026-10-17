@@ -3,6 +3,13 @@ import { BmMdSettingsTab } from './settings/SettingsTab'
 import { PreviewView, VIEW_TYPE_PREVIEW } from './views/PreviewView'
 import { DraftsModal } from './views/DraftsModal'
 import { WeChatApi } from './lib/wechat/wechat-api'
+import {
+  normalizeDraftLinks,
+  removeDraftLinkByMediaId,
+  renameDraftLink,
+  type DraftLink,
+  type DraftLinkMap
+} from './lib/wechat/draft-links'
 import { loadCustomThemes } from './lib/custom-themes'
 import { getAllMarkdownStyles, type MarkdownStyle } from './themes/markdown-style'
 
@@ -31,6 +38,8 @@ interface BmMdSettings {
   // 发布默认值
   defaultOpenComment: boolean
   defaultFansOnlyComment: boolean
+  /** 笔记路径 → 已发布草稿，用于「覆盖更新已有草稿」 */
+  draftLinks: DraftLinkMap
 }
 
 const DEFAULT_SETTINGS: BmMdSettings = {
@@ -56,6 +65,7 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   manualTokenExpireTime: 0,
   defaultOpenComment: false,
   defaultFansOnlyComment: false,
+  draftLinks: {},
 }
 
 export default class BmMdPlugin extends Plugin {
@@ -116,6 +126,16 @@ export default class BmMdPlugin extends Plugin {
     // Add settings tab
     this.addSettingTab(new BmMdSettingsTab(this.app, this))
 
+    // 笔记重命名/移动后迁移草稿关联，否则再次发布会被当成新笔记而重复建草稿
+    this.registerEvent(
+      this.app.vault.on('rename', (file, oldPath) => {
+        const next = renameDraftLink(this.settings.draftLinks, oldPath, file.path)
+        if (next === this.settings.draftLinks) return
+        this.settings.draftLinks = next
+        void this.saveSettings()
+      })
+    )
+
     console.debug('插件已加载')
   }
 
@@ -126,10 +146,40 @@ export default class BmMdPlugin extends Plugin {
   async loadSettings() {
     const saved = (await this.loadData()) as Partial<BmMdSettings> | null
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved ?? {})
+    // 持久化数据可能被手工编辑过，结构不完整的关联记录直接丢弃
+    this.settings.draftLinks = normalizeDraftLinks(this.settings.draftLinks)
   }
 
   async saveSettings() {
     await this.saveData(this.settings)
+  }
+
+  /** 读取某篇笔记关联的草稿；没有则返回 null */
+  getDraftLink(notePath: string | null): DraftLink | null {
+    if (!notePath) return null
+    return this.settings.draftLinks[notePath] ?? null
+  }
+
+  /** 记录/更新笔记与草稿的关联并持久化 */
+  async setDraftLink(notePath: string, link: DraftLink): Promise<void> {
+    this.settings.draftLinks = { ...this.settings.draftLinks, [notePath]: link }
+    await this.saveSettings()
+  }
+
+  /** 清除指向某篇草稿的所有关联（草稿被删除后调用） */
+  async clearDraftLinksByMediaId(mediaId: string): Promise<void> {
+    const next = removeDraftLinkByMediaId(this.settings.draftLinks, mediaId)
+    if (next === this.settings.draftLinks) return
+    this.settings.draftLinks = next
+    await this.saveSettings()
+  }
+
+  /** 反查某篇草稿关联的笔记路径 */
+  findNotePathByDraftId(mediaId: string): string | null {
+    for (const [path, link] of Object.entries(this.settings.draftLinks)) {
+      if (link.mediaId === mediaId) return path
+    }
+    return null
   }
 
   /** 重新扫描自定义主题文件夹，并刷新缓存的列表 */

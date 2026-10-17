@@ -78,3 +78,75 @@ describe('BmMdPlugin.createWeChatApi', () => {
     await expect(api.getAccessToken()).rejects.toThrow('手动 token 已过期')
   })
 })
+
+describe('BmMdPlugin draft links', () => {
+  it('loadSettings drops malformed persisted links but keeps valid ones', async () => {
+    const plugin = makePlugin({})
+    plugin.loadData = async () => ({
+      draftLinks: {
+        'a.md': { mediaId: 'M1', title: 't', updatedAt: 1 },
+        'bad.md': { title: 'no media id' },
+      },
+    })
+
+    await plugin.loadSettings()
+
+    expect(plugin.settings.draftLinks).toEqual({
+      'a.md': { mediaId: 'M1', title: 't', updatedAt: 1 },
+    })
+  })
+
+  it('setDraftLink persists and is readable via getDraftLink', async () => {
+    const saved: unknown[] = []
+    const plugin = makePlugin({})
+    plugin.saveData = async (data) => void saved.push(data)
+
+    const link = { mediaId: 'M1', title: '标题', updatedAt: 7 }
+    await plugin.setDraftLink('notes/a.md', link)
+
+    expect(plugin.getDraftLink('notes/a.md')).toEqual(link)
+    expect(plugin.getDraftLink('notes/b.md')).toBeNull()
+    expect(plugin.getDraftLink(null)).toBeNull()
+    expect(saved).toHaveLength(1)
+  })
+
+  it('clearDraftLinksByMediaId removes every link to a deleted draft and saves once', async () => {
+    const saved: unknown[] = []
+    const plugin = makePlugin({
+      draftLinks: {
+        'a.md': { mediaId: 'M1', title: 'a', updatedAt: 1 },
+        'b.md': { mediaId: 'M2', title: 'b', updatedAt: 2 },
+        'c.md': { mediaId: 'M1', title: 'c', updatedAt: 3 },
+      },
+    })
+    plugin.saveData = async (data) => void saved.push(data)
+
+    await plugin.clearDraftLinksByMediaId('M1')
+
+    expect(plugin.settings.draftLinks).toEqual({
+      'b.md': { mediaId: 'M2', title: 'b', updatedAt: 2 },
+    })
+    expect(saved).toHaveLength(1)
+  })
+
+  it('clearDraftLinksByMediaId does not write when nothing matches', async () => {
+    const saved: unknown[] = []
+    const plugin = makePlugin({
+      draftLinks: { 'a.md': { mediaId: 'M1', title: 'a', updatedAt: 1 } },
+    })
+    plugin.saveData = async (data) => void saved.push(data)
+
+    await plugin.clearDraftLinksByMediaId('OTHER')
+
+    expect(saved).toEqual([])
+  })
+
+  it('findNotePathByDraftId reverses the association', () => {
+    const plugin = makePlugin({
+      draftLinks: { 'notes/a.md': { mediaId: 'M1', title: 'a', updatedAt: 1 } },
+    })
+
+    expect(plugin.findNotePathByDraftId('M1')).toBe('notes/a.md')
+    expect(plugin.findNotePathByDraftId('M2')).toBeNull()
+  })
+})
