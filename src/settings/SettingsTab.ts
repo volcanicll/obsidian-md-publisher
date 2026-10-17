@@ -275,6 +275,9 @@ export class BmMdSettingsTab extends PluginSettingTab {
             .setValue(this.plugin.settings.wechatAppId)
             .onChange(async (value) => {
               this.plugin.settings.wechatAppId = value.trim()
+              // 旧 token 绑定的还是改之前的 AppID，继续复用会让
+              // 发布前的凭证校验形同虚设
+              this.resetCachedToken()
               await this.plugin.saveSettings()
             })
         })
@@ -293,6 +296,7 @@ export class BmMdSettingsTab extends PluginSettingTab {
             .setValue(this.plugin.settings.wechatAppSecret)
             .onChange(async (value) => {
               this.plugin.settings.wechatAppSecret = value.trim()
+              this.resetCachedToken()
               await this.plugin.saveSettings()
             })
         })
@@ -345,5 +349,11 @@ export class BmMdSettingsTab extends PluginSettingTab {
           }
         })
     })
+  }
+
+  /** 清掉自动模式下缓存的 access_token，下一次发布重新换取 */
+  private resetCachedToken(): void {
+    this.plugin.settings.wechatAccessToken = ''
+    this.plugin.settings.wechatTokenExpireTime = 0
   }
 }

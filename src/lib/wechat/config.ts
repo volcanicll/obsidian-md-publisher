@@ -34,6 +34,31 @@ export function charLength(text: string): number {
 }
 
 /**
+ * 凭证类错误码对应的排查建议；不是凭证问题时返回 null。
+ *
+ * 发布前校验凭证能提前暴露这些问题，但错误码本身只说「不合法」，
+ * 用户往往不知道去哪里改，所以这里给出去向明确的提示。
+ */
+export function credentialFailureHint(errcode: number | null): string | null {
+  switch (errcode) {
+    case 40013:
+      return 'AppID 无效，请到 设置 → Markdown Publisher 检查是否填错或填反'
+    case 40125:
+      return 'AppSecret 无效，请到 设置 → Markdown Publisher 重新复制填写'
+    case 43104:
+      return 'AppID 与 AppSecret 不匹配，请核对两者是否来自同一个公众号'
+    case 40164:
+      return '本机 IP 不在公众号白名单中，请到公众平台添加，或改用「手动 token」模式'
+    case 40001:
+    case 40014:
+    case 42001:
+      return 'access_token 无效或已过期，请在设置中重新粘贴 access_token'
+    default:
+      return null
+  }
+}
+
+/**
  * 校验发布字段，返回第一条错误信息；全部通过时返回 null。
  */
 export function validateWeChatArticleFields(fields: {

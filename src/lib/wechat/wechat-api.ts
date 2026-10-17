@@ -139,6 +139,31 @@ export class WeChatApi {
     return this.tokenRequest
   }
 
+  /**
+   * 强制校验凭证：跳过本地缓存，真正向微信换取一次 access_token。
+   *
+   * 发布前用它把「AppID/AppSecret 填错」「IP 不在白名单」「手动 token
+   * 过期」这类问题挡在图片上传之前。自动模式下换到的新 token 会通过
+   * onTokenRefresh 写回设置，后续请求直接复用，不产生额外开销。
+   */
+  async verifyCredentials(): Promise<void> {
+    if (this.manualMode) {
+      if (this.isTokenExpired()) {
+        throw new Error(
+          '手动 token 已过期（有效期约 2 小时）。请到设置 → 微信公众号配置中粘贴新的 access_token，或切换到自动模式。'
+        )
+      }
+      return
+    }
+    // 并发发布时共用同一次刷新，避免旧 token 被互相作废
+    if (!this.tokenRequest) {
+      this.tokenRequest = this.refreshAccessToken().finally(() => {
+        this.tokenRequest = null
+      })
+    }
+    await this.tokenRequest
+  }
+
   private async refreshAccessToken(): Promise<string> {
     if (!this.appId || !this.appSecret) {
       throw new Error('请先配置公众号 AppID 和 AppSecret')

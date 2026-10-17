@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  credentialFailureHint,
   isWeChatConfigured,
   validateWeChatArticleFields,
   WECHAT_LIMITS,
@@ -80,5 +81,26 @@ describe('charLength', () => {
     expect(charLength('ab')).toBe(2)
     expect(charLength('😀')).toBe(1)
     expect('😀'.length).toBe(2)
+  })
+})
+
+describe('credentialFailureHint', () => {
+  it('points at the setting to fix for each credential error code', () => {
+    expect(credentialFailureHint(40013)).toContain('AppID')
+    expect(credentialFailureHint(40125)).toContain('AppSecret')
+    expect(credentialFailureHint(43104)).toContain('不匹配')
+    expect(credentialFailureHint(40164)).toContain('白名单')
+  })
+
+  it('treats every token error as a stale access_token', () => {
+    for (const code of [40001, 40014, 42001]) {
+      expect(credentialFailureHint(code)).toContain('access_token')
+    }
+  })
+
+  it('returns null for non-credential failures so callers keep the original message', () => {
+    expect(credentialFailureHint(45064)).toBeNull()
+    expect(credentialFailureHint(87010)).toBeNull()
+    expect(credentialFailureHint(null)).toBeNull()
   })
 })

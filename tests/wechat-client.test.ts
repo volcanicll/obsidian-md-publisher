@@ -153,6 +153,55 @@ describe('WeChatApi.getAccessToken', () => {
   })
 })
 
+// ── verifyCredentials ──────────────────────────────────────────────────
+
+describe('WeChatApi.verifyCredentials', () => {
+  it('ignores the cached token and always exchanges the credentials', async () => {
+    mockJson(() => ({ access_token: 'T1', expires_in: 7200 }))
+    // 缓存里的 T0 仍在有效期内，但校验必须真的去问微信
+    const api = apiWithCachedToken()
+
+    await api.verifyCredentials()
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0].url).toContain('/token?grant_type=client_credential')
+    expect(calls[0].url).toContain('secret=secret')
+  })
+
+  it('surfaces a bad AppSecret instead of silently reusing a valid token', async () => {
+    mockJson(() => ({ errcode: 40125 }))
+    const api = apiWithCachedToken({ appSecret: 'wrong' })
+
+    await expect(api.verifyCredentials()).rejects.toThrow('不合法的 AppSecret')
+  })
+
+  it('does not touch the network in manual mode', async () => {
+    forbidNetwork()
+    const api = new WeChatApi({
+      appId: '',
+      appSecret: '',
+      accessToken: 'manual',
+      tokenExpireTime: Date.now() + 60 * 60 * 1000,
+      manualMode: true,
+    })
+
+    await expect(api.verifyCredentials()).resolves.toBeUndefined()
+  })
+
+  it('rejects an expired manual token without a network call', async () => {
+    forbidNetwork()
+    const api = new WeChatApi({
+      appId: '',
+      appSecret: '',
+      accessToken: 'stale',
+      tokenExpireTime: Date.now() - 1000,
+      manualMode: true,
+    })
+
+    await expect(api.verifyCredentials()).rejects.toThrow('手动 token 已过期')
+  })
+})
+
 // ── addDraft ───────────────────────────────────────────────────────────
 
 describe('WeChatApi.addDraft', () => {
