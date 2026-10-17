@@ -176,6 +176,50 @@ function remoteFilename(src: string): string {
   }
 }
 
+/** 属性值中的 HTML 实体还原：路径里的 & 等字符会被 rehype 转义成 &amp; */
+function decodeBasicEntities(value: string): string {
+  return value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+}
+
+/**
+ * 折叠路径中的 `.` 与 `..` 段。
+ * keepParent 为 true 时保留开头无法消解的 `..`（相对路径还要与笔记目录拼接），
+ * 为 false 时直接丢弃，避免解析结果逃出 vault 根。
+ */
+function collapsePathSegments(path: string, keepParent: boolean): string {
+  const out: string[] = []
+  for (const segment of path.split('/')) {
+    if (!segment || segment === '.') continue
+    if (segment === '..') {
+      if (out.length > 0 && out[out.length - 1] !== '..') {
+        out.pop()
+      } else if (keepParent) {
+        out.push('..')
+      }
+      continue
+    }
+    out.push(segment)
+  }
+  return out.join('/')
+}
+
+/**
+ * 图片 src → 解码后的路径：
+ * app:// 取协议后的路径，其余做 HTML 实体与 URL 解码，并折叠 ./ 与 ../
+ */
+export function decodeImageSrc(src: string): string {
+  const appMatch = src.match(/^app:\/\/[^/]+\/(.+)$/)
+  const raw = appMatch ? appMatch[1] : src
+  const decoded = decodeBasicEntities(safeDecodeURIComponent(raw))
+  const collapsed = collapsePathSegments(decoded, true)
+  return decoded.startsWith('/') ? `/${collapsed}` : collapsed
+}
+
 /** ArrayBuffer + mime → `data:<mime>;base64,…`；分块编码避免大文件爆栈 */
 export function arrayBufferToDataUrl(data: ArrayBuffer, mime: string): string {
   const bytes = new Uint8Array(data)
@@ -214,23 +258,23 @@ export async function inlineImagesAsDataUrls(
   let inlined = 0
 
   for (const src of extractLocalImagePaths(html)) {
-    const normalized = normalizeImagePath(src, activeFilePath)
-    if (!normalized) {
-      warnings.push(`无法解析图片路径：${src}`)
+    const file = resolveVaultImageFile(app, src, activeFilePath)
+    if (!file) {
+      warnings.push(`vault 中未找到图片：${src}`)
       continue
     }
-    const cached = cache.get(normalized)
+    const cached = cache.get(file.path)
     if (cached) {
       result = replaceImageSrc(result, src, cached)
       continue
     }
-    const data = await readImageFromVault(app, normalized)
+    const data = await readVaultFile(app, file)
     if (!data) {
-      warnings.push(`vault 中未找到图片：${normalized}`)
+      warnings.push(`图片读取失败：${file.path}`)
       continue
     }
     const dataUrl = arrayBufferToDataUrl(data, detectImageType(data))
-    cache.set(normalized, dataUrl)
+    cache.set(file.path, dataUrl)
     result = replaceImageSrc(result, src, dataUrl)
     inlined++
   }
@@ -281,43 +325,37 @@ export function replaceImageSrc(html: string, rawSrc: string, newUrl: string): s
  * Normalize an Obsidian image src to a vault-relative path.
  * Handles formats:
  *   - app://<hash>/<absolute-path>
- *   - Relative paths like "images/photo.png"
+ *   - Relative paths like "images/photo.png"（按笔记目录解析）
  *   - Wikilink style like "![[](Pasted%20image.png)]"
+ *   - 含 `./`、`../` 的相对路径
  */
 export function normalizeImagePath(
   src: string,
   activeFilePath: string | null
 ): string | null {
-  let path = src
+  const decoded = decodeImageSrc(src)
+  if (!decoded) return null
+  if (decoded.startsWith('/') || !activeFilePath) return decoded
 
-  // Handle app:// protocol (Obsidian desktop)
-  const appMatch = path.match(/^app:\/\/[^/]+\/(.+)$/)
-  if (appMatch) {
-    path = safeDecodeURIComponent(appMatch[1])
-    return path
-  }
-
-  // URL decode
-  path = safeDecodeURIComponent(path)
-
-  // Remove leading ./ if present
-  if (path.startsWith('./')) {
-    path = path.substring(2)
-  }
-
-  // If relative and we have active file, resolve relative to it
-  if (!path.startsWith('/') && activeFilePath) {
-    const dir = activeFilePath.substring(0, activeFilePath.lastIndexOf('/'))
-    if (dir) {
-      path = dir + '/' + path
-    }
-  }
-
-  return path
+  const dir = noteDirOf(activeFilePath)
+  if (!dir) return collapsePathSegments(decoded, false)
+  return collapsePathSegments(`${dir}/${decoded}`, false)
 }
 
 function stripExtension(path: string): string {
   return path.replace(/\.[^./]+$/, '')
+}
+
+/** 笔记所在目录（'a/b.md' → 'a'，根目录笔记 → ''） */
+function noteDirOf(notePath: string | null): string {
+  if (!notePath) return ''
+  const idx = notePath.lastIndexOf('/')
+  return idx === -1 ? '' : notePath.slice(0, idx)
+}
+
+/** 仅接受图片扩展名的文件，避免误把同名笔记当图片 */
+function isImageFile(file: TFile): boolean {
+  return IMAGE_EXTENSIONS.includes(file.extension.toLowerCase())
 }
 
 /**
@@ -354,6 +392,82 @@ export function findVaultImageFile(app: App, imagePath: string): TFile | null {
 }
 
 /**
+ * 图片 src → vault 内文件。
+ *
+ * 渲染管线把 `![[图片.png]]` 转成 `![](图片.png)` 后不再区分 wiki 嵌入与
+ * Markdown 相对链接，而两者的解析规则不同（wiki 嵌入按 vault 内「最短路径」
+ * 查找，Markdown 相对链接优先相对笔记目录）。这里按 Obsidian 的规则逐级尝试：
+ *
+ * 1. 笔记相对路径（notes/a.md + assets/x.png → notes/assets/x.png）：
+ *    必须先于链接索引，否则根目录同名图片会被「最短路径」抢走
+ * 2. metadataCache 链接解析：与阅读视图一致（`../`、最短路径等语义都由它处理）
+ * 3. 原样路径（vault 根相对，命中路径后缀）
+ * 4. 仅文件名（vault 内任意位置的「最短路径」兜底，附件目录场景）
+ *
+ * 全都不中时返回 null，调用方保留原 src 并给出提示。
+ */
+export function resolveVaultImageFile(
+  app: App,
+  src: string,
+  activeFilePath: string | null
+): TFile | null {
+  const decoded = decodeImageSrc(src)
+  if (!decoded) return null
+
+  const relative = normalizeImagePath(src, activeFilePath)
+  if (relative) {
+    const direct = findVaultImageFile(app, relative)
+    if (direct) return direct
+  }
+
+  // 链接解析在 vault 索引未就绪等边缘情况下可能抛错，失败时继续走路径候选
+  try {
+    const linkDest = app.metadataCache?.getFirstLinkpathDest?.(
+      decoded.replace(/^\//, ''),
+      activeFilePath ?? ''
+    )
+    if (linkDest instanceof TFile && isImageFile(linkDest)) {
+      return linkDest
+    }
+  } catch {
+    // 忽略，走下面的路径候选
+  }
+
+  const seen = new Set<string>()
+  const candidates = [relative, decoded, decoded.split('/').pop() ?? '']
+  for (const candidate of candidates) {
+    if (!candidate || seen.has(candidate)) continue
+    seen.add(candidate)
+    const file = findVaultImageFile(app, candidate)
+    if (file) return file
+  }
+  return null
+}
+
+/** 读取已解析的 vault 图片文件字节；失败返回 null */
+async function readVaultFile(app: App, file: TFile): Promise<ArrayBuffer | null> {
+  try {
+    return await app.vault.readBinary(file)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 按 Obsidian 的链接规则解析并读取 vault 内图片；
+ * 找不到文件或读取失败返回 null。
+ */
+export async function readVaultImage(
+  app: App,
+  src: string,
+  activeFilePath: string | null
+): Promise<ArrayBuffer | null> {
+  const file = resolveVaultImageFile(app, src, activeFilePath)
+  if (!file) return null
+  return await readVaultFile(app, file)
+}
+
+/**
  * Read an image file from the vault and return its ArrayBuffer.
  * 支持精确路径、补全扩展名以及 wikilink 风格的「仅文件名」查找。
  */
@@ -361,15 +475,9 @@ export async function readImageFromVault(
   app: App,
   imagePath: string
 ): Promise<ArrayBuffer | null> {
-  try {
-    const file = findVaultImageFile(app, imagePath)
-    if (file) {
-      return await app.vault.readBinary(file)
-    }
-    return null
-  } catch {
-    return null
-  }
+  const file = findVaultImageFile(app, imagePath)
+  if (!file) return null
+  return await readVaultFile(app, file)
 }
 
 /** Get image dimensions from ArrayBuffer */
@@ -573,9 +681,7 @@ export function resolveLocalImageSrcs(
 ): string {
   let resolved = html
   for (const src of extractLocalImagePaths(html)) {
-    const normalized = normalizeImagePath(src, activeFilePath)
-    if (!normalized) continue
-    const file = findVaultImageFile(app, normalized)
+    const file = resolveVaultImageFile(app, src, activeFilePath)
     if (file) {
       resolved = replaceImageSrc(resolved, src, app.vault.getResourcePath(file))
     }
@@ -624,11 +730,17 @@ export async function processImages(
     current++
     const isData = rawPath.startsWith('data:')
     const isRemote = rawPath.startsWith('http://') || rawPath.startsWith('https://')
+
+    // 本地图片按 Obsidian 链接规则解析成实际文件：缓存键用真实路径，
+    // 同一图片的多种写法（相对路径 / 仅文件名）才能命中同一条缓存
+    const localFile = isData || isRemote
+      ? null
+      : resolveVaultImageFile(app, rawPath, activeFilePath)
     const normalizedPath = isData
       ? rawPath
       : isRemote
         ? rawPath
-        : normalizeImagePath(rawPath, activeFilePath)
+        : localFile?.path ?? normalizeImagePath(rawPath, activeFilePath) ?? ''
 
     if (!normalizedPath) {
       errors.push(`Could not normalize path: ${rawPath}`)
@@ -658,14 +770,16 @@ export async function processImages(
       ? decodeDataUrl(rawPath)
       : isRemote
         ? await fetchRemoteImage(rawPath)
-        : await readImageFromVault(app, normalizedPath)
+        : localFile
+          ? await readVaultFile(app, localFile)
+          : null
     if (!imageData) {
       errors.push(
         isData
           ? `Failed to decode embedded image: ${filename}`
           : isRemote
             ? `Failed to download remote image: ${rawPath}`
-            : `Image not found in vault: ${normalizedPath}`
+            : `Image not found in vault: ${rawPath}`
       )
       continue
     }

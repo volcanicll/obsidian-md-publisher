@@ -9,8 +9,7 @@ import {
   type SensitiveHit
 } from '../lib/wechat/validation'
 import {
-  normalizeImagePath,
-  findVaultImageFile,
+  resolveVaultImageFile,
   resolveLocalImageSrcs,
   generateDefaultCover
 } from '../lib/image-processor'
@@ -28,6 +27,8 @@ export interface PublishPreviewOptions {
   form: PublishPreviewForm
   /** 渲染后的文章 HTML（本地图片路径尚未解析） */
   html: string
+  /** 正文所属笔记路径；弹窗打开时预览面板可能已失去焦点，不能现取 activeFile */
+  notePath?: string | null
 }
 
 /**
@@ -41,6 +42,7 @@ export class PublishPreviewModal extends Modal {
   private plugin: BmMdPlugin
   private form: PublishPreviewForm
   private html: string
+  private notePath: string | null
 
   private checkRunning = false
 
@@ -49,6 +51,12 @@ export class PublishPreviewModal extends Modal {
     this.plugin = options.plugin
     this.form = options.form
     this.html = options.html
+    this.notePath = options.notePath ?? null
+  }
+
+  /** 正文所属笔记路径：优先调用方传入，其次当前活动文件 */
+  private activeNotePath(): string | null {
+    return this.notePath ?? this.app.workspace.getActiveFile()?.path ?? null
   }
 
   onOpen(): void {
@@ -70,16 +78,12 @@ export class PublishPreviewModal extends Modal {
 
   /** 解析封面展示源：指定路径 → 正文首图 → 标题卡片兜底 */
   private async resolveCoverSrc(): Promise<string | null> {
-    const activeFilePath = this.app.workspace.getActiveFile()?.path ?? null
+    const activeFilePath = this.activeNotePath()
 
     const explicit = this.form.coverPath.trim()
     if (explicit) {
-      const normalized = normalizeImagePath(explicit, activeFilePath) ?? explicit
-      const file = findVaultImageFile(this.app, normalized)
-      if (file) {
-        return this.app.vault.getResourcePath(file)
-      }
-      return null
+      const file = resolveVaultImageFile(this.app, explicit, activeFilePath)
+      return file ? this.app.vault.getResourcePath(file) : null
     }
 
     const html = resolveLocalImageSrcs(this.html, this.app, activeFilePath)
@@ -103,7 +107,7 @@ export class PublishPreviewModal extends Modal {
     const phone = pane.createDiv({ cls: 'bm-md-phone' })
     phone.createDiv({ cls: 'bm-md-phone-bar', text: '公众号文章预览 · 375px' })
 
-    const activeFilePath = this.app.workspace.getActiveFile()?.path ?? null
+    const activeFilePath = this.activeNotePath()
     const articleHtml = resolveLocalImageSrcs(this.html, this.app, activeFilePath)
 
     const header = phone.createDiv({ cls: 'bm-md-article-header' })

@@ -12,9 +12,9 @@ import { PublishPreviewModal } from './PublishPreviewModal'
 import {
   compressImage,
   generateDefaultCover,
-  normalizeImagePath,
   processImages,
   readImageFromVault,
+  resolveVaultImageFile,
   DEFAULT_IMAGE_OPTIONS,
   type ImageProcessResult,
   type ProgressCallback
@@ -33,6 +33,8 @@ export interface PublishModalOptions {
    * 不提供时退回打开弹窗时的快照。
    */
   loadContent?: () => Promise<PublishModalContent | null>
+  /** 正文所属笔记路径；缺省时取弹窗打开瞬间的活动文件 */
+  notePath?: string | null
 }
 
 /**
@@ -42,6 +44,7 @@ export class PublishModal extends Modal {
   private html: string
   private plugin: BmMdPlugin
   private loadContent?: () => Promise<PublishModalContent | null>
+  private notePath: string | null
   private title: string
   private digest: string
   private author: string
@@ -58,6 +61,7 @@ export class PublishModal extends Modal {
     this.html = options.html
     this.plugin = options.plugin
     this.loadContent = options.loadContent
+    this.notePath = options.notePath ?? app.workspace.getActiveFile()?.path ?? null
 
     // Extract defaults from markdown
     this.title = extractTitleFromMarkdown(options.markdown)
@@ -229,7 +233,9 @@ export class PublishModal extends Modal {
           coverPath: this.coverPath,
           contentSourceUrl: this.contentSourceUrl
         },
-        html: this.html
+        html: this.html,
+        // 弹窗里的图片解析必须跟随正文所属笔记，不能取「当前活动文件」
+        notePath: this.notePath ?? this.app.workspace.getActiveFile()?.path ?? null
       }).open()
     })
 
@@ -284,15 +290,15 @@ export class PublishModal extends Modal {
   ): Promise<string> {
     const explicit = this.coverPath.trim()
     if (explicit) {
-      const normalized = normalizeImagePath(explicit, activeFilePath) ?? explicit
-      const data = await readImageFromVault(this.app, normalized)
-      if (!data) {
+      const file = resolveVaultImageFile(this.app, explicit, activeFilePath)
+      const data = file ? await readImageFromVault(this.app, file.path) : null
+      if (!file || !data) {
         throw new Error(`未找到封面图：${explicit}`)
       }
       const compressed = await compressImage(data)
       return api.uploadCoverImage(
         compressed.data,
-        normalized.split('/').pop() || 'cover',
+        file.name || 'cover',
         compressed.contentType
       )
     }
@@ -330,8 +336,7 @@ export class PublishModal extends Modal {
       const api = this.plugin.createWeChatApi()
 
       // Get active file path for resolving relative image paths
-      const activeFile = this.app.workspace.getActiveFile()
-      const activeFilePath = activeFile?.path ?? null
+      const activeFilePath = this.notePath
 
       // 弹窗打开期间笔记可能继续被编辑，发布时重新获取最新渲染结果
       this.updateProgress('正在渲染最新内容…')

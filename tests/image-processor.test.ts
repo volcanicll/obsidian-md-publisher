@@ -9,6 +9,8 @@ import {
   safeDecodeURIComponent,
   isWeChatSupportedImageType,
   findVaultImageFile,
+  resolveVaultImageFile,
+  resolveLocalImageSrcs,
   inlineImagesAsDataUrls,
   processImages
 } from '../src/lib/image-processor'
@@ -72,6 +74,103 @@ describe('normalizeImagePath', () => {
     expect(normalizeImagePath('/vault/img/a.png', 'notes/doc.md')).toBe(
       '/vault/img/a.png'
     )
+  })
+
+  it('collapses ../ segments against the note directory', () => {
+    expect(normalizeImagePath('../assets/pic.png', 'notes/sub/doc.md')).toBe(
+      'notes/assets/pic.png'
+    )
+  })
+
+  it('does not escape the vault root', () => {
+    expect(normalizeImagePath('../../pic.png', 'notes/doc.md')).toBe('pic.png')
+  })
+
+  it('decodes HTML entities in the src', () => {
+    expect(normalizeImagePath('assets/a&amp;b.png', null)).toBe('assets/a&b.png')
+  })
+})
+
+describe('resolveVaultImageFile', () => {
+  /** 与 makeApp 相同的 stub，但保留 TFile 引用以便按对象比较 */
+  function makeAppWithFiles(files: string[]) {
+    const byPath = new Map<string, TFile>()
+    for (const path of files) {
+      const file = new TFile() as unknown as { path: string; extension: string }
+      file.path = path
+      file.extension = path.split('.').pop() ?? ''
+      byPath.set(path, file as unknown as TFile)
+    }
+    const app = {
+      vault: {
+        getAbstractFileByPath: (path: string) => byPath.get(path),
+        getFiles: () => [...byPath.values()],
+      },
+    }
+    return { app: app as never, byPath }
+  }
+
+  it('resolves a note-relative path', () => {
+    const { app, byPath } = makeAppWithFiles(['notes/assets/pic.png'])
+    expect(resolveVaultImageFile(app, 'assets/pic.png', 'notes/a.md')).toBe(
+      byPath.get('notes/assets/pic.png')
+    )
+  })
+
+  it('resolves a bare wikilink filename stored in another folder', () => {
+    const { app, byPath } = makeAppWithFiles(['attachments/Pasted image 1.png'])
+    expect(
+      resolveVaultImageFile(app, 'Pasted%20image%201.png', 'notes/a.md')
+    ).toBe(byPath.get('attachments/Pasted image 1.png'))
+  })
+
+  it('resolves a vault-root path from a note in a subfolder', () => {
+    const { app, byPath } = makeAppWithFiles(['assets/diagram.png'])
+    expect(
+      resolveVaultImageFile(app, 'assets/diagram.png', 'notes/a.md')
+    ).toBe(byPath.get('assets/diagram.png'))
+  })
+
+  it('prefers the note-relative path over the link index', () => {
+    const { app, byPath } = makeAppWithFiles(['notes/pic.png', 'other/pic.png'])
+    const indexed = byPath.get('other/pic.png')!
+    ;(app as unknown as { metadataCache: unknown }).metadataCache = {
+      getFirstLinkpathDest: () => indexed,
+    }
+    expect(resolveVaultImageFile(app, 'pic.png', 'notes/a.md')).toBe(
+      byPath.get('notes/pic.png')
+    )
+  })
+
+  it('falls back to the metadataCache link resolution', () => {
+    const { app, byPath } = makeAppWithFiles(['notes/assets/pic.png', 'other/pic.png'])
+    const preferred = byPath.get('other/pic.png')!
+    ;(app as unknown as { metadataCache: unknown }).metadataCache = {
+      getFirstLinkpathDest: () => preferred,
+    }
+    expect(resolveVaultImageFile(app, 'pic.png', 'notes/a.md')).toBe(preferred)
+  })
+
+  it('falls back to path candidates when link resolution throws', () => {
+    const { app, byPath } = makeAppWithFiles(['assets/pic.png'])
+    ;(app as unknown as { metadataCache: unknown }).metadataCache = {
+      getFirstLinkpathDest: () => {
+        throw new Error('metadata cache not ready')
+      },
+    }
+    expect(resolveVaultImageFile(app, 'assets/pic.png', 'notes/a.md')).toBe(
+      byPath.get('assets/pic.png')
+    )
+  })
+
+  it('returns null when the image does not exist', () => {
+    const { app } = makeAppWithFiles(['notes/a.md'])
+    expect(resolveVaultImageFile(app, 'missing.png', 'notes/a.md')).toBeNull()
+  })
+
+  it('never resolves to a non-image file', () => {
+    const { app } = makeAppWithFiles(['notes/photo.md'])
+    expect(resolveVaultImageFile(app, 'photo', 'notes/a.md')).toBeNull()
   })
 })
 
@@ -297,6 +396,38 @@ describe('processImages', () => {
     expect(results[0].contentType).toBe('image/png')
   })
 
+  it('uploads a wikilink image stored in the attachment folder', async () => {
+    const app = makeAppWithImages(['attachments/Pasted image 1.png'])
+    const api = makeApi()
+
+    const { html: out, results, errors } = await processImages(
+      '<img src="Pasted%20image%201.png">',
+      app,
+      api as never,
+      'notes/a.md'
+    )
+
+    expect(errors).toEqual([])
+    expect(results).toHaveLength(1)
+    expect(results[0].originalPath).toBe('attachments/Pasted image 1.png')
+    expect(out).toContain(api.urls[0])
+  })
+
+  it('uploads a vault-root image referenced from a subfolder note', async () => {
+    const app = makeAppWithImages(['assets/diagram.png'])
+    const api = makeApi()
+
+    const { results, errors } = await processImages(
+      '<img src="assets/diagram.png">',
+      app,
+      api as never,
+      'notes/a.md'
+    )
+
+    expect(errors).toEqual([])
+    expect(results[0].originalPath).toBe('assets/diagram.png')
+  })
+
   it('downloads remote images and re-hosts them on WeChat', async () => {
     setRequestUrlMock(async (param) => {
       expect(param.url).toBe('https://cdn.com/pic.png')
@@ -350,6 +481,43 @@ describe('processImages', () => {
   })
 })
 
+describe('resolveLocalImageSrcs', () => {
+  function makeAppWithResourcePath(files: string[]) {
+    const base = makeApp(files) as { vault: Record<string, unknown> }
+    base.vault.getResourcePath = (file: { path: string }) => `app://hash/${file.path}`
+    return base as never
+  }
+
+  it('rewrites a wikilink image stored outside the note folder', () => {
+    const app = makeAppWithResourcePath(['attachments/pasted.png'])
+    const out = resolveLocalImageSrcs(
+      '<img src="pasted.png" alt>',
+      app,
+      'notes/a.md'
+    )
+    expect(out).toContain('src="app://hash/attachments/pasted.png"')
+  })
+
+  it('rewrites a vault-root image referenced from a subfolder note', () => {
+    const app = makeAppWithResourcePath(['assets/diagram.png'])
+    const out = resolveLocalImageSrcs('<img src="assets/diagram.png">', app, 'notes/a.md')
+    expect(out).toContain('src="app://hash/assets/diagram.png"')
+  })
+
+  it('leaves unresolvable images untouched', () => {
+    const app = makeAppWithResourcePath([])
+    const html = '<img src="missing.png">'
+    expect(resolveLocalImageSrcs(html, app, 'notes/a.md')).toBe(html)
+  })
+
+  it('does not rewrite remote or data URLs', () => {
+    const app = makeAppWithResourcePath([])
+    const html =
+      '<img src="https://cdn.com/a.png"><img src="data:image/png;base64,AAAA">'
+    expect(resolveLocalImageSrcs(html, app, 'notes/a.md')).toBe(html)
+  })
+})
+
 describe('inlineImagesAsDataUrls', () => {
   const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).buffer
 
@@ -377,6 +545,35 @@ describe('inlineImagesAsDataUrls', () => {
     const out = await inlineImagesAsDataUrls('<img src="assets/pic.png">', app, 'notes/a.md')
     expect(out.html).toContain('data:image/png;base64,')
     expect(out.inlined).toBe(1)
+  })
+
+  it('inlines a wikilink image that lives outside the note folder', async () => {
+    const app = makeAppWithImages(['attachments/Pasted image 1.png'])
+    const out = await inlineImagesAsDataUrls(
+      '<img src="Pasted%20image%201.png">',
+      app,
+      'notes/a.md'
+    )
+    expect(out.inlined).toBe(1)
+    expect(out.warnings).toEqual([])
+  })
+
+  it('inlines a vault-root image referenced from a subfolder note', async () => {
+    const app = makeAppWithImages(['assets/diagram.png'])
+    const out = await inlineImagesAsDataUrls('<img src="assets/diagram.png">', app, 'notes/a.md')
+    expect(out.inlined).toBe(1)
+    expect(out.warnings).toEqual([])
+  })
+
+  it('reuses one data URL when the same file is referenced by different srcs', async () => {
+    const app = makeAppWithImages(['assets/pic.png'])
+    const out = await inlineImagesAsDataUrls(
+      '<img src="assets/pic.png"><img src="pic.png">',
+      app,
+      'notes/a.md'
+    )
+    expect(out.inlined).toBe(1)
+    expect(out.html.match(/data:image\/png;base64,/g)).toHaveLength(2)
   })
 
   it('inlines remote images by downloading them', async () => {

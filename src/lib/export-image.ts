@@ -2,8 +2,7 @@ import { App, requestUrl } from 'obsidian'
 import {
   arrayBufferToDataUrl,
   detectImageType,
-  findVaultImageFile,
-  normalizeImagePath,
+  resolveVaultImageFile,
 } from './image-processor'
 
 // 供既有测试与调用方继续从本模块导入；实现在 image-processor 中，与复制路径共用
@@ -170,11 +169,15 @@ export interface ExportImageResult {
   warnings: string[]
 }
 
-/** 读取 vault 内图片字节；找不到文件时抛错（进入 warnings） */
-async function readLocalImageBytes(app: App, imagePath: string): Promise<ArrayBuffer> {
-  const file = findVaultImageFile(app, imagePath)
+/** 解析并读取 vault 内图片字节；找不到文件时抛错（进入 warnings） */
+async function readLocalImageBytes(
+  app: App,
+  src: string,
+  activeFilePath: string | null
+): Promise<ArrayBuffer> {
+  const file = resolveVaultImageFile(app, src, activeFilePath)
   if (!file) {
-    throw new Error(`vault 中未找到图片 ${imagePath}`)
+    throw new Error(`vault 中未找到图片 ${src}`)
   }
   return await app.vault.readBinary(file)
 }
@@ -206,7 +209,9 @@ async function inlineImageSources(
     if (!src || src.startsWith('data:')) continue
 
     const isRemote = /^https?:\/\//i.test(src)
-    const key = isRemote ? src : normalizeImagePath(src, activeFilePath) ?? src
+    // 本地图片先解析成真实文件，缓存键用文件路径：同一图片的多种写法只下载一次
+    const localFile = isRemote ? null : resolveVaultImageFile(app, src, activeFilePath)
+    const key = isRemote ? src : localFile?.path ?? src
     const cached = cache.get(key)
     if (cached) {
       img.setAttribute('src', cached)
@@ -216,7 +221,7 @@ async function inlineImageSources(
     try {
       const bytes = isRemote
         ? await fetchRemoteImageBytes(src)
-        : await readLocalImageBytes(app, key)
+        : await readLocalImageBytes(app, src, activeFilePath)
       const dataUrl = arrayBufferToDataUrl(bytes, detectImageType(bytes))
       cache.set(key, dataUrl)
       img.setAttribute('src', dataUrl)

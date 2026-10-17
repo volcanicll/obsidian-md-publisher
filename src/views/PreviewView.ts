@@ -313,7 +313,7 @@ export class PreviewView extends ItemView {
       return
     }
 
-    const activeFilePath = this.app.workspace.getActiveFile()?.path ?? null
+    const activeFilePath = this.getSourceNotePath()
 
     try {
       const { html: inlined, inlined: count, warnings } =
@@ -346,7 +346,7 @@ export class PreviewView extends ItemView {
    * 图片嵌入不进入此流程（由 convertWikiEmbeds → 图片管线处理）。
    */
   private makeNoteResolver(): NoteResolver {
-    const sourcePath = this.app.workspace.getActiveFile()?.path ?? ''
+    const sourcePath = this.getSourceNotePath() ?? ''
     return async (target) => {
       const hashIdx = target.indexOf('#')
       const linkpath = hashIdx === -1 ? target : target.slice(0, hashIdx)
@@ -420,12 +420,23 @@ export class PreviewView extends ItemView {
   }
 
   /**
+   * 正文所属笔记路径。
+   *
+   * 不能用 `workspace.getActiveFile()`：预览面板获得焦点（点主题菜单、点预览区）
+   * 后活动文件为空，相对图片路径会退化成 vault 根路径而全部裂图。
+   * 因此优先取预览镜像的笔记，再回退当前打开的 Markdown 视图。
+   */
+  private getSourceNotePath(): string | null {
+    const bound = this.findBoundMarkdownView()
+    return bound?.file?.path ?? this.lastActiveFile?.path ?? null
+  }
+
+  /**
    * 将 HTML 中的本地图片 src 重写为 Obsidian 资源 URL（app://…），
    * 让预览面板能直接显示 vault 内图片；发布时仍按原路径读取上传。
    */
   private resolveLocalImages(html: string): string {
-    const activeFilePath = this.app.workspace.getActiveFile()?.path ?? null
-    return resolveLocalImageSrcs(html, this.app, activeFilePath)
+    return resolveLocalImageSrcs(html, this.app, this.getSourceNotePath())
   }
 
   async updatePreview(): Promise<void> {
@@ -483,7 +494,7 @@ export class PreviewView extends ItemView {
       return
     }
 
-    const noteFile = this.app.workspace.getActiveFile() ?? this.lastActiveFile
+    const noteFile = this.findBoundMarkdownView()?.file ?? this.lastActiveFile
     const settings = this.plugin.settings
     const resolvedWidth = resolveExportWidth(this.measurePreviewWidth())
     new Notice('正在生成图片…')
@@ -536,6 +547,7 @@ export class PreviewView extends ItemView {
       markdown,
       html,
       plugin: this.plugin,
+      notePath: this.getSourceNotePath(),
       // 发布时重新渲染：弹窗打开期间笔记可能继续被编辑。
       // 编辑会清空渲染缓存，未变更时直接复用缓存，无额外开销。
       loadContent: async () => {
