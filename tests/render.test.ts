@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, convertWikiEmbeds, convertHighlights } from '../src/lib/markdown/render'
 import {
+  LIST_TEXT_SPAN_STYLE,
   cleanFootnotes,
   replaceMarkTags,
   stabilizeLists,
@@ -281,27 +282,43 @@ describe('post-process helpers', () => {
   // 真实条目被挤到偶数位。渲染器默认输出带换行的列表，这里必须压平。
   it('stabilizeLists removes whitespace between list tags', () => {
     const html = '<ol>\n<li>一</li>\n<li>二</li>\n</ol>'
-    expect(stabilizeLists(html)).toBe('<ol><li><span>一</span></li><li><span>二</span></li></ol>')
+    const span = (text: string) => `<span style="${LIST_TEXT_SPAN_STYLE}">${text}</span>`
+    expect(stabilizeLists(html)).toBe(
+      `<ol><li>${span('一')}</li><li>${span('二')}</li></ol>`
+    )
   })
 
   // 列表项里没被行内标签包住的文字会被编辑器塞进块级 <section>，
   // 导致加粗小标题与说明断成两行；预先包一个 <span> 可以避免。
-  it('stabilizeLists wraps bare text in spans without touching inline tags', () => {
+  // span 必须带 style —— 无属性的 span 会被微信编辑器剥掉，裸文本重新暴露，
+  // 于是又被包进块级 section（真机表现就是粗体小标题后强制换行）。
+  it('stabilizeLists wraps bare text in styled spans without touching inline tags', () => {
     const out = stabilizeLists('<li><strong>标题</strong>：说明</li>')
-    expect(out).toBe('<li><strong>标题</strong><span>：说明</span></li>')
+    expect(out).toBe(
+      `<li><strong>标题</strong><span style="${LIST_TEXT_SPAN_STYLE}">：说明</span></li>`
+    )
+  })
+
+  it('stabilizeLists never emits an attribute-less span wrapper', () => {
+    const out = stabilizeLists('<li>前段<strong>标题</strong>尾段</li>')
+    expect(out).not.toContain('<span>')
+    expect(out.match(new RegExp(LIST_TEXT_SPAN_STYLE, 'g'))).toHaveLength(2)
   })
 
   it('stabilizeLists keeps spaces inside and between inline elements', () => {
     const out = stabilizeLists('<li>前段 <code>code</code> 后段</li>')
-    expect(out).toBe('<li><span>前段 </span><code>code</code><span> 后段</span></li>')
+    expect(out).toBe(
+      `<li><span style="${LIST_TEXT_SPAN_STYLE}">前段 </span><code>code</code>` +
+        `<span style="${LIST_TEXT_SPAN_STYLE}"> 后段</span></li>`
+    )
   })
 
   it('stabilizeLists handles nested lists', () => {
     const out = stabilizeLists('<ul>\n<li>父\n<ul>\n<li>子</li>\n</ul>\n</li>\n</ul>')
     expect(out).not.toMatch(/\s<li/)
     expect(out).not.toMatch(/<\/li>\s/)
-    expect(out).toContain('<span>父')
-    expect(out).toContain('<span>子</span>')
+    expect(out).toContain(`<span style="${LIST_TEXT_SPAN_STYLE}">父`)
+    expect(out).toContain(`<span style="${LIST_TEXT_SPAN_STYLE}">子</span>`)
   })
 
   // 手机正文区约 300px，4 列时每列不足 80px，表头与正文会被压成一行两三个字。
@@ -362,9 +379,9 @@ describe('fidelity pipeline end to end', () => {
   it('renders task items with a text symbol and no bullet', async () => {
     const html = await render({ markdown: '- [x] 完成\n- [ ] 待办' })
     expect(html).not.toContain('<input')
-    // 文本符号后的空格连同说明一起被包进 span，避免微信把裸文本拆成块
-    expect(html).toMatch(/✓<\/span><span> 完成<\/span>/)
-    expect(html).toMatch(/□<\/span><span> 待办<\/span>/)
+    // 文本符号后的空格连同说明一起被包进带样式的 span，避免微信把裸文本拆成块
+    expect(html).toMatch(new RegExp(`✓</span><span style="${LIST_TEXT_SPAN_STYLE}"> 完成</span>`))
+    expect(html).toMatch(new RegExp(`□</span><span style="${LIST_TEXT_SPAN_STYLE}"> 待办</span>`))
     expect(html).not.toContain('>• <')
   })
 

@@ -96,6 +96,20 @@ export function stabilizeLists(html: string): string {
 }
 
 /**
+ * 包住列表项裸文本的 span 必须带内联样式。
+ *
+ * 无属性的 `<span>` 会被公众号编辑器当作无意义包装整个剥掉，文字重新变成
+ * 直接挂在 `<li>` 下的裸文本，随后又被塞进块级 `<section>`——条目的加粗
+ * 小标题与后面的说明就断成两行。真实草稿回读里，带 style 的 span（列表
+ * 圆点 `color: currentColor; font-weight: 700`）全部保留，无属性的 span
+ * 一个不剩，因此这里用两条声明做「防剥离」标记：
+ *
+ * - `color: currentColor` 已被真实回读证明能存活，且不改变继承来的颜色；
+ * - `display: inline` 明确保持行内，万一前者被清洗掉仍能兜住排版。
+ */
+export const LIST_TEXT_SPAN_STYLE = 'display: inline; color: currentColor'
+
+/**
  * 把直接挂在 `<li>` 下的裸文本包进 `<span>`，已处于行内标签内的文字不再处理。
  *
  * 编辑器只对「直接挂在 li / section 下的文字」做块级包装，行内标签里的
@@ -120,7 +134,7 @@ function wrapListText(html: string): string {
     }
     // 纯空白保持原样，避免把条目首尾的换行变成可见空格
     if (text && text.trim() && stack[stack.length - 1] === 'li') {
-      return `<span>${text}</span>`
+      return `<span style="${LIST_TEXT_SPAN_STYLE}">${text}</span>`
     }
     return match
   })
