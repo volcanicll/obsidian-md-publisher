@@ -142,6 +142,52 @@ function wrapListText(html: string): string {
 
 const VOID_TAGS = /^<(?:br|img|hr|input|source)\b/i
 
+const PRE_RE = /<pre\b[^>]*>[\s\S]*?<\/pre>/gi
+const CODE_IN_PRE_RE = /(<code\b[^>]*>)([\s\S]*?)(<\/code>)/gi
+
+/**
+ * 让代码块在公众号文章页保持原样。
+ *
+ * 草稿接口会原样保存 `<pre>` 里的换行与缩进，但文章页渲染时 `white-space:
+ * pre` 并不生效——所有换行被折叠成普通空格，整段代码按容器宽度重新折行，
+ * 缩进也随之错位。ASCII 架构图因此彻底散架（10 行被拼成一段）。
+ *
+ * 既然不能依赖 CSS，就把空白固化成结构：换行写成 `<br>`、行首缩进写成
+ * `&nbsp;`。`<br>` 在任何样式下都会断行，`&nbsp;` 也不会被折叠，代码块
+ * 于是与预览逐字符对齐。
+ *
+ * 只处理 `<pre><code>` 里的文本，不动行内 `<code>`：后者本来就该随正文
+ * 折行。代码高亮生成的 `<span>` 标签原样保留。
+ */
+export function preserveCodeBlocks(html: string): string {
+  return html.replace(PRE_RE, (pre) =>
+    pre.replace(CODE_IN_PRE_RE, (_m, open: string, body: string, close: string) =>
+      open + hardenPreformatted(body) + close
+    )
+  )
+}
+
+/**
+ * 把代码文本里的空白转成不可折叠的形式。
+ *
+ * 只改标签之外的文本：代码高亮生成的 `<span>` 必须原样保留。
+ * 换行 → `<br>`；制表符按 4 空格展开（微信不会保留 tab 宽度）；其余空格
+ * 全部转 `&nbsp;`，连续缩进才不会被 HTML 的空白折叠规则吃掉。
+ *
+ * 去掉块尾多余的一个换行——否则 `</code>` 前会多出一个 `<br>`，
+ * 每个代码块底部都多出一条空行。
+ */
+function hardenPreformatted(body: string): string {
+  const trimmed = body.replace(/\n$/, '')
+  return trimmed.replace(/(<[^>]+>)|([^<]+)/g, (match, tag?: string, text?: string) => {
+    if (tag !== undefined) return tag
+    return text!
+      .replace(/\t/g, '    ')
+      .replace(/ /g, '&nbsp;')
+      .replace(/\n/g, '<br>')
+  })
+}
+
 /** 达到这个列数的表格在手机宽度下会被压到不可读，需要保留最小宽度 */
 export const WIDE_TABLE_COLUMNS = 4
 /** 宽表格每列保留的最小宽度（含单元格内边距），约合 7 个汉字 */

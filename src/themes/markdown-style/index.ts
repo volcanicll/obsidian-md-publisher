@@ -41,7 +41,9 @@ export const COMMON_STYLE = `
   display: block;
 }
 
-/* Scrollable Code Blocks */
+/* Scrollable Code Blocks
+ * 换行与缩进已由渲染管线固化成 <br> / &nbsp;（文章页不认 white-space: pre），
+ * 这里只需保证长行可以横向滚动、不被正文宽度压断。 */
 #bm-md pre {
   overflow-x: auto;
   white-space: pre;
@@ -49,6 +51,10 @@ export const COMMON_STYLE = `
   margin: 1.5em 0;
   -webkit-overflow-scrolling: touch;
   max-width: 100%;
+}
+/* 预格式化后的代码用 <br> 断行，内容不该再被自动折行打断 ASCII 图 */
+#bm-md pre code {
+  white-space: nowrap;
 }
 
 /* 行内代码整段换行

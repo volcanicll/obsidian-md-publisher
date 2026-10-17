@@ -17,7 +17,7 @@ import { getCodeThemeCss } from '../../themes/code-theme'
 import { transformCallouts } from './callouts'
 import { renderMermaidBlocks } from './mermaid'
 import { isImagePath } from './embeds'
-import { cleanFootnotes, replaceMarkTags, stabilizeLists, transformTaskLists, wrapWideTables } from './post-process'
+import { cleanFootnotes, preserveCodeBlocks, replaceMarkTags, stabilizeLists, transformTaskLists, wrapWideTables } from './post-process'
 
 export interface RenderOptions {
   markdown: string
@@ -247,6 +247,8 @@ export async function render(options: RenderOptions): Promise<string> {
   html = cleanFootnotes(html)
   // 列数多的表格包进横向滚动容器（需在 juice 前注入容器，样式随主题内联）
   html = wrapWideTables(html)
+  // 代码块里的换行与缩进固化成 <br> / &nbsp;：文章页不认 white-space: pre
+  html = preserveCodeBlocks(html)
 
   const wrapped = `<section id="bm-md">${html}</section>`
 

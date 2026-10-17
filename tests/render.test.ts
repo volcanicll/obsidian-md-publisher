@@ -407,4 +407,29 @@ describe('fidelity pipeline end to end', () => {
     const block = await render({ markdown: '```ts\nconst a = 1\n```' })
     expect(block).toMatch(/<pre[^>]*>\s*<code[^>]*style="[^"]*display: inline;/)
   })
+
+  // 文章页不认 white-space: pre，草稿里真实的换行会被折叠成空格，
+  // 整段代码按容器重新折行，ASCII 图的缩进与对齐全部错位。
+  it('hardens code blocks so line breaks survive publishing', async () => {
+    const md = '```\n a  b\n  c\n```'
+    const html = await render({ markdown: md })
+    const block = html.match(/<pre[\s\S]*?<\/pre>/)![0]
+    // 换行必须变 <br>，缩进必须变 &nbsp;，否则公众号会把它们当普通空白折叠
+    expect(block).toContain('&nbsp;a&nbsp;&nbsp;b<br>')
+    expect(block).toContain('&nbsp;&nbsp;c')
+    expect(block).not.toMatch(/>[^<]*\n[^<]*</)
+  })
+
+  it('keeps syntax-highlight spans inside hardened code blocks', async () => {
+    const html = await render({ markdown: '```ts\nconst a = 1\n```', codeTheme: 'one-light' })
+    const block = html.match(/<pre[\s\S]*?<\/pre>/)![0]
+    expect(block).toContain('<span')
+    expect(block).toContain('&nbsp;')
+  })
+
+  it('leaves inline code readable instead of hardening it', async () => {
+    const html = await render({ markdown: '行内 `a b` 代码' })
+    expect(html).not.toContain('<br>')
+    expect(html).toContain('a b')
+  })
 })
