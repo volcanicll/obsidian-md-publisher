@@ -111,6 +111,46 @@ describe('WeChatApi.getAccessToken', () => {
     const api = apiWithCachedToken({ manualMode: true, tokenExpireTime: Date.now() - 1000 })
     await expect(api.getAccessToken()).rejects.toThrow('手动 token 已过期')
   })
+
+  it('shares one token request across concurrent callers', async () => {
+    // 图片并发上传时几个请求会同时发现 token 过期，只能刷新一次：
+    // 并行的 token 请求会让先前拿到的 token 立刻失效
+    let tokenCalls = 0
+    setRequestUrlMock(async (param) => {
+      if (param.url.includes('/token?')) {
+        tokenCalls++
+        await new Promise((resolve) => setTimeout(resolve, 5))
+        return { json: { access_token: 'T1', expires_in: 7200 } }
+      }
+      throw new Error(`unexpected url: ${param.url}`)
+    })
+
+    const api = new WeChatApi({ appId: 'wx123', appSecret: 'secret' })
+    const tokens = await Promise.all([
+      api.getAccessToken(),
+      api.getAccessToken(),
+      api.getAccessToken(),
+    ])
+
+    expect(tokens).toEqual(['T1', 'T1', 'T1'])
+    expect(tokenCalls).toBe(1)
+  })
+
+  it('retries the token request after a failed refresh', async () => {
+    let attempts = 0
+    setRequestUrlMock(async (param) => {
+      if (!param.url.includes('/token?')) throw new Error(`unexpected url: ${param.url}`)
+      attempts++
+      if (attempts === 1) return { json: { errcode: 40125 } }
+      return { json: { access_token: 'T2', expires_in: 7200 } }
+    })
+
+    const api = new WeChatApi({ appId: 'wx123', appSecret: 'bad' })
+    await expect(api.getAccessToken()).rejects.toThrow('不合法的 AppSecret')
+    // 失败不能把客户端锁死，下一次调用应重新尝试
+    await expect(api.getAccessToken()).resolves.toBe('T2')
+    expect(attempts).toBe(2)
+  })
 })
 
 // ── addDraft ───────────────────────────────────────────────────────────

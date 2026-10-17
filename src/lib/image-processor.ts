@@ -690,12 +690,31 @@ export function resolveLocalImageSrcs(
 }
 
 /**
+ * 并发上传的图片数。微信对同一账号的接口有频率限制，并发过高容易被限流；
+ * 3 路并发足以让十几张图的文章从「逐张等待」变成一次顺畅的进度推进。
+ */
+const UPLOAD_CONCURRENCY = 3
+
+/** 一张待上传图片：同一文件的多种写法在计划阶段已合并成一个任务 */
+interface ImageTask {
+  /** 去重键：本地图用真实 vault 路径，外链/data 用原 src */
+  normalizedPath: string
+  filename: string
+  isData: boolean
+  isRemote: boolean
+  localFile: TFile | null
+}
+
+/**
  * Process all images in HTML content:
  * 1. Extract local and remote image paths
  * 2. Read from vault / download from the remote URL
  * 3. Compress if needed (GIF 保留动画，SVG/WebP 等转为微信支持的格式)
  * 4. Upload to WeChat (同一图片只上传一次，复用 URL)
  * 5. Replace URLs in HTML
+ *
+ * 上传按 UPLOAD_CONCURRENCY 并发执行；结果按图片在正文中的出现顺序返回，
+ * 首张图仍对应 results[0]，封面逻辑不受并发影响。
  *
  * 结果中保留处理后的字节（data/contentType/filename），
  * 供发布流程把首图以永久素材形式再上传为封面 thumb_media_id。
@@ -720,19 +739,17 @@ export async function processImages(
     return { html, results: [], errors: [] }
   }
 
-  const results: ImageProcessResult[] = []
   const errors: string[] = []
-  const uploadedUrls = new Map<string, string>()
-  let processedHtml = html
-  let current = 0
 
-  for (const rawPath of allPaths) {
-    current++
+  // 1. 归一化并去重。缓存键用真实路径，同一图片的多种写法
+  //    （相对路径 / 仅文件名 / app:// 地址）才能合并成一次上传。
+  const tasks = new Map<string, ImageTask>()
+  const order: Array<{ raw: string; key: string | null }> = []
+
+  allPaths.forEach((rawPath, index) => {
     const isData = rawPath.startsWith('data:')
     const isRemote = rawPath.startsWith('http://') || rawPath.startsWith('https://')
 
-    // 本地图片按 Obsidian 链接规则解析成实际文件：缓存键用真实路径，
-    // 同一图片的多种写法（相对路径 / 仅文件名）才能命中同一条缓存
     const localFile = isData || isRemote
       ? null
       : resolveVaultImageFile(app, rawPath, activeFilePath)
@@ -744,44 +761,57 @@ export async function processImages(
 
     if (!normalizedPath) {
       errors.push(`Could not normalize path: ${rawPath}`)
-      continue
+      order.push({ raw: rawPath, key: null })
+      return
     }
 
-    // 同一图片出现多次时复用已上传的 URL，避免重复上传
-    const cachedUrl = uploadedUrls.get(normalizedPath)
-    if (cachedUrl) {
-      processedHtml = replaceImageSrc(processedHtml, rawPath, cachedUrl)
-      continue
-    }
+    order.push({ raw: rawPath, key: normalizedPath })
+
+    const existing = tasks.get(normalizedPath)
+    if (existing) return
 
     const baseName = isData
-      ? `embedded-${current}.png`
+      ? `embedded-${index + 1}.png`
       : isRemote
         ? remoteFilename(rawPath)
         : normalizedPath.split('/').pop() || ''
-    const filename = sanitizeFilename(baseName || 'image.png')
 
-    if (onProgress) {
-      onProgress(current, allPaths.length, filename)
-    }
+    tasks.set(normalizedPath, {
+      normalizedPath,
+      filename: sanitizeFilename(baseName || 'image.png'),
+      isData,
+      isRemote,
+      localFile,
+    })
+  })
+
+  const taskList = [...tasks.values()]
+  const uploadedUrls = new Map<string, string>()
+  const resultsByIndex: Array<ImageProcessResult | null> = new Array(taskList.length).fill(null)
+
+  // 2. 按固定并发数领取任务。cursor 的自增在 await 之前完成，
+  //    因此同一任务不会被两个 worker 领取。
+  let cursor = 0
+  const runTask = async (task: ImageTask, taskIndex: number): Promise<void> => {
+    const { normalizedPath, filename } = task
 
     // Read image from vault / download from the remote URL / decode data URL
-    const imageData = isData
-      ? decodeDataUrl(rawPath)
-      : isRemote
-        ? await fetchRemoteImage(rawPath)
-        : localFile
-          ? await readVaultFile(app, localFile)
+    const imageData = task.isData
+      ? decodeDataUrl(normalizedPath)
+      : task.isRemote
+        ? await fetchRemoteImage(normalizedPath)
+        : task.localFile
+          ? await readVaultFile(app, task.localFile)
           : null
     if (!imageData) {
       errors.push(
-        isData
+        task.isData
           ? `Failed to decode embedded image: ${filename}`
-          : isRemote
-            ? `Failed to download remote image: ${rawPath}`
-            : `Image not found in vault: ${rawPath}`
+          : task.isRemote
+            ? `Failed to download remote image: ${normalizedPath}`
+            : `Image not found in vault: ${normalizedPath}`
       )
-      continue
+      return
     }
 
     // Determine output image
@@ -809,22 +839,46 @@ export async function processImages(
     // Upload to WeChat
     try {
       const wechatUrl = await api.uploadImage(processedData, filename, contentType)
-
       uploadedUrls.set(normalizedPath, wechatUrl)
-      processedHtml = replaceImageSrc(processedHtml, rawPath, wechatUrl)
-
-      results.push({
+      resultsByIndex[taskIndex] = {
         originalPath: normalizedPath,
         wechatUrl,
         filename,
         data: processedData,
         contentType,
-      })
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       errors.push(`Failed to upload ${filename}: ${msg}`)
     }
   }
+
+  const worker = async (): Promise<void> => {
+    while (cursor < taskList.length) {
+      const taskIndex = cursor++
+      const task = taskList[taskIndex]
+      onProgress?.(taskIndex + 1, taskList.length, task.filename)
+      await runTask(task, taskIndex)
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(UPLOAD_CONCURRENCY, taskList.length) }, worker)
+  )
+
+  // 3. 回填 URL。计划阶段的 order 记录了每个原始 src 对应的去重键，
+  //    同一文件的多种写法都会指向同一次上传的结果。
+  let processedHtml = html
+  for (const { raw, key } of order) {
+    const url = key ? uploadedUrls.get(key) : undefined
+    if (url) {
+      processedHtml = replaceImageSrc(processedHtml, raw, url)
+    }
+  }
+
+  const results = resultsByIndex.filter(
+    (item): item is ImageProcessResult => item !== null
+  )
 
   return { html: processedHtml, results, errors }
 }

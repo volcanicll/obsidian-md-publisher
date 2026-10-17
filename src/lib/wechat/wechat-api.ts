@@ -87,6 +87,8 @@ export class WeChatApi {
   private tokenExpireTime: number
   private manualMode: boolean
   private callbacks: WeChatApiCallbacks
+  /** 正在进行的 token 刷新请求；并发上传共用同一次刷新，避免重复请求 */
+  private tokenRequest: Promise<string> | null = null
 
   constructor(config: WeChatApiConfig, callbacks: WeChatApiCallbacks = {}) {
     this.appId = config.appId
@@ -127,6 +129,17 @@ export class WeChatApi {
       return this.accessToken
     }
 
+    // 图片并发上传时多个请求会同时发现 token 过期，
+    // 共享同一次刷新，避免打出多个 token 请求（旧 token 也会互相作废）
+    if (!this.tokenRequest) {
+      this.tokenRequest = this.refreshAccessToken().finally(() => {
+        this.tokenRequest = null
+      })
+    }
+    return this.tokenRequest
+  }
+
+  private async refreshAccessToken(): Promise<string> {
     if (!this.appId || !this.appSecret) {
       throw new Error('请先配置公众号 AppID 和 AppSecret')
     }

@@ -396,6 +396,57 @@ describe('processImages', () => {
     expect(results[0].contentType).toBe('image/png')
   })
 
+  it('uploads multiple images concurrently up to the limit and keeps result order', async () => {
+    const files = ['a.png', 'b.png', 'c.png', 'd.png']
+    const app = makeAppWithImages(files)
+    let active = 0
+    let peak = 0
+    const uploaded: string[] = []
+
+    const api = {
+      uploadImage: async (_data: ArrayBuffer, filename: string) => {
+        active++
+        peak = Math.max(peak, active)
+        uploaded.push(filename)
+        // 让出事件循环，模拟真实的网络往返
+        await new Promise((resolve) => setTimeout(resolve, 1))
+        active--
+        return `https://mmbiz.qpic.cn/${encodeURIComponent(filename)}`
+      },
+    }
+
+    const { results, errors } = await processImages(
+      files.map((f) => `<img src="${f}">`).join(''),
+      app,
+      api as never,
+      null
+    )
+
+    expect(errors).toEqual([])
+    expect(peak).toBeGreaterThan(1)
+    expect(peak).toBeLessThanOrEqual(3)
+    // 结果顺序与正文中的出现顺序一致，首图仍是封面来源
+    expect(results.map((r) => r.filename)).toEqual(files)
+    expect(uploaded.sort()).toEqual([...files].sort())
+  })
+
+  it('reports progress once per distinct image', async () => {
+    const app = makeAppWithImages(['a.png', 'b.png'])
+    const api = makeApi()
+    const seen: string[] = []
+
+    await processImages(
+      '<img src="a.png"><img src="a.png"><img src="b.png">',
+      app,
+      api as never,
+      null,
+      undefined,
+      (current, total, filename) => seen.push(`${current}/${total}:${filename}`)
+    )
+
+    expect(seen).toEqual(['1/2:a.png', '2/2:b.png'])
+  })
+
   it('uploads a wikilink image stored in the attachment folder', async () => {
     const app = makeAppWithImages(['attachments/Pasted image 1.png'])
     const api = makeApi()
