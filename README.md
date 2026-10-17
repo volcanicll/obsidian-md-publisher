@@ -28,6 +28,7 @@ Markdown Publisher 把「写」和「发」之间的排版工作全部自动化�
 - **Pre-publish preview & checks**: a phone-frame mock of the actual WeChat article, link validity checking, heuristic sensitive-word detection, and live field-length counters
 - **Bidirectional scroll sync** between the editor and the preview pane
 - **Automatic covers**: uses your chosen cover, the article's first image, or a generated title card
+- **Overwrite instead of duplicates**: re-publishing a note updates the draft it created last time (`draft/update`); you can still choose to create a new draft or pick another draft to overwrite, and an unchanged cover reuses the media already uploaded
 - **Fails safely**: if any image fails to upload, publishing is cancelled instead of leaving a broken draft
 - **KaTeX math**, GFM tables, task lists, footnotes, and Obsidian `![[image.png]]` embeds
 
@@ -56,15 +57,17 @@ Install it from the Obsidian community plugins browser (search for "Markdown Pub
 ## 📤 发布链路，交给它
 
 - **直接存入草稿箱**：填好标题、作者、摘要，一键送达草稿箱，手机上预览后群发。
+- **边填边看的一体化发布弹窗**：点「发布」打开左右双栏窗口，左侧是 375px 手机预览（文章页 / 分享卡片两个标签），右侧直接填表，改字预览即时更新；封面在弹窗里换（正文首图 / vault 选图 / 上传本地文件 / 按标题生成），检查结果在同窗口底部抽屉里展开。
+- **重复发布不堆草稿**：同一篇笔记再次发布会默认覆盖上次生成的草稿（`draft/update`），也可随时改为新建或另选一篇草稿覆盖；封面没改就复用已上传的素材，不重复上传。
 - **发布前预览与校验**：手机框模拟公众号文章页实际效果；支持链接有效性检查、敏感词检测（内置词表 + 自定义词条）、字段长度核查，结果仅提示不拦截。
 - **内容格式兼容**：Mermaid 图表自动转 PNG 并上传；Callout 提示框转为公众号卡片样式（支持折叠写法）；`![[笔记名]]` 与 `![[笔记名#标题]]` 嵌入转为引用块。
-- **封面自动处理**：自动用正文首图作封面；全文无图时可指定封面图，或按文章标题自动生成标题卡片封面。
+- **封面自动处理**：自动用正文首图作封面；全文无图时可指定封面图，或按文章标题自动生成标题卡片封面。「正文顶部显示封面」决定文章页顶部是否重复展示封面。
 - **图片全自动**：本地图片自动压缩上传，外链图片自动转存；GIF 保留动画，WebP / BMP / SVG 自动转 PNG，PNG 转 JPEG 时自动铺白底，不出现黑底。
 - **失败即中止**：任一图片上传失败就取消发布并明确提示，绝不产出残留本地路径的裂图草稿。
-- **草稿箱管理**：在插件内分页查看、删除草稿箱内容。
+- **草稿箱管理**：在插件内分页查看、删除草稿箱内容，并标出每篇草稿来自哪篇笔记。
 - **也可以只复制**：不想配置 API？点「复制」，到公众号后台粘贴，排版与图片原样保留（图片自动内联，不会出现裂图）。
 - **导出为图片**：一键把排版结果截成 PNG 长图（宽度跟随预览面板实际宽度，上限 1080px；缩放 1x–3x），自动保存到 vault。适合发到不支持富文本的平台（小红书、微博、朋友圈）或存档留底；本地与外链图片会先内联，长文超出画布上限时自动降级缩放并提示。
-- **完整 Markdown 能力**：GFM 表格、任务列表、脚注、删除线，KaTeX 块级公式，代码块高亮，Obsidian `![[图片.png]]` 嵌入语法。正文中的金额与 Shell 变量（`$10`、`$HOME`）不会被误当作公式改写。
+- **完整 Markdown 能力**：GFM 表格、任务列表、脚注、删除线，KaTeX 块级公式，代码块高亮，Obsidian `![[图片.png]]` 嵌入语法与 `==高亮==`；双链 `[[笔记]]` 按可读文本输出。任务列表勾选状态与脚注在公众号里都能正常显示，金额与 Shell 变量（`$10`、`$HOME`）也不会被误当作公式改写。
 - **预览即所得**：编辑器与预览面板双向滚动同步，长文定位不迷路；重渲染时保持阅读位置。
 - **主题随心定制**：「自定义 Custom」入口配合自定义 CSS 从零搭建排版；也可在 vault 主题文件夹中放入 .css 文件直接作为主题使用。
 
