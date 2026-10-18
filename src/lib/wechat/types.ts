@@ -80,6 +80,34 @@ export interface WeChatDraftListItem {
   }
 }
 
+// 单篇图文的完整内容，由 draft/get 返回
+export interface WeChatDraftNewsItem {
+  title: string
+  author?: string
+  digest?: string
+  /** 正文 HTML（含公众号编辑器写入的内联样式） */
+  content: string
+  content_source_url?: string
+  /** 封面永久素材 media_id */
+  thumb_media_id?: string
+  /** 封面图 CDN 地址，可下载后作为本地封面 */
+  thumb_url?: string
+  show_cover_pic?: number
+  need_open_comment?: number
+  only_fans_can_comment?: number
+  /** 草稿预览链接（草稿未群发时通常为空） */
+  url?: string
+}
+
+// draft/get response
+export interface WeChatDraftGetResponse {
+  news_item?: WeChatDraftNewsItem[]
+  create_time?: number
+  update_time?: number
+  errcode?: number
+  errmsg?: string
+}
+
 // draft/batchget response
 export interface WeChatDraftListResponse {
   total_count: number

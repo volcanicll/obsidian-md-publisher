@@ -279,6 +279,43 @@ describe('WeChatApi.deleteDraft', () => {
   })
 })
 
+describe('WeChatApi.getDraft', () => {
+  it('posts the media_id and returns the full article content', async () => {
+    const payload = {
+      news_item: [
+        {
+          title: '标题',
+          content: '<section><p>正文</p></section>',
+          author: '作者',
+          thumb_media_id: 'T1',
+          thumb_url: 'https://mmbiz.qpic.cn/cover.jpg',
+        },
+      ],
+      update_time: 1700000000,
+    }
+    mockJson((param) => {
+      expect(param.url).toContain('/draft/get?access_token=T0')
+      expect(JSON.parse(param.body as string)).toEqual({ media_id: 'MEDIA1' })
+      return payload
+    })
+
+    const api = apiWithCachedToken()
+    await expect(api.getDraft('MEDIA1')).resolves.toEqual(payload)
+  })
+
+  it('surfaces a deleted-draft error so callers can clean up the link', async () => {
+    mockJson(() => ({ errcode: 87010 }))
+    const api = apiWithCachedToken()
+    await expect(api.getDraft('GONE')).rejects.toThrow('该草稿不存在')
+  })
+
+  it('does not throw when the response carries no errcode', async () => {
+    mockJson(() => ({ news_item: [] }))
+    const api = apiWithCachedToken()
+    await expect(api.getDraft('M')).resolves.toEqual({ news_item: [] })
+  })
+})
+
 // ── updateDraft ────────────────────────────────────────────────────────
 
 describe('WeChatApi.updateDraft', () => {

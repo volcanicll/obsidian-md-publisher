@@ -1,4 +1,4 @@
-import { Modal, App, Notice, setIcon } from 'obsidian'
+import { Modal, App, Notice, TFile, setIcon } from 'obsidian'
 import type BmMdPlugin from '../main'
 import type { WeChatApi } from '../lib/wechat/wechat-api'
 import { extractTitleFromMarkdown, extractDigestFromMarkdown } from '../lib/wechat/wechat-api'
@@ -9,6 +9,12 @@ import {
   classifyUpdateFailure,
   weChatErrorCode
 } from '../lib/wechat/draft-links'
+import {
+  draftDefaultsFromFrontmatter,
+  readDraftFrontmatter,
+  writeDraftFrontmatter,
+  type DraftFrontmatter
+} from '../lib/wechat/draft-frontmatter'
 import {
   canSubmit,
   computeFieldState,
@@ -101,6 +107,8 @@ export class PublishModal extends Modal {
 
   private checkReport: CheckReport = emptyReport()
   private checkRunning = false
+  /** 笔记 frontmatter 里记录的草稿元数据（拉取或上次发布时写入） */
+  private savedFrontmatter: DraftFrontmatter | null = null
 
   /** 正文首图：发布时作为 auto 封面，也用于封面来源指纹 */
   private firstBodyImagePath: string | null = null
@@ -118,16 +126,43 @@ export class PublishModal extends Modal {
     this.loadContent = options.loadContent
     this.notePath = options.notePath ?? app.workspace.getActiveFile()?.path ?? null
 
-    const draftLink = this.plugin.getDraftLink(this.notePath)
+    const saved = readDraftFrontmatter(options.markdown)
+    const defaults = draftDefaultsFromFrontmatter(saved)
+    this.savedFrontmatter = saved
+
+    // 关联表丢失（换了设备、清过设置）时用 frontmatter 里的 media_id 兜底，
+    // 拉取过的笔记仍然默认覆盖原草稿
+    const draftLink =
+      this.plugin.getDraftLink(this.notePath) ??
+      (saved?.media_id
+        ? {
+            mediaId: saved.media_id,
+            title: saved.title ?? extractTitleFromMarkdown(options.markdown),
+            updatedAt: saved.pulled_at ?? Date.now(),
+            ...(saved.thumb_media_id ? { thumbMediaId: saved.thumb_media_id } : {}),
+            ...(saved.cover_key ? { coverKey: saved.cover_key } : {})
+          }
+        : null)
+
     this.form = {
-      title: extractTitleFromMarkdown(options.markdown),
-      author: '',
-      digest: extractDigestFromMarkdown(options.markdown),
-      contentSourceUrl: '',
+      // 拉取回来的笔记：草稿标题存在 frontmatter 里。若正文自带一个不同的
+      // H1（公众号里常见，那是引言而非标题），以 frontmatter 的 title 为准，
+      // 否则重新发布会把公众号标题改成正文里的那句引言；正文 H1 就是标题
+      // 本身时，用户改 H1 即改标题，继续跟随正文。
+      title:
+        defaults.title && defaults.titleInBody
+          ? defaults.title
+          : extractTitleFromMarkdown(options.markdown),
+      author: defaults.author ?? '',
+      digest: defaults.digest ?? extractDigestFromMarkdown(options.markdown),
+      contentSourceUrl: defaults.contentSourceUrl ?? '',
       needOpenComment: this.plugin.settings.defaultOpenComment,
       onlyFansCanComment: this.plugin.settings.defaultFansOnlyComment,
       showCoverInBody: this.plugin.settings.showCoverInBody,
-      cover: { kind: 'auto' },
+      // 拉取时下载过封面图，默认沿用它，避免重新按正文首图猜
+      cover: defaults.coverPath
+        ? { kind: 'vault', path: defaults.coverPath }
+        : { kind: 'auto' },
       publishMode: draftLink ? 'update' : 'new',
       draftLink
     }
@@ -1020,6 +1055,7 @@ export class PublishModal extends Modal {
           thumbMediaId: cover.thumbMediaId,
           coverKey: cover.coverKey
         })
+        await this.persistDraftFrontmatter(mediaId, cover)
       }
 
       this.close()
@@ -1032,6 +1068,44 @@ export class PublishModal extends Modal {
       this.isPublishing = false
       this.refreshAll()
       this.updateProgress(null)
+    }
+  }
+
+  /**
+   * 把本次发布的草稿元数据写回笔记 frontmatter。
+   *
+   * 关联表是插件私有设置，换设备或清过设置就丢了；frontmatter 跟着
+   * 笔记走，拉取回来的笔记在任何设备上都能认回自己的草稿。
+   */
+  private async persistDraftFrontmatter(mediaId: string, cover: ResolvedCover): Promise<void> {
+    if (!this.notePath) return
+    const file = this.app.vault.getAbstractFileByPath(this.notePath)
+    if (!(file instanceof TFile)) return
+
+    const data: DraftFrontmatter = {
+      media_id: mediaId,
+      title: this.form.title.trim(),
+      ...(this.form.author.trim() ? { author: this.form.author.trim() } : {}),
+      ...(this.form.digest.trim() ? { digest: this.form.digest.trim() } : {}),
+      ...(this.form.contentSourceUrl.trim()
+        ? { content_source_url: this.form.contentSourceUrl.trim() }
+        : {}),
+      thumb_media_id: cover.thumbMediaId,
+      cover_key: cover.coverKey,
+      ...(this.form.cover.kind === 'vault' && this.form.cover.path.trim()
+        ? { cover: this.form.cover.path.trim() }
+        : this.savedFrontmatter?.cover
+          ? { cover: this.savedFrontmatter.cover }
+          : {}),
+      pulled_at: Date.now()
+    }
+
+    try {
+      await this.app.vault.process(file, (content) => writeDraftFrontmatter(content, data))
+      this.savedFrontmatter = data
+    } catch (error) {
+      // 元数据写回失败不应让发布显示为失败：草稿已经保存成功
+      console.warn('写回笔记 frontmatter 失败:', error)
     }
   }
 

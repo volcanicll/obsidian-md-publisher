@@ -453,6 +453,80 @@
   font-weight: 500;
 }
 
+/* 行内操作按钮组：拉取 / 删除并排，宽度一致 */
+.bm-md-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.bm-md-draft-action {
+  height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.bm-md-drafts-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.bm-md-drafts-status {
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--background-secondary);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.bm-md-drafts-status.is-hidden {
+  display: none;
+}
+
+/* 文件夹选择器：复用图片选择器的搜索与列表样式，补上图标与选中态 */
+.bm-md-folder-picker {
+  max-height: 70vh;
+}
+
+.bm-md-folder-picker-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.bm-md-picker-folder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.bm-md-picker-folder-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.bm-md-folder-picker .bm-md-picker-row.is-selected {
+  border: 1px solid var(--interactive-accent);
+  background: var(--background-modifier-hover);
+  padding: 5px 7px;
+}
+
+.bm-md-folder-picker-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .bm-md-drafts-pagination {
   display: flex;
   align-items: center;

@@ -5,6 +5,7 @@
     "": {
       "name": "obsidian-md-publisher",
       "dependencies": {
+        "hast-util-from-html": "^2.0.3",
         "highlight.js": "^11.11.1",
         "html2canvas-pro": "^2.5.0",
         "juice": "^11.1.0",
@@ -25,12 +26,14 @@
       },
       "devDependencies": {
         "@eslint-community/eslint-utils": "^4.9.1",
+        "@types/hast": "^3.0.4",
         "@types/node": "^22.0.0",
         "@typescript-eslint/eslint-plugin": "^8.58.1",
         "@typescript-eslint/parser": "^8.58.1",
         "@typescript-eslint/utils": "^8.58.1",
         "esbuild": "^0.25.0",
         "eslint-plugin-obsidianmd": "^0.4.2",
+        "js-yaml": "^5.4.3",
         "obsidian": "^1.7.2",
         "type-fest": "^5.10.0",
         "typescript": "^5.7.0",

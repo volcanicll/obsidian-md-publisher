@@ -53,6 +53,24 @@ export class PluginSettingTab {}
 
 export function setIcon(_parent: HTMLElement | string, _iconId: string): void {}
 
+/**
+ * Obsidian 的 YAML 读写内部就是 js-yaml。
+ * 测试里直接转给 js-yaml，行为与宿主一致。
+ */
+export { load as parseYaml, dump as stringifyYaml } from 'js-yaml'
+
+/**
+ * 与 Obsidian 的 normalizePath 行为一致：
+ * 反斜杠转正斜杠、折叠重复斜杠、去掉首尾斜杠。
+ */
+export function normalizePath(path: string): string {
+  const normalized = path
+    .replace(/\\/g, '/')
+    .replace(/\/{2,}/g, '/')
+    .replace(/^\/+|\/+$/g, '')
+  return normalized || '/'
+}
+
 /** DOM 辅助：仅在 DOM 环境被调用，测试中不应触达 */
 export function createEl<K extends keyof HTMLElementTagNameMap>(_tag: K): HTMLElementTagNameMap[K] {
   throw new Error('obsidian.createEl 在测试环境中不可用')

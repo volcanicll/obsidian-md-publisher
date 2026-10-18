@@ -7,7 +7,8 @@ import type {
   WeChatDraftUpdateRequest,
   WeChatDraftUpdateResponse,
   WeChatDraftListResponse,
-  WeChatDraftDeleteResponse
+  WeChatDraftDeleteResponse,
+  WeChatDraftGetResponse
 } from './types'
 import { WeChatApiError } from './types'
 import { sanitizeFilename } from '../image-processor'
@@ -347,6 +348,36 @@ export class WeChatApi {
 
     const response = await requestUrl(params)
     const data = response.json as WeChatDraftListResponse
+
+    if (data.errcode && data.errcode !== 0) {
+      throw new WeChatApiError(data.errcode)
+    }
+
+    return data
+  }
+
+  /**
+   * 读取草稿的完整内容（含正文 HTML）。
+   *
+   * draft/batchget 的 no_content=0 只给标题等元信息，正文必须走 draft/get。
+   * 草稿已在后台被删除时返回 87010，调用方据此清理本地关联。
+   */
+  async getDraft(mediaId: string): Promise<WeChatDraftGetResponse> {
+    const token = await this.getAccessToken()
+
+    const url = `${WECHAT_API_BASE}/draft/get?access_token=${encodeURIComponent(token)}`
+
+    const params: RequestUrlParam = {
+      url,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ media_id: mediaId })
+    }
+
+    const response = await requestUrl(params)
+    const data = response.json as WeChatDraftGetResponse
 
     if (data.errcode && data.errcode !== 0) {
       throw new WeChatApiError(data.errcode)

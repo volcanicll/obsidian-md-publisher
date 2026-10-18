@@ -367,6 +367,40 @@ describe('processImages', () => {
     expect((out.match(new RegExp(firstUrl, 'g')) || []).length).toBe(2)
   })
 
+  it('leaves images already hosted on the WeChat CDN untouched', async () => {
+    // 拉取草稿后重新发布时，正文里保留的是微信 CDN 地址：
+    // 再上传一次既慢又白占素材配额
+    const app = makeAppWithImages([])
+    const api = makeApi()
+    const cdn = 'https://mmbiz.qpic.cn/mmbiz_png/abc123/0'
+    const html = `<p><img src="${cdn}"></p>`
+
+    const { html: out, results, errors } = await processImages(html, app, api as never, null)
+
+    expect(api.urls).toEqual([])
+    expect(results).toEqual([])
+    expect(errors).toEqual([])
+    expect(out).toContain(cdn)
+  })
+
+  it('uploads external images but skips CDN ones in the same document', async () => {
+    setRequestUrlMock(async () => ({ json: {}, arrayBuffer: PNG_BYTES }))
+
+    const app = makeAppWithImages([])
+    const api = makeApi()
+    const cdn = 'https://mmbiz.qpic.cn/mmbiz_png/abc/0'
+    const html = `<img src="${cdn}"><img src="https://example.com/photo.png">`
+
+    const { html: out, results } = await processImages(html, app, api as never, null)
+
+    expect(api.urls.length).toBe(1)
+    expect(results.length).toBe(1)
+    expect(out).toContain(cdn)
+    expect(out).not.toContain('https://example.com/photo.png')
+
+    setRequestUrlMock(null)
+  })
+
   it('reports missing images and leaves their src untouched', async () => {
     const app = makeAppWithImages([])
     const api = makeApi()

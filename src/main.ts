@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian'
+import { Plugin, TFile, WorkspaceLeaf } from 'obsidian'
 import { BmMdSettingsTab } from './settings/SettingsTab'
 import { PreviewView, VIEW_TYPE_PREVIEW } from './views/PreviewView'
 import { DraftsModal } from './views/DraftsModal'
@@ -10,6 +10,10 @@ import {
   type DraftLink,
   type DraftLinkMap
 } from './lib/wechat/draft-links'
+import {
+  clearDraftFrontmatter,
+  readDraftFrontmatter
+} from './lib/wechat/draft-frontmatter'
 import { loadCustomThemes } from './lib/custom-themes'
 import { getAllMarkdownStyles, type MarkdownStyle } from './themes/markdown-style'
 
@@ -42,6 +46,8 @@ interface BmMdSettings {
   showCoverInBody: boolean
   /** 笔记路径 → 已发布草稿，用于「覆盖更新已有草稿」 */
   draftLinks: DraftLinkMap
+  /** 从草稿箱拉取笔记时保存到的文件夹；留空为 vault 根目录 */
+  draftImportFolder: string
 }
 
 const DEFAULT_SETTINGS: BmMdSettings = {
@@ -69,6 +75,7 @@ const DEFAULT_SETTINGS: BmMdSettings = {
   defaultFansOnlyComment: false,
   showCoverInBody: true,
   draftLinks: {},
+  draftImportFolder: '',
 }
 
 export default class BmMdPlugin extends Plugin {
@@ -169,12 +176,48 @@ export default class BmMdPlugin extends Plugin {
     await this.saveSettings()
   }
 
-  /** 清除指向某篇草稿的所有关联（草稿被删除后调用） */
+  /**
+   * 清除指向某篇草稿的所有关联（草稿被删除后调用）。
+   *
+   * 除了插件设置里的关联表，还要清掉笔记 frontmatter 里的 `wechat` 段：
+   * 那里同样存着 media_id，留着会让下次发布继续去覆盖一篇已删除的草稿。
+   */
   async clearDraftLinksByMediaId(mediaId: string): Promise<void> {
+    const affected = Object.entries(this.settings.draftLinks)
+      .filter(([, link]) => link.mediaId === mediaId)
+      .map(([path]) => path)
+
     const next = removeDraftLinkByMediaId(this.settings.draftLinks, mediaId)
-    if (next === this.settings.draftLinks) return
-    this.settings.draftLinks = next
-    await this.saveSettings()
+    if (next !== this.settings.draftLinks) {
+      this.settings.draftLinks = next
+      await this.saveSettings()
+    }
+
+    for (const path of affected) {
+      await this.clearNoteDraftFrontmatter(path, mediaId)
+    }
+  }
+
+  /** 清掉某篇笔记 frontmatter 里指向指定草稿的元数据 */
+  private async clearNoteDraftFrontmatter(
+    notePath: string,
+    mediaId: string
+  ): Promise<void> {
+    // 单元测试里插件可能没有 app 实例
+    if (!this.app?.vault) return
+    const file = this.app.vault.getAbstractFileByPath(notePath)
+    if (!(file instanceof TFile)) return
+
+    try {
+      await this.app.vault.process(file, (content) => {
+        const saved = readDraftFrontmatter(content)
+        // 笔记后来改指向别的草稿时不动它
+        if (saved?.media_id !== mediaId) return content
+        return clearDraftFrontmatter(content)
+      })
+    } catch (error) {
+      console.warn('清理笔记 frontmatter 失败:', error)
+    }
   }
 
   /** 反查某篇草稿关联的笔记路径 */

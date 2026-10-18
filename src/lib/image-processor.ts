@@ -721,6 +721,22 @@ interface ImageTask {
  *
  * @returns Processed HTML with WeChat URLs and list of results
  */
+/**
+ * 微信图片 CDN 域名。这些地址上的图片已经在微信服务器上，
+ * 重新上传只会得到一份重复素材，还会拖慢发布。
+ */
+const WECHAT_CDN_HOSTS = ['mmbiz.qpic.cn', 'mmbiz.qlogo.cn', 'wx.qlogo.cn']
+
+/** 判断 URL 是否已在微信 CDN 上 */
+export function isWeChatCdnImage(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return WECHAT_CDN_HOSTS.some((known) => host === known || host.endsWith(`.${known}`))
+  } catch {
+    return false
+  }
+}
+
 export async function processImages(
   html: string,
   app: App,
@@ -749,6 +765,13 @@ export async function processImages(
   allPaths.forEach((rawPath, index) => {
     const isData = rawPath.startsWith('data:')
     const isRemote = rawPath.startsWith('http://') || rawPath.startsWith('https://')
+
+    // 已经是微信 CDN 地址的图片无需重新上传：拉取草稿后重新发布时，
+    // 正文里会保留这些地址，再传一次既慢又白占素材配额
+    if (isRemote && isWeChatCdnImage(rawPath)) {
+      order.push({ raw: rawPath, key: null })
+      return
+    }
 
     const localFile = isData || isRemote
       ? null

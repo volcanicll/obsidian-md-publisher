@@ -229,6 +229,28 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
+    // 草稿拉取
+    new Setting(containerEl)
+      .setName('草稿拉取')
+      .setHeading()
+
+    new Setting(containerEl)
+      .setName('默认拉取文件夹')
+      .setDesc(
+        '从草稿管理里把公众号草稿拉回 Obsidian 时，笔记默认保存到该文件夹。' +
+        '每次拉取前都会弹出目录选择，可临时改到任意文件夹或新建目录；' +
+        '留空则默认选中 vault 根目录。图片按 Obsidian 的附件设置存放。'
+      )
+      .addText(text => {
+        text
+          .setPlaceholder('留空为 vault 根目录')
+          .setValue(this.plugin.settings.draftImportFolder)
+          .onChange(async (value) => {
+            this.plugin.settings.draftImportFolder = value.trim()
+            await this.plugin.saveSettings()
+          })
+      })
+
     // WeChat Settings Section
     new Setting(containerEl)
       .setName('微信公众号')

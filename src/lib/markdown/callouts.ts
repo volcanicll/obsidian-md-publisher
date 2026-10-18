@@ -54,6 +54,44 @@ export function resolveCalloutType(type: string): CalloutTypeStyle | null {
 }
 
 /**
+ * 把颜色统一成小写十六进制，便于比较。
+ * 公众号编辑器会把内联样式重新序列化，`#4d6e8c` 可能变成
+ * `rgb(77, 110, 140)`，两种写法都要能认出来。
+ */
+function normalizeColor(value: string): string {
+  const trimmed = value.trim().toLowerCase()
+  const rgb = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
+  if (rgb) {
+    return (
+      '#' +
+      [rgb[1], rgb[2], rgb[3]]
+        .map((part) => Number(part).toString(16).padStart(2, '0'))
+        .join('')
+    )
+  }
+  const hex = trimmed.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/)
+  if (!hex) return trimmed
+  const digits = hex[1]
+  return '#' + (digits.length === 3 ? digits.split('').map((c) => c + c).join('') : digits)
+}
+
+/**
+ * 按卡片左侧竖线颜色 + 背景色反查 callout 类型，用于把草稿正文还原成
+ * `> [!type]` 源码。两个颜色同时匹配才认定是插件生成的卡片，避免把
+ * 主题自带的引用块样式误判成 callout。
+ */
+export function calloutTypeByCard(borderColor: string, background: string): string | null {
+  const border = normalizeColor(borderColor)
+  const bg = normalizeColor(background)
+  for (const [type, style] of Object.entries(CALLOUT_TYPES)) {
+    if (normalizeColor(style.color) === border && normalizeColor(style.bg) === bg) {
+      return type
+    }
+  }
+  return null
+}
+
+/**
  * callout 首段标记：[!type] 可选折叠符与标题。
  * 匹配目标形如 "[!tip]+ 三条要点"。
  * 折叠符两种写法都兼容：[!tip-]（括号内）与 [!tip]-（括号后，Obsidian 实际语法）。

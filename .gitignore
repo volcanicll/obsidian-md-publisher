@@ -33,3 +33,5 @@ coverage/
 
 # Obsidian development
 data.json
+
+/videos
