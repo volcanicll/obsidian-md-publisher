@@ -2,6 +2,14 @@ export interface MarkdownStyle {
   id: string
   name: string
   css: string
+  /**
+   * 配套代码高亮主题。
+   *
+   * 排版主题的代码块底色是深色，浅色高亮在其上不可读，因此每套排版
+   * 主题都自带一套经过对比度校验的深色高亮。用户只选排版主题时，
+   * 代码块自动跟随这个值，不再需要单独决策。
+   */
+  codeTheme?: string
 }
 
 // 共享基础：移动端优先的宽度、行宽与滚动容器，各主题只负责「气质层」
@@ -163,6 +171,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'mist',
     name: '晨雾 Mist',
+    // 配套高亮：dracula（最低 token 对比度 7.8:1）
+    codeTheme: 'dracula',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 2.0; letter-spacing: 0.3px; color: #4a5a68; background: #fbfcfd; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #2c3e4e; font-weight: 600; }
@@ -188,6 +198,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'peach',
     name: '蜜桃 Peach',
+    // 配套高亮：dracula（最低 token 对比度 8.2:1）
+    codeTheme: 'dracula',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.95; letter-spacing: 0.3px; color: #4d4340; background: #fff9f6; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #3d322e; font-weight: 600; }
@@ -213,6 +225,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'journal',
     name: '学报 Journal',
+    // 配套高亮：github-dark（最低 token 对比度 6.0:1）
+    codeTheme: 'github-dark',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 2.0; letter-spacing: 0.3px; color: #222222; }
 #bm-md h1, #bm-md h2, #bm-md h3 { font-family: ${SANS_CN}; color: #111111; }
@@ -239,6 +253,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'notes',
     name: '笔记 Notes',
+    // 配套高亮：github-dark（最低 token 对比度 5.6:1）
+    codeTheme: 'github-dark',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.9; letter-spacing: 0.2px; color: #2f3a4c; background: #fdfcf6; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #222b3a; font-weight: 700; }
@@ -264,6 +280,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'cover',
     name: '封面 Cover',
+    // 配套高亮：github-dark（最低 token 对比度 7.5:1）
+    codeTheme: 'github-dark',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.9; color: #262626; }
 #bm-md h1, #bm-md h2, #bm-md h3 { font-family: ${SERIF_CN}; color: #111111; }
@@ -288,6 +306,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'booklet',
     name: '别册 Booklet',
+    // 配套高亮：github-dark（最低 token 对比度 5.6:1）
+    codeTheme: 'github-dark',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 2.05; letter-spacing: 0.4px; color: #40342a; background: #faf6ef; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #2e241b; font-weight: 600; }
@@ -318,6 +338,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'letter',
     name: '信笺 Letter',
+    // 配套高亮：github-dark（最低 token 对比度 5.6:1）
+    codeTheme: 'github-dark',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 2.1; letter-spacing: 0.4px; color: #3f3a30; background: #f5f4ed; }
 #bm-md h1, #bm-md h2, #bm-md h3 { font-family: ${SERIF_CN}; font-weight: 600; }
@@ -345,6 +367,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'rubbing',
     name: '拓本 Rubbing',
+    // 配套高亮：github-dark（最低 token 对比度 6.5:1）
+    codeTheme: 'github-dark',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SERIF_CN}; font-size: 15px; line-height: 1.95; letter-spacing: 0.3px; color: #26241f; }
 #bm-md h1, #bm-md h2, #bm-md h3 { font-family: ${SERIF_CN}; color: #1a1815; font-weight: 700; }
@@ -374,6 +398,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'terminal',
     name: '终端 Terminal',
+    // 配套高亮：dracula（最低 token 对比度 12.9:1）
+    codeTheme: 'dracula',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.9; letter-spacing: 0.2px; color: #334155; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #0f172a; font-weight: 600; }
@@ -405,6 +431,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'ledger',
     name: '账本 Ledger',
+    // 配套高亮：github-dark（最低 token 对比度 5.8:1）
+    codeTheme: 'github-dark',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.95; letter-spacing: 0.3px; color: #374151; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #111827; font-weight: 600; }
@@ -434,6 +462,8 @@ export const designerMarkdownStyles: MarkdownStyle[] = [
   {
     id: 'festive',
     name: '橙意 Festive',
+    // 配套高亮：dracula（最低 token 对比度 9.4:1）
+    codeTheme: 'dracula',
     css: COMMON_STYLE + `
 #bm-md { font-family: ${SANS_CN}; font-size: 15px; line-height: 1.95; letter-spacing: 0.3px; color: #453b33; background: #fffcf5; }
 #bm-md h1, #bm-md h2, #bm-md h3 { color: #3b2f26; font-weight: 700; }
@@ -477,6 +507,22 @@ export const customStyleEntry: MarkdownStyle = {
  */
 export function getAllMarkdownStyles(customThemes: MarkdownStyle[] = []): MarkdownStyle[] {
   return [...designerMarkdownStyles, ...customThemes, customStyleEntry]
+}
+
+/**
+ * 某套排版主题的配套代码高亮。
+ *
+ * 自定义主题与「自定义」入口没有声明配套配色，回退到全局默认，
+ * 由 code-theme 模块决定兜底值，避免两处各写一份常量。
+ */
+export function getPairedCodeTheme(
+  styleId: string,
+  customThemes: MarkdownStyle[] = []
+): string | undefined {
+  const style = [...designerMarkdownStyles, ...customThemes, customStyleEntry].find(
+    (s) => s.id === styleId
+  )
+  return style?.codeTheme
 }
 
 export function getMarkdownStyleCss(

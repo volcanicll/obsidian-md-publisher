@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting, Notice } from 'obsidian'
 import type BmMdPlugin from '../main'
-import { codeThemes } from '../themes/code-theme'
+import { codeThemes, resolveCodeThemeId } from '../themes/code-theme'
+import { getPairedCodeTheme } from '../themes/markdown-style'
 import { isWeChatConfigured } from '../lib/wechat/config'
 import { defaultCustomThemeFolder } from '../lib/custom-themes'
 
@@ -26,7 +27,10 @@ export class BmMdSettingsTab extends PluginSettingTab {
     // Markdown Style Selection（含 vault 导入的自定义主题与「自定义」入口）
     new Setting(containerEl)
       .setName('排版主题')
-      .setDesc('选择默认的 Markdown 排版样式；自定义主题文件夹中的主题会一并列出')
+      .setDesc(
+        '选择默认的 Markdown 排版样式；代码高亮会跟随主题自动匹配。' +
+        '自定义主题文件夹中的主题会一并列出'
+      )
       .addDropdown(dropdown => {
         this.plugin.getMarkdownStyleList().forEach(style => {
           dropdown.addOption(style.id, style.name)
@@ -35,7 +39,13 @@ export class BmMdSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.markdownStyle)
           .onChange(async (value) => {
             this.plugin.settings.markdownStyle = value
+            // 换排版主题时把配套高亮一起换掉：旧高亮可能在新底色上不可读
+            this.plugin.settings.codeTheme = resolveCodeThemeId(
+              getPairedCodeTheme(value, this.plugin.customThemes)
+            )
             await this.plugin.saveSettings()
+            // 下拉选项的说明文字跟着更新
+            this.display()
           })
       })
 
@@ -67,10 +77,22 @@ export class BmMdSettingsTab extends PluginSettingTab {
           })
       })
 
-    // Code Theme Selection
+    // Code Theme Selection：默认跟随排版主题，只有想覆盖时才需要动
+    const pairedCode = getPairedCodeTheme(
+      this.plugin.settings.markdownStyle,
+      this.plugin.customThemes
+    )
+    const pairedName = codeThemes.find(t => t.id === pairedCode)?.name
+    const isOverridden = this.plugin.settings.codeTheme !== pairedCode
+
     new Setting(containerEl)
       .setName('代码高亮主题')
-      .setDesc('选择代码块的语法高亮样式')
+      .setDesc(
+        (pairedName
+          ? `默认跟随排版主题（当前配套：${pairedName}）。`
+          : '当前排版主题没有配套高亮，使用默认配色。') +
+        '代码块底色是深色，因此只提供深色高亮；改成其它深色主题会覆盖配套值。'
+      )
       .addDropdown(dropdown => {
         codeThemes.forEach(theme => {
           dropdown.addOption(theme.id, theme.name)
@@ -78,8 +100,18 @@ export class BmMdSettingsTab extends PluginSettingTab {
         dropdown
           .setValue(this.plugin.settings.codeTheme)
           .onChange(async (value) => {
-            this.plugin.settings.codeTheme = value
+            this.plugin.settings.codeTheme = resolveCodeThemeId(value, pairedCode)
             await this.plugin.saveSettings()
+          })
+      })
+      .addButton(button => {
+        button
+          .setButtonText('恢复跟随主题')
+          .setDisabled(!isOverridden)
+          .onClick(async () => {
+            this.plugin.settings.codeTheme = resolveCodeThemeId(pairedCode)
+            await this.plugin.saveSettings()
+            this.display()
           })
       })
 

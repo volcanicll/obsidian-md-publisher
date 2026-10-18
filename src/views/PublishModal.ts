@@ -43,7 +43,11 @@ import {
   type ProgressCallback
 } from '../lib/image-processor'
 import { DraftPickerModal } from './DraftPickerModal'
+import { LatestTask } from '../lib/latest-task'
+import { resolveCodeThemeId } from '../themes/code-theme'
+import { getPairedCodeTheme } from '../themes/markdown-style'
 import { PhonePreview } from './publish/phone-preview'
+import { ThemePicker } from './publish/theme-picker'
 import { VaultImagePickerModal, readLocalCoverFile } from './publish/cover-picker'
 import { collectIssues, emptyReport, runChecks, type CheckReport } from './publish/publish-checks'
 
@@ -68,6 +72,14 @@ export interface PublishModalOptions {
    * 不提供时退回打开弹窗时的快照。
    */
   loadContent?: () => Promise<PublishModalContent | null>
+  /**
+   * 按指定主题重新渲染正文。弹窗内切换主题时调用；
+   * 不提供时只能改选择器文案，预览与发布内容保持不变。
+   */
+  renderWithTheme?: (theme: {
+    markdownStyle: string
+    codeTheme: string
+  }) => Promise<string | null>
   /** 正文所属笔记路径；缺省时取弹窗打开瞬间的活动文件 */
   notePath?: string | null
 }
@@ -82,11 +94,19 @@ export class PublishModal extends Modal {
   private html: string
   private plugin: BmMdPlugin
   private loadContent?: () => Promise<PublishModalContent | null>
+  private renderWithTheme?: PublishModalOptions['renderWithTheme']
   private notePath: string | null
   private form: PublishFormState
   private isPublishing = false
 
+  /** 弹窗内选定的主题，打开时沿用侧栏当前值 */
+  private markdownStyle: string
+  private codeTheme: string
+  /** 主题切换触发的正文重渲染：连续切换只认最后一次 */
+  private themeRender = new LatestTask<string | null>()
+
   private preview: PhonePreview | null = null
+  private themePicker: ThemePicker | null = null
   private submitBtn: HTMLButtonElement | null = null
   private cancelBtn: HTMLButtonElement | null = null
   private checkBtn: HTMLButtonElement | null = null
@@ -132,7 +152,14 @@ export class PublishModal extends Modal {
     this.html = options.html
     this.plugin = options.plugin
     this.loadContent = options.loadContent
+    this.renderWithTheme = options.renderWithTheme
     this.notePath = options.notePath ?? app.workspace.getActiveFile()?.path ?? null
+    // 打开时跟随侧栏当前主题；弹窗里的切换只影响本次发布
+    this.markdownStyle = this.plugin.settings.markdownStyle || 'mist'
+    this.codeTheme = resolveCodeThemeId(
+      this.plugin.settings.codeTheme,
+      getPairedCodeTheme(this.markdownStyle, this.plugin.customThemes)
+    )
 
     const saved = readDraftFrontmatter(options.markdown)
     const defaults = draftDefaultsFromFrontmatter(saved)
@@ -197,6 +224,17 @@ export class PublishModal extends Modal {
     const body = contentEl.createDiv({ cls: 'bm-md-pm-body' })
     const previewCol = body.createDiv({ cls: 'bm-md-pm-preview-col' })
     this.preview = new PhonePreview(previewCol)
+    // 主题切换放在真机预览下方：改主题的动机就是想看文章长什么样。
+    // 没有重渲染能力时不给选择器，避免只改文案不改正文。
+    if (this.renderWithTheme) {
+      const themeBar = previewCol.createDiv({ cls: 'bm-md-pm-theme-bar' })
+      themeBar.createSpan({ text: '主题', cls: 'bm-md-pm-theme-label' })
+      this.themePicker = new ThemePicker(themeBar, {
+        markdownStyle: this.markdownStyle,
+        styles: this.plugin.getMarkdownStyleList(),
+        onChange: (styleId) => this.applyTheme(styleId),
+      })
+    }
     this.mountBody()
 
     const formCol = body.createDiv({ cls: 'bm-md-pm-form' })
@@ -257,20 +295,77 @@ export class PublishModal extends Modal {
   /** 挂载正文并解析本地图片；只在打开时执行一次 */
   private mountBody(): void {
     if (!this.preview) return
-
-    const firstSrc = this.html.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] ?? null
-    if (firstSrc) {
-      if (/^(data:|https?:)/i.test(firstSrc)) {
-        this.firstBodyImagePath = firstSrc
-        this.firstBodyImagePreview = firstSrc
-      } else {
-        const file = resolveVaultImageFile(this.app, firstSrc, this.notePath)
-        this.firstBodyImagePath = file?.path ?? firstSrc
-        this.firstBodyImagePreview = file ? this.app.vault.getResourcePath(file) : firstSrc
-      }
-    }
-
+    this.refreshFirstBodyImage()
     this.preview.setBodyHtml(resolveLocalImageSrcs(this.html, this.app, this.notePath))
+  }
+
+  /**
+   * 在弹窗内切换主题。
+   *
+   * 主题是文章外观的一部分，选中后要写回设置并同步侧栏预览：
+   * 否则关掉弹窗后侧栏还是旧主题，看起来像切换没生效。
+   * 重渲染完成后用新 HTML 替换预览正文，发布时也会用同一套主题。
+   */
+  private applyTheme(styleId: string): void {
+    this.markdownStyle = styleId
+    // 代码高亮跟随该主题的配套配色；旧配置或未知值由 resolve 兜底
+    this.codeTheme = resolveCodeThemeId(
+      getPairedCodeTheme(styleId, this.plugin.customThemes),
+      this.codeTheme
+    )
+    this.themePicker?.setState(this.markdownStyle)
+
+    if (!this.renderWithTheme || !this.preview) return
+
+    this.updateProgress('正在应用主题…')
+    this.refreshAll()
+
+    void this.themeRender.run(
+      () =>
+        this.renderWithTheme!({
+          markdownStyle: this.markdownStyle,
+          codeTheme: this.codeTheme,
+        }),
+      (html) => {
+        if (!html) {
+          // 选择条已经显示新主题，正文却还是旧的：明确告知而不是静默
+          new Notice('主题渲染失败，正文仍是上一个主题')
+          return
+        }
+        this.html = html
+        this.refreshFirstBodyImage()
+        this.preview?.setBodyHtml(resolveLocalImageSrcs(html, this.app, this.notePath))
+        // 正文首图可能随主题变化，封面来源与缩略图需要跟着重算
+        this.refreshPreview()
+      },
+      (error) => {
+        console.error('应用主题失败:', error)
+        new Notice('应用主题失败，预览仍使用原主题')
+      }
+    ).finally(() => {
+      // 更早的任务不会走到这里改变状态，只有最后一次结束时收尾
+      if (this.themeRender.pending) return
+      this.updateProgress(null)
+      this.refreshAll()
+    })
+  }
+
+  /** 正文首图路径与预览地址；主题切换后正文结构可能变化，需要重新解析 */
+  private refreshFirstBodyImage(): void {
+    const firstSrc = this.html.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] ?? null
+    if (!firstSrc) {
+      this.firstBodyImagePath = null
+      this.firstBodyImagePreview = null
+      return
+    }
+    if (/^(data:|https?:)/i.test(firstSrc)) {
+      this.firstBodyImagePath = firstSrc
+      this.firstBodyImagePreview = firstSrc
+      return
+    }
+    const file = resolveVaultImageFile(this.app, firstSrc, this.notePath)
+    this.firstBodyImagePath = file?.path ?? firstSrc
+    this.firstBodyImagePreview = file ? this.app.vault.getResourcePath(file) : firstSrc
   }
 
   // ---- 右栏：基本信息 -----------------------------------------------------
@@ -683,7 +778,9 @@ export class PublishModal extends Modal {
 
     if (this.submitBtn) {
       this.submitBtn.setText(primaryActionLabel(this.form.publishMode))
-      this.submitBtn.disabled = this.isPublishing || !canSubmit(this.form, fields)
+      // 主题还在重渲染时也不能提交，否则发出去的是上一个主题
+      this.submitBtn.disabled =
+        this.isPublishing || this.themeRender.pending || !canSubmit(this.form, fields)
     }
 
     this.refreshPreview()
@@ -980,6 +1077,12 @@ export class PublishModal extends Modal {
     this.isPublishing = true
     this.setButtonsEnabled(false)
 
+    // 主题切换的正文重渲染可能还在路上：等它落地，否则会把上一个主题发出去
+    if (this.themeRender.pending) {
+      this.updateProgress('正在应用主题…')
+      await this.themeRender.whenIdle()
+    }
+
     // 在任何 await 之前锁定本次发布方式：发布期间用户仍可能操作弹窗，
     // 中途切换会变成「以为在覆盖，实际新建了一篇」
     const updating = this.form.publishMode === 'update' && this.form.draftLink !== null
@@ -1194,6 +1297,7 @@ export class PublishModal extends Modal {
       this.submitBtn.setText(enabled ? primaryActionLabel(this.form.publishMode) : '发布中…')
     }
     if (this.checkBtn) this.checkBtn.disabled = !enabled
+    this.themePicker?.setDisabled(!enabled)
   }
 
   /** 进度文案显示在页脚；传 null 收起 */

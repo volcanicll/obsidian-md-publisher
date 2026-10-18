@@ -6,20 +6,30 @@
    强调色只留给「发布」一个主操作，排好版的文章是唯一主角。
    ============================================================ */
 
+/* 控制条共用度量：左右留白与控件高度只在这里定义一次。
+ * 挂在 :root 上，发布弹窗里的主题选择条也能取到同一套数值。 */
+:root {
+  --bm-md-gutter: 14px;
+  --bm-md-control-h: 28px;
+}
+
 /* Container */
 .bm-md-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: var(--background-primary);
+  container-type: inline-size;
 }
 
-/* Toolbar - Main operation bar */
+/* Toolbar - Main operation bar
+ * 单行控制区：主题贴左、操作居中、发布靠右。
+ * 次级操作默认为幽灵态，强调色整条栏只给「发布」。 */
 .bm-md-toolbar {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  gap: 10px;
+  padding: 9px var(--bm-md-gutter);
+  gap: 6px;
   background: var(--background-primary);
   border-bottom: 1px solid var(--background-modifier-border);
 }
@@ -27,17 +37,118 @@
 /* Button Group */
 .bm-md-button-group {
   display: flex;
-  gap: 8px;
-  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  /* 不参与压缩：内部按钮都是 flex-shrink: 0，组被压扁会让内容溢出到发布按钮上。
+     空间不足时统一由左侧主题芯片吸收，它带省略号与图标降级。 */
+  flex: 0 0 auto;
+  margin: 0 auto;
 }
 
-/* 统一按钮系统：同槽位同高度同字号，只以填充与描边区分层级 */
-.bm-md-btn {
+/* 主题选择：工具栏里唯一的外观决策，做成紧凑的下拉芯片。
+ * 代码高亮已跟随主题，这里不再出现第二个选择器。 */
+button.bm-md-theme-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  /* 允许被压缩：窄侧栏里先收掉主题文字，保住三个操作与发布 */
+  max-width: 100%;
+  height: var(--bm-md-control-h);
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s, 6px);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 1;
+  min-width: 0;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+button.bm-md-theme-chip:hover {
+  background: var(--background-modifier-hover);
+}
+
+button.bm-md-theme-chip:active {
+  background: var(--background-modifier-border);
+}
+
+button.bm-md-theme-chip:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+button.bm-md-theme-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bm-md-theme-chip-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+button.bm-md-theme-chip:hover .bm-md-theme-chip-icon {
+  color: var(--text-muted);
+}
+
+.bm-md-theme-chip-icon svg {
+  width: 14px;
+  height: 14px;
+  margin-right: 0;
+}
+
+.bm-md-theme-chip-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.bm-md-theme-chip-caret {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.bm-md-theme-chip-caret svg {
+  width: 12px;
+  height: 12px;
+  margin-right: 0;
+}
+
+/* 发布弹窗里的主题条：贴在真机预览下方，与侧栏用同一控件 */
+.bm-md-pm-theme-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding-top: 8px;
+}
+
+.bm-md-pm-theme-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+/* 统一按钮系统：同槽位同高度同字号，只以填充与描边区分层级。
+ * 选择器带 button 前缀，否则会被 Obsidian 的 button:not(.clickable-icon)
+ * 覆盖成原生灰底与内阴影。 */
+button.bm-md-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 28px;
+  height: var(--bm-md-control-h);
   padding: 0 12px;
   border-radius: var(--radius-s, 6px);
   cursor: pointer;
@@ -52,119 +163,119 @@
   flex-shrink: 0;
 }
 
-.bm-md-btn:hover {
+button.bm-md-btn:hover {
   background: var(--background-modifier-hover);
 }
 
-.bm-md-btn:active {
+button.bm-md-btn:active {
   background: var(--background-modifier-active-hover);
 }
 
-.bm-md-btn:focus-visible {
+button.bm-md-btn:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 1px;
+  /* 宿主 button:focus-visible 会再画一圈内阴影，这里只保留描边 */
+  box-shadow: none;
 }
 
-.bm-md-btn:disabled {
+button.bm-md-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.bm-md-btn svg {
-  width: 14px;
-  height: 14px;
+/* 工具栏次级操作：无填充无描边，悬停才浮出底色 */
+button.bm-md-btn-quiet {
+  padding: 0 9px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+button.bm-md-btn-quiet:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+button.bm-md-btn-quiet:active {
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.bm-md-btn svg,
+.bm-md-btn-quiet svg {
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
+  /* 抵消 .svg-icon 自带的外边距，图标与文字的间距统一交给 gap */
+  margin-right: 0;
+  opacity: 0.85;
+}
+
+button.bm-md-btn-quiet:hover svg {
+  opacity: 1;
 }
 
 /* 主操作：全界面唯一的强调色 */
-.bm-md-btn-primary {
+button.bm-md-btn.bm-md-btn-primary {
+  padding: 0 14px;
   background: var(--interactive-accent);
   border-color: var(--interactive-accent);
+  box-shadow: none;
   color: var(--text-on-accent);
 }
 
-.bm-md-btn-primary:hover {
+/* 工具栏里主操作独占行尾，与左侧次级操作拉开层级 */
+.bm-md-toolbar .bm-md-btn-primary {
+  margin-left: auto;
+}
+
+button.bm-md-btn.bm-md-btn-primary:hover {
   background: var(--interactive-accent-hover);
   border-color: var(--interactive-accent-hover);
 }
 
-.bm-md-btn-primary:active {
+button.bm-md-btn.bm-md-btn-primary:active {
   background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent-hover);
+}
+
+button.bm-md-btn.bm-md-btn-primary svg {
+  opacity: 1;
 }
 
 /* 破坏性操作：中性底 + 错误色描边，悬停才实感 */
-.bm-md-btn-danger {
+button.bm-md-btn.bm-md-btn-danger {
   background: var(--background-primary);
   color: var(--text-error);
 }
 
-.bm-md-btn-danger:hover {
+button.bm-md-btn.bm-md-btn-danger:hover {
   background: var(--background-modifier-error-hover, var(--background-modifier-hover));
   border-color: var(--text-error);
 }
 
-/* Settings Row */
-.bm-md-settings {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--background-modifier-border);
-  background: var(--background-secondary-alt);
+/* 窄侧栏：逐级收起文字，保证主题、三个操作与发布始终排得下。
+ * 阈值按实测：400px 起操作文字开始挤压主题名，336px 必须收成图标。 */
+@container (max-width: 400px) {
+  button.bm-md-btn-quiet {
+    width: var(--bm-md-control-h);
+    padding: 0;
+  }
+
+  .bm-md-btn-label {
+    display: none;
+  }
 }
 
-.bm-md-selector-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.bm-md-selector-label {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.bm-md-selector {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 24px;
-  padding: 0 8px;
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s, 6px);
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--text-normal);
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.bm-md-selector:hover {
-  border-color: var(--interactive-accent);
-}
-
-.bm-md-selector:focus-visible {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 1px;
-}
-
-.bm-md-selector-value {
-  min-width: 64px;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.bm-md-selector-caret {
-  display: inline-flex;
-  align-items: center;
-}
-
-.bm-md-selector-caret svg {
-  width: 12px;
-  height: 12px;
-  color: var(--text-muted);
+/* 极窄：主题芯片只剩图标与箭头，名字靠 title 提示。
+ * 阈值取 300px：再宽一点主题名还能完整显示，窄于它就会压成「封..」，
+ * 半截名字比纯图标更难读。 */
+@container (max-width: 300px) {
+  .bm-md-theme-chip-value {
+    display: none;
+  }
 }
 
 /* Preview Area */
@@ -676,6 +787,11 @@
   position: sticky;
   top: 0;
   align-self: start;
+  /* 窗口很矮时整列（页签 + 手机 + 主题条）会超过可用高度：
+     让它自己滚动，主题条始终能滚到，而不是被裁掉 */
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .bm-md-pm-tabs {
@@ -728,8 +844,11 @@
   width: calc(375px + 14px);
   max-width: 100%;
   box-sizing: border-box;
-  /* 结果抽屉展开后中段会变矮；机型跟着视口收缩，避免底部被裁掉 */
-  height: clamp(340px, calc(100vh - 440px), 520px);
+  /* 结果抽屉展开后中段会变矮；机型跟着视口收缩，避免底部被裁掉。
+     482 → 452：主题条从两行控件缩成一行芯片，预算随之收回。
+     下限 260px：再矮就优先保证主题条可见（它是预览的一部分），
+     手机内部本来就独立滚动，不需要靠高度撑住。 */
+  height: clamp(260px, calc(100vh - 452px), 520px);
   margin: 0 auto;
   /* 手机框内固定成微信的浅色配色：公众号正文是白底黑字，
      不该跟着 Obsidian 的深色主题一起变暗 */
@@ -1553,9 +1672,12 @@
     gap: 22px;
   }
 
-  /* 单列时预览在上、表单在下，保持 sticky 会盖住表单 */
+  /* 单列时预览在上、表单在下，保持 sticky 会盖住表单；
+     单列下整页由弹窗中段滚动，预览列不再自己滚 */
   .bm-md-pm-preview-col {
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .bm-md-pm-foot {

@@ -193,7 +193,7 @@ async function main() {
     const html = await render({
       markdown: sample,
       markdownStyle: theme.id,
-      codeTheme: 'github',
+      // 不指定 codeTheme：让渲染管线自动取该主题的配套高亮
     })
     sections.push(`
       <div class="card" id="${theme.id}">

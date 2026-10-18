@@ -421,7 +421,7 @@ describe('fidelity pipeline end to end', () => {
   })
 
   it('keeps syntax-highlight spans inside hardened code blocks', async () => {
-    const html = await render({ markdown: '```ts\nconst a = 1\n```', codeTheme: 'one-light' })
+    const html = await render({ markdown: '```ts\nconst a = 1\n```', codeTheme: 'dracula' })
     const block = html.match(/<pre[\s\S]*?<\/pre>/)![0]
     expect(block).toContain('<span')
     expect(block).toContain('&nbsp;')

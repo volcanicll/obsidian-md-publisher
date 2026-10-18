@@ -1,4 +1,12 @@
-import { ItemView, WorkspaceLeaf, MarkdownView, Menu, TFile, Notice, setIcon } from 'obsidian'
+import {
+  ItemView,
+  WorkspaceLeaf,
+  MarkdownView,
+  TFile,
+  Notice,
+  setIcon,
+  setTooltip,
+} from 'obsidian'
 import type BmMdPlugin from '../main'
 import { render } from '../lib/markdown/render'
 import { resolveNoteEmbeds, sliceByHeadings, type NoteResolver } from '../lib/markdown/embeds'
@@ -8,19 +16,20 @@ import {
 } from '../lib/image-processor'
 import { stripHtmlTags } from '../lib/wechat/validation'
 import { exportNoteImage, resolveExportWidth } from '../lib/export-image'
-import { codeThemes } from '../themes/code-theme'
+import { resolveCodeThemeId, DEFAULT_CODE_THEME } from '../themes/code-theme'
+import { getPairedCodeTheme } from '../themes/markdown-style'
 import { PublishModal } from './PublishModal'
 import { DraftsModal } from './DraftsModal'
+import { ThemePicker } from './publish/theme-picker'
 
 export const VIEW_TYPE_PREVIEW = 'obsidian-md-publisher'
 
 export class PreviewView extends ItemView {
   plugin: BmMdPlugin
   currentMarkdownStyle: string = 'mist'
-  currentCodeTheme: string = 'github'
+  currentCodeTheme: string = DEFAULT_CODE_THEME
   previewContainer: HTMLElement | null = null
-  styleSelector: HTMLElement | null = null
-  codeThemeSelector: HTMLElement | null = null
+  private themePicker: ThemePicker | null = null
 
   // Cache markdown content and rendered HTML
   private lastMarkdownContent: string | null = null
@@ -39,7 +48,10 @@ export class PreviewView extends ItemView {
     super(leaf)
     this.plugin = plugin
     this.currentMarkdownStyle = plugin.settings.markdownStyle || 'mist'
-    this.currentCodeTheme = plugin.settings.codeTheme || 'github'
+    this.currentCodeTheme = resolveCodeThemeId(
+      plugin.settings.codeTheme,
+      getPairedCodeTheme(this.currentMarkdownStyle, plugin.customThemes)
+    )
   }
 
   getViewType(): string {
@@ -59,47 +71,52 @@ export class PreviewView extends ItemView {
     container.empty()
     container.addClass('bm-md-container')
 
-    // Toolbar
+    // 顶部控制条：主题贴左，操作居中，发布靠右，全部收进一行
     const toolbar = container.createDiv({ cls: 'bm-md-toolbar' })
 
-    // Button group (left side)
+    // 主题选择：代码高亮跟随主题，主题是唯一的外观决策
+    this.themePicker = new ThemePicker(toolbar, {
+      markdownStyle: this.currentMarkdownStyle,
+      styles: this.plugin.getMarkdownStyleList(),
+      onChange: (styleId) => this.applyMarkdownStyle(styleId),
+    })
+
     const buttonGroup = toolbar.createDiv({ cls: 'bm-md-button-group' })
 
     // 草稿管理
-    const draftsBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn' })
+    const draftsBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn bm-md-btn-quiet' })
     setIcon(draftsBtn, 'inbox')
-    draftsBtn.createSpan({ text: '草稿' })
+    draftsBtn.createSpan({ text: '草稿', cls: 'bm-md-btn-label' })
+    setTooltip(draftsBtn, '管理公众号草稿')
     draftsBtn.addEventListener('click', () => {
       new DraftsModal(this.app, this.plugin).open()
     })
 
     // 复制
-    const copyBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn' })
+    const copyBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn bm-md-btn-quiet' })
     setIcon(copyBtn, 'copy')
-    copyBtn.createSpan({ text: '复制' })
+    copyBtn.createSpan({ text: '复制', cls: 'bm-md-btn-label' })
+    setTooltip(copyBtn, '复制公众号格式')
     copyBtn.addEventListener('click', () => {
       void this.copyToClipboard()
     })
 
     // 导出图片
-    const exportBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn' })
+    const exportBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn bm-md-btn-quiet' })
     setIcon(exportBtn, 'image')
-    exportBtn.createSpan({ text: '导出图片' })
+    exportBtn.createSpan({ text: '导出图片', cls: 'bm-md-btn-label' })
+    setTooltip(exportBtn, '导出为图片')
     exportBtn.addEventListener('click', () => {
       void this.exportImage()
     })
 
-    // 发布
-    const publishBtn = buttonGroup.createEl('button', { cls: 'bm-md-btn bm-md-btn-primary' })
+    // 发布：整条工具栏唯一的实心按钮
+    const publishBtn = toolbar.createEl('button', { cls: 'bm-md-btn bm-md-btn-primary' })
     setIcon(publishBtn, 'send')
     publishBtn.createSpan({ text: '发布' })
     publishBtn.addEventListener('click', () => {
       void this.openPublishModal()
     })
-
-    // Theme selectors
-    const settingsRow = container.createDiv({ cls: 'bm-md-settings' })
-    this.renderSelectors(settingsRow)
 
     // Preview container
     this.previewContainer = container.createDiv({ cls: 'bm-md-preview' })
@@ -220,83 +237,15 @@ export class PreviewView extends ItemView {
     }
   }
 
-  renderSelectors(container: HTMLElement): void {
-    // Markdown Style Selector
-    const styleGroup = container.createDiv({ cls: 'bm-md-selector-group' })
-    styleGroup.createSpan({ text: '主题', cls: 'bm-md-selector-label' })
-
-    this.styleSelector = styleGroup.createEl('button', { cls: 'bm-md-selector' })
-    this.styleSelector.createSpan({ cls: 'bm-md-selector-value' })
-    // setIcon 会清空目标元素内容，图标必须装进独立容器，避免吃掉文字
-    const styleCaret = this.styleSelector.createSpan({ cls: 'bm-md-selector-caret' })
-    setIcon(styleCaret, 'chevron-down')
-    this.updateStyleSelector()
-    this.styleSelector.addEventListener('click', (e) => this.showStyleMenu(e))
-
-    // Code Theme Selector
-    const codeGroup = container.createDiv({ cls: 'bm-md-selector-group' })
-    codeGroup.createSpan({ text: '代码', cls: 'bm-md-selector-label' })
-
-    this.codeThemeSelector = codeGroup.createEl('button', { cls: 'bm-md-selector' })
-    this.codeThemeSelector.createSpan({ cls: 'bm-md-selector-value' })
-    const codeCaret = this.codeThemeSelector.createSpan({ cls: 'bm-md-selector-caret' })
-    setIcon(codeCaret, 'chevron-down')
-    this.updateCodeThemeSelector()
-    this.codeThemeSelector.addEventListener('click', (e) => this.showCodeThemeMenu(e))
-  }
-
-  updateStyleSelector(): void {
-    if (!this.styleSelector) return
-    const style = this.plugin
-      .getMarkdownStyleList()
-      .find(s => s.id === this.currentMarkdownStyle)
-    const valueEl = this.styleSelector.querySelector('.bm-md-selector-value')
-    if (valueEl) valueEl.textContent = style?.name || this.currentMarkdownStyle
-  }
-
-  updateCodeThemeSelector(): void {
-    if (!this.codeThemeSelector) return
-    const theme = codeThemes.find(t => t.id === this.currentCodeTheme)
-    const valueEl = this.codeThemeSelector.querySelector('.bm-md-selector-value')
-    if (valueEl) valueEl.textContent = theme?.name || this.currentCodeTheme
-  }
-
-  showStyleMenu(e: MouseEvent): void {
-    const menu = new Menu()
-    this.plugin.getMarkdownStyleList().forEach(style => {
-      menu.addItem(item => {
-        item.setTitle(style.name)
-          .setChecked(style.id === this.currentMarkdownStyle)
-          .onClick(async () => {
-            this.currentMarkdownStyle = style.id
-            this.plugin.settings.markdownStyle = style.id
-            await this.plugin.saveSettings()
-            this.updateStyleSelector()
-            this.clearRenderedCache()
-            void this.updatePreview()
-          })
-      })
+  /** 切换排版主题：代码高亮跟随该主题的配套配色 */
+  private applyMarkdownStyle(styleId: string): void {
+    this.applyThemeState({
+      markdownStyle: styleId,
+      codeTheme: resolveCodeThemeId(
+        getPairedCodeTheme(styleId, this.plugin.customThemes),
+        this.currentCodeTheme
+      ),
     })
-    menu.showAtMouseEvent(e)
-  }
-
-  showCodeThemeMenu(e: MouseEvent): void {
-    const menu = new Menu()
-    codeThemes.forEach(theme => {
-      menu.addItem(item => {
-        item.setTitle(theme.name)
-          .setChecked(theme.id === this.currentCodeTheme)
-          .onClick(async () => {
-            this.currentCodeTheme = theme.id
-            this.plugin.settings.codeTheme = theme.id
-            await this.plugin.saveSettings()
-            this.updateCodeThemeSelector()
-            this.clearRenderedCache()
-            void this.updatePreview()
-          })
-      })
-    })
-    menu.showAtMouseEvent(e)
   }
 
   /**
@@ -554,9 +503,31 @@ export class PreviewView extends ItemView {
         if (!this.getCurrentMarkdown()) return null
         const freshHtml = await this.getRenderedHtml()
         return freshHtml ? { html: freshHtml } : null
+      },
+      // 弹窗内换主题：写回设置并同步侧栏，保证预览、侧栏与发布内容一致
+      renderWithTheme: async (theme) => {
+        this.applyThemeState(theme)
+        return this.getRenderedHtml()
       }
     })
     modal.open()
+  }
+
+  /**
+   * 应用主题并让侧栏跟上：设置、选择条文案、渲染缓存、预览视图
+   * 一起更新，避免关掉发布弹窗后侧栏还停在旧主题。
+   */
+  private applyThemeState(theme: { markdownStyle: string; codeTheme: string }): void {
+    this.currentMarkdownStyle = theme.markdownStyle
+    this.currentCodeTheme = theme.codeTheme
+    this.plugin.settings.markdownStyle = theme.markdownStyle
+    this.plugin.settings.codeTheme = theme.codeTheme
+    void this.plugin.saveSettings()
+
+    this.themePicker?.setState(this.currentMarkdownStyle)
+
+    this.clearRenderedCache()
+    void this.updatePreview()
   }
 
   onClose(): Promise<void> {

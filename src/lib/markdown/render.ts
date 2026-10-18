@@ -12,8 +12,12 @@ import rehypeExternalLinks from 'rehype-external-links'
 import rehypeStringify from 'rehype-stringify'
 import juice from 'juice'
 import katexCss from 'katex/dist/katex.min.css'
-import { getMarkdownStyleCss, type MarkdownStyle } from '../../themes/markdown-style'
-import { getCodeThemeCss } from '../../themes/code-theme'
+import { getMarkdownStyleCss, getPairedCodeTheme, type MarkdownStyle } from '../../themes/markdown-style'
+import {
+  DEFAULT_CODE_THEME,
+  getCodeThemeCss,
+  resolveCodeThemeId,
+} from '../../themes/code-theme'
 import { transformCallouts } from './callouts'
 import { renderMermaidBlocks } from './mermaid'
 import { isImagePath } from './embeds'
@@ -225,12 +229,16 @@ export async function render(options: RenderOptions): Promise<string> {
   const {
     markdown,
     markdownStyle = 'mist',
-    codeTheme = 'github',
     customCss = '',
     openLinksInNewWindow = true,
     customThemes = [],
     inlineDollarMath = false,
   } = options
+  // 未显式指定代码主题时跟随排版主题的配套配色，避免深色代码块配浅色高亮
+  const codeTheme = resolveCodeThemeId(
+    options.codeTheme,
+    getPairedCodeTheme(markdownStyle, customThemes) ?? DEFAULT_CODE_THEME
+  )
 
   const processor = createProcessor({ openLinksInNewWindow, inlineDollarMath })
   let html = (

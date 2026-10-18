@@ -15,7 +15,12 @@ import {
   readDraftFrontmatter
 } from './lib/wechat/draft-frontmatter'
 import { loadCustomThemes } from './lib/custom-themes'
-import { getAllMarkdownStyles, type MarkdownStyle } from './themes/markdown-style'
+import {
+  getAllMarkdownStyles,
+  getPairedCodeTheme,
+  type MarkdownStyle,
+} from './themes/markdown-style'
+import { resolveCodeThemeId } from './themes/code-theme'
 
 interface BmMdSettings {
   markdownStyle: string
@@ -52,7 +57,8 @@ interface BmMdSettings {
 
 const DEFAULT_SETTINGS: BmMdSettings = {
   markdownStyle: 'mist',
-  codeTheme: 'github',
+  // 与 mist 的配套配色一致；旧的默认 github 是浅色高亮，在深色代码块上不可读
+  codeTheme: 'dracula',
   customCss: '',
   // 预览与校验
   scrollSync: true,
@@ -158,6 +164,12 @@ export default class BmMdPlugin extends Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved ?? {})
     // 持久化数据可能被手工编辑过，结构不完整的关联记录直接丢弃
     this.settings.draftLinks = normalizeDraftLinks(this.settings.draftLinks)
+    // 旧版本允许选浅色高亮，这些主题在深色代码块上不可读且已移除；
+    // 读到旧值时换成当前排版主题的配套配色，而不是让它渲染成不可读的代码
+    this.settings.codeTheme = resolveCodeThemeId(
+      this.settings.codeTheme,
+      getPairedCodeTheme(this.settings.markdownStyle, this.customThemes)
+    )
   }
 
   async saveSettings() {
