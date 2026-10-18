@@ -1676,3 +1676,62 @@
   width: 100%;
   height: 80px;
 }
+
+/* ============================================================
+   手机预览：二维码
+   ============================================================ */
+
+/* 禁用态标签：草稿还没保存时不能切过去 */
+.bm-md-pm-tab.is-disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bm-md-pm-tab.is-disabled:hover {
+  color: var(--text-muted);
+}
+
+.bm-md-pm-panel.is-qr {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+/* 二维码固定白底黑码：反色二维码在部分扫码器上识别率明显下降 */
+.bm-md-pm-qr-holder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #e6e6e1;
+  border-radius: 8px;
+}
+
+.bm-md-pm-qr-holder svg {
+  display: block;
+  width: 168px;
+  height: 168px;
+}
+
+.bm-md-pm-qr-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.bm-md-pm-qr-url a {
+  font-size: 11px;
+  color: #576b95;
+  text-decoration: none;
+}
+
+.bm-md-pm-qr-url a:hover {
+  text-decoration: underline;
+}

@@ -5,6 +5,7 @@ import { extractTitleFromMarkdown, extractDigestFromMarkdown } from '../lib/wech
 import type { WeChatArticle } from '../lib/wechat/types'
 import { isWeChatError } from '../lib/wechat/types'
 import { isWeChatConfigured, credentialFailureHint, validateWeChatArticleFields } from '../lib/wechat/config'
+import { isPreviewUrlUsable } from '../lib/wechat/draft-qr'
 import {
   classifyUpdateFailure,
   weChatErrorCode
@@ -109,6 +110,13 @@ export class PublishModal extends Modal {
   private checkRunning = false
   /** 笔记 frontmatter 里记录的草稿元数据（拉取或上次发布时写入） */
   private savedFrontmatter: DraftFrontmatter | null = null
+  /**
+   * 已保存草稿的微信预览链接。
+   *
+   * 只有草稿真正存在于公众号后台时才有值：打开弹窗时从已有草稿读取，
+   * 或本次保存成功后重新获取。链接带临时凭证，可用于扫码在真机查看。
+   */
+  private previewUrl: string | null = null
 
   /** 正文首图：发布时作为 auto 封面，也用于封面来源指纹 */
   private firstBodyImagePath: string | null = null
@@ -201,6 +209,31 @@ export class PublishModal extends Modal {
     this.reportEl = contentEl.createDiv({ cls: 'bm-md-pm-report is-hidden' })
     this.renderFooter(contentEl)
     this.refreshAll()
+
+    // 已有草稿时后台取一次预览链接，让「手机预览」标签在打开时就能用
+    void this.loadExistingPreviewUrl()
+  }
+
+  /**
+   * 读取已有草稿的预览链接。
+   *
+   * 只用于「覆盖更新」场景：草稿已经在公众号后台，draft/get 会返回一个
+   * 带临时凭证的文章地址。失败不影响发布，标签保持禁用即可。
+   */
+  private async loadExistingPreviewUrl(): Promise<void> {
+    const target = this.form.draftLink
+    if (!target || !isWeChatConfigured(this.plugin.settings)) return
+
+    try {
+      const data = await this.plugin.createWeChatApi().getDraft(target.mediaId)
+      const url = data.news_item?.[0]?.url
+      if (!isPreviewUrlUsable(url)) return
+      this.previewUrl = url ?? null
+      this.refreshPreview()
+    } catch (error) {
+      // 草稿可能已被删除或无权限，交给发布流程报错，这里静默处理
+      console.debug('读取草稿预览链接失败:', error)
+    }
   }
 
   // ---- 头部 ---------------------------------------------------------------
@@ -669,7 +702,8 @@ export class PublishModal extends Modal {
       coverSrc: src,
       coverMissingText: missing,
       showCoverInBody: this.form.showCoverInBody,
-      hasSourceUrl: Boolean(this.form.contentSourceUrl.trim())
+      hasSourceUrl: Boolean(this.form.contentSourceUrl.trim()),
+      previewUrl: this.previewUrl
     })
 
     this.refreshCoverMeta(src)
@@ -1058,7 +1092,19 @@ export class PublishModal extends Modal {
         await this.persistDraftFrontmatter(mediaId, cover)
       }
 
-      this.close()
+      // 草稿已进后台，取一次真机预览链接并留在弹窗里：
+      // 用户可以直接扫码在手机上看效果，不必先去公众号后台找文章
+      this.updateProgress('正在获取手机预览…')
+      this.previewUrl = await this.fetchPreviewUrl(api, mediaId)
+      this.setButtonsEnabled(true)
+      this.refreshAll()
+      if (this.previewUrl) {
+        this.preview?.setTab('qr')
+        new Notice('草稿已保存，可扫码在手机上预览')
+      } else {
+        this.close()
+        new Notice('草稿已保存')
+      }
       console.debug('草稿已保存，media_id:', mediaId, '上传图片数:', results.length)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -1068,6 +1114,18 @@ export class PublishModal extends Modal {
       this.isPublishing = false
       this.refreshAll()
       this.updateProgress(null)
+    }
+  }
+
+  /** 取草稿的微信预览链接；失败返回 null（不影响草稿已保存的结果） */
+  private async fetchPreviewUrl(api: WeChatApi, mediaId: string): Promise<string | null> {
+    try {
+      const data = await api.getDraft(mediaId)
+      const url = data.news_item?.[0]?.url
+      return isPreviewUrlUsable(url) ? url ?? null : null
+    } catch (error) {
+      console.debug('获取草稿预览链接失败:', error)
+      return null
     }
   }
 

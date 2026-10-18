@@ -1,4 +1,6 @@
-export type PreviewTab = 'article' | 'card'
+import { createQrSvg, isPreviewUrlUsable } from '../../lib/wechat/draft-qr'
+
+export type PreviewTab = 'article' | 'card' | 'qr'
 
 export interface PhonePreviewModel {
   title: string
@@ -12,6 +14,8 @@ export interface PhonePreviewModel {
   showCoverInBody: boolean
   /** 是否展示「阅读原文」 */
   hasSourceUrl: boolean
+  /** 已保存草稿的预览链接；有值时「手机预览」标签才可用 */
+  previewUrl?: string | null
 }
 
 /**
@@ -35,6 +39,12 @@ export class PhonePreview {
   private cardDigest: HTMLElement
   private articlePanel: HTMLElement
   private cardPanel: HTMLElement
+  private qrPanel: HTMLElement
+  private qrHolder: HTMLElement
+  private qrHint: HTMLElement
+  private qrUrlEl: HTMLElement
+  /** 当前二维码对应的链接，避免每次表单变更都重画 */
+  private renderedQrUrl: string | null = null
   private articleChrome: HTMLElement[] = []
   private tabs: HTMLButtonElement[] = []
   private currentTab: PreviewTab = 'article'
@@ -45,7 +55,8 @@ export class PhonePreview {
     const tabBar = root.createDiv({ cls: 'bm-md-pm-tabs', attr: { role: 'tablist' } })
     for (const [id, label] of [
       ['article', '文章页'],
-      ['card', '分享卡片']
+      ['card', '分享卡片'],
+      ['qr', '手机预览']
     ] as const) {
       const tab = tabBar.createEl('button', {
         cls: 'bm-md-pm-tab',
@@ -107,6 +118,12 @@ export class PhonePreview {
     note.createSpan({ text: '摘要 ' })
     this.cardDigest = note.createSpan({ cls: 'bm-md-pm-card-digest-text' })
 
+    // 手机预览：草稿保存后用二维码把文章搬到真机上查看
+    this.qrPanel = scroll.createDiv({ cls: 'bm-md-pm-panel is-qr is-hidden' })
+    this.qrHolder = this.qrPanel.createDiv({ cls: 'bm-md-pm-qr-holder' })
+    this.qrHint = this.qrPanel.createDiv({ cls: 'bm-md-pm-qr-hint' })
+    this.qrUrlEl = this.qrPanel.createDiv({ cls: 'bm-md-pm-qr-url' })
+
     this.setTab('article')
   }
 
@@ -124,13 +141,15 @@ export class PhonePreview {
   setTab(tab: PreviewTab): void {
     this.currentTab = tab
     this.tabs.forEach((btn, index) => {
-      const active = (index === 0 ? 'article' : 'card') === tab
+      const id: PreviewTab = index === 0 ? 'article' : index === 1 ? 'card' : 'qr'
+      const active = id === tab
       btn.toggleClass('is-active', active)
       btn.setAttribute('aria-selected', String(active))
     })
     this.articlePanel.toggleClass('is-hidden', tab !== 'article')
     this.cardPanel.toggleClass('is-hidden', tab !== 'card')
-    // 顶栏与底部操作条属于文章页，分享卡片下要一起收起
+    this.qrPanel.toggleClass('is-hidden', tab !== 'qr')
+    // 顶栏与底部操作条属于文章页，其它标签下要一起收起
     for (const el of this.articleChrome) el.toggleClass('is-hidden', tab !== 'article')
   }
 
@@ -182,5 +201,60 @@ export class PhonePreview {
 
     // 关闭「正文顶部显示封面」只影响文章页，分享卡片仍需缩略图
     this.articleCover.toggleClass('is-hidden', !model.showCoverInBody)
+
+    this.updateQr(model.previewUrl ?? null)
+  }
+
+  /**
+   * 手机预览标签的内容。
+   *
+   * 二维码指向草稿在微信端的真实文章页（带临时凭证），扫码即可在手机上
+   * 看到最终效果。草稿还没保存时没有链接，这里给出说明而不是空白。
+   */
+  private updateQr(url: string | null): void {
+    const usable = isPreviewUrlUsable(url)
+
+    // 只有拿到可用链接时才允许切到手机预览标签
+    const qrTab = this.tabs[2]
+    if (qrTab) {
+      qrTab.toggleClass('is-disabled', !usable)
+      qrTab.setAttribute('aria-disabled', String(!usable))
+    }
+    if (!usable && this.currentTab === 'qr') {
+      // 草稿被覆盖更新后链接会短暂失效，自动退回文章页
+      this.setTab('article')
+    }
+
+    // 二维码只在链接变化时重画：update() 会随每次按键触发，
+    // 而二维码是纯确定性输出，重复生成没有意义
+    if (this.renderedQrUrl === url) return
+    this.renderedQrUrl = url
+
+    this.qrHolder.empty()
+    this.qrUrlEl.empty()
+
+    if (!usable) {
+      this.qrHint.setText('先保存到草稿，再用手机扫码查看真机效果。')
+      return
+    }
+
+    // 用 DOMParser 而不是 innerHTML，避免把 SVG 字符串直接当 HTML 注入
+    const doc = new DOMParser().parseFromString(createQrSvg(url!), 'image/svg+xml')
+    const svg = doc.documentElement
+    if (svg && svg.nodeName.toLowerCase() === 'svg') {
+      this.qrHolder.appendChild(svg)
+    }
+    this.qrHint.setText('用微信扫一扫，在手机上打开这篇草稿')
+
+    const link = this.qrUrlEl.createEl('a', {
+      text: '在浏览器中打开',
+      href: url!,
+      attr: { target: '_blank', rel: 'noreferrer noopener' }
+    })
+    link.addEventListener('click', (event) => {
+      // Obsidian 内点击外链交给系统浏览器，避免主窗口被导航走
+      event.preventDefault()
+      window.open(url!, '_blank')
+    })
   }
 }
